@@ -1,0 +1,66 @@
+model Chronicle {
+  id          String                @id @default(uuid())
+  name        String
+  description String?
+  setting     String?
+  image       String?
+  narratorId  String
+  narrator    Users                 @relation("ChronicleNarrator", fields: [narratorId], references: [id], onDelete: Cascade)
+  members     ChronicleMember[]
+  invitations ChronicleInvitation[]
+  journalEntries          ChronicleJournalEntry[]
+  characterJournalEntries CharacterJournalEntry[]
+  chronicleCharacters     ChronicleCharacter[]
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+
+  @@index([narratorId])
+  @@map("chronicles")
+}
+
+enum ChronicleMemberRole {
+  NARRATOR
+  PLAYER
+}
+
+model ChronicleMember {
+  id          String              @id @default(uuid())
+  chronicleId String
+  chronicle   Chronicle           @relation(fields: [chronicleId], references: [id], onDelete: Cascade)
+  userId      String
+  user        Users               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role        ChronicleMemberRole @default(PLAYER)
+  joinedAt    DateTime            @default(now())
+
+  @@unique([chronicleId, userId])
+  @@index([userId])
+  @@map("chronicle_members")
+}
+
+enum ChronicleInvitationStatus {
+  PENDING
+  ACCEPTED
+  CANCELLED
+  EXPIRED
+}
+
+model ChronicleInvitation {
+  id            String                    @id @default(uuid())
+  token         String                    @unique
+  chronicleId   String
+  chronicle     Chronicle                 @relation(fields: [chronicleId], references: [id], onDelete: Cascade)
+  email         String
+  invitedById   String
+  invitedBy     Users                     @relation("InvitationInvitedBy", fields: [invitedById], references: [id], onDelete: Cascade)
+  invitedUserId String?
+  invitedUser   Users?                    @relation("InvitationInvitedUser", fields: [invitedUserId], references: [id], onDelete: SetNull)
+  status        ChronicleInvitationStatus @default(PENDING)
+  expiresAt     DateTime
+  acceptedAt    DateTime?
+  createdAt     DateTime                  @default(now())
+
+  @@index([chronicleId])
+  @@index([email])
+  @@index([invitedUserId])
+  @@map("chronicle_invitations")
+}

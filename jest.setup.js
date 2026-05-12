@@ -1,0 +1,9 @@
+process.env.NODE_ENV = 'test';
+process.env.JWT_SECRET = 'test-secret-key-for-unit-tests-only';
+process.env.PORT = '3000';
+process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/vampiros_test';
+process.env.MAIL_HOST = 'smtp.example.com';
+process.env.MAIL_PORT = '587';
+process.env.MAIL_USER = 'test@example.com';
+process.env.MAIL_PASSWORD = 'test-pass';
+process.env.MAIL_FROM = 'test@example.com';

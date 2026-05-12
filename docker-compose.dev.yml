@@ -1,0 +1,32 @@
+name: distop_ia_dev
+
+services:
+  db:
+    image: postgres:17
+    restart: always
+    container_name: ${PREFIX:-distop_ia_dev}_db
+    ports:
+      - "5441:5432"
+    volumes:
+      - distop_ia_dev_data:/var/lib/postgresql/data
+    env_file:
+      - .env
+    networks:
+      - distop_ia_dev_network
+    shm_size: '128mb'
+    environment:
+      POSTGRES_USER: '${POSTGRES_USER}'
+      POSTGRES_PASSWORD: '${POSTGRES_PASSWORD}'
+      POSTGRES_DB: '${DB_NAME}'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${DB_NAME}']
+      interval: 10s
+      timeout: 5s
+
+networks:
+  distop_ia_dev_network:
+    driver: bridge
+
+volumes:
+  distop_ia_dev_data:
+    driver: local

@@ -1,0 +1,22 @@
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+model Friendship {
+  id          String           @id @default(uuid())
+  requesterId String
+  requester   Users            @relation("FriendshipRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  addresseeId String
+  addressee   Users            @relation("FriendshipAddressee", fields: [addresseeId], references: [id], onDelete: Cascade)
+  status      FriendshipStatus @default(PENDING)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  acceptedAt  DateTime?
+
+  @@unique([requesterId, addresseeId])
+  @@index([addresseeId])
+  @@index([status])
+  @@map("friendships")
+}

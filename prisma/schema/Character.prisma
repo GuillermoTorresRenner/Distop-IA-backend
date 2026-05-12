@@ -1,0 +1,153 @@
+enum AbilityCategory {
+  TALENT
+  SKILL
+  KNOWLEDGE
+}
+
+enum VirtueScheme {
+  HUMANITY
+  PATH
+}
+
+/// Ficha de personaje (V20 — Vampiro: La Mascarada).
+/// Pertenece a un Usuario; puede asociarse a 0..N crónicas vía ChronicleCharacter.
+model Character {
+  id            String   @id @default(uuid())
+  userId        String
+  user          Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Identidad
+  name        String
+  concept     String?
+  chronicleName String? // texto libre, distinto de la asociación con Chronicle
+  generation  Int?
+  haven       String?
+  clanId      String?
+  clan        Clan?      @relation(fields: [clanId], references: [id], onDelete: SetNull)
+
+  // Naturaleza / Conducta (catálogo)
+  natureId    String?
+  nature      Archetype? @relation("CharacterNature", fields: [natureId], references: [id], onDelete: SetNull)
+  demeanorId  String?
+  demeanor    Archetype? @relation("CharacterDemeanor", fields: [demeanorId], references: [id], onDelete: SetNull)
+
+  // Atributos (físicos)
+  strength     Int @default(1)
+  dexterity    Int @default(1)
+  stamina      Int @default(1)
+  // Atributos (sociales)
+  charisma     Int @default(1)
+  manipulation Int @default(1)
+  appearance   Int @default(1)
+  // Atributos (mentales)
+  perception   Int @default(1)
+  intelligence Int @default(1)
+  wits         Int @default(1)
+
+  // Virtudes (esquema Humanidad vs Senda comparte 3 virtudes)
+  virtueScheme    VirtueScheme @default(HUMANITY)
+  conscience      Int          @default(1) // Conciencia / Convicción
+  selfControl     Int          @default(1) // Autocontrol / Instintos
+  courage         Int          @default(1)
+
+  // Estado
+  humanity        Int @default(7) // 0-10 (Humanidad o nivel de Senda)
+  willpowerMax    Int @default(1) // Fuerza de Voluntad (puntos totales)
+  willpowerCurrent Int @default(1)
+  bloodPool       Int @default(10) // Reserva de sangre (0-20 según generación)
+
+  // Salud (cada nivel cuenta cuántas casillas marcadas, 0 = ileso)
+  healthBruised      Int @default(0)
+  healthHurt         Int @default(0)
+  healthInjured      Int @default(0)
+  healthWounded      Int @default(0)
+  healthMauled       Int @default(0)
+  healthCrippled     Int @default(0)
+  healthIncapacitated Int @default(0)
+
+  experience Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  abilities    CharacterAbility[]
+  backgrounds  CharacterBackground[]
+  disciplines  CharacterDiscipline[]
+  meritsFlaws  CharacterMeritFlaw[]
+  chronicles   ChronicleCharacter[]
+
+  @@index([userId])
+  @@map("characters")
+}
+
+/// Habilidades libres (puntaje 0-5). 'category' separa Talentos/Técnicas/Conocimientos.
+/// Habilidades fijas de la hoja se crean con sus nombres canónicos al crear el personaje.
+model CharacterAbility {
+  id          String          @id @default(uuid())
+  characterId String
+  character   Character       @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  category    AbilityCategory
+  name        String
+  value       Int             @default(0)
+  specialty   String?
+
+  @@unique([characterId, category, name])
+  @@index([characterId])
+  @@map("character_abilities")
+}
+
+/// Trasfondos: 7 slots libres (nombre + nivel).
+model CharacterBackground {
+  id          String    @id @default(uuid())
+  characterId String
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  name        String
+  level       Int       @default(0)
+  notes       String?
+  order       Int       @default(0)
+
+  @@index([characterId])
+  @@map("character_backgrounds")
+}
+
+/// Disciplina poseída por el personaje hasta cierto nivel.
+/// Cada nivel comprado corresponde al poder anidado en DisciplinePower de ese nivel.
+model CharacterDiscipline {
+  id           String     @id @default(uuid())
+  characterId  String
+  character    Character  @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  disciplineId String
+  discipline   Discipline @relation(fields: [disciplineId], references: [id], onDelete: Restrict)
+  level        Int        @default(1)
+
+  @@unique([characterId, disciplineId])
+  @@index([characterId])
+  @@map("character_disciplines")
+}
+
+/// Mérito o Defecto seleccionado del catálogo.
+model CharacterMeritFlaw {
+  id          String    @id @default(uuid())
+  characterId String
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  meritFlawId String
+  meritFlaw   MeritFlaw @relation(fields: [meritFlawId], references: [id], onDelete: Restrict)
+  notes       String?
+
+  @@index([characterId])
+  @@map("character_merits_flaws")
+}
+
+/// Asociación N:M: un personaje puede estar en varias crónicas.
+model ChronicleCharacter {
+  id          String    @id @default(uuid())
+  chronicleId String
+  chronicle   Chronicle @relation(fields: [chronicleId], references: [id], onDelete: Cascade)
+  characterId String
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  joinedAt    DateTime  @default(now())
+
+  @@unique([chronicleId, characterId])
+  @@index([characterId])
+  @@map("chronicle_characters")
+}

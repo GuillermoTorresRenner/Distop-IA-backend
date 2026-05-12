@@ -1,0 +1,32 @@
+model ChronicleJournalEntry {
+  id          String    @id @default(uuid())
+  chronicleId String
+  chronicle   Chronicle @relation(fields: [chronicleId], references: [id], onDelete: Cascade)
+  authorId    String
+  author      Users     @relation("ChronicleJournalAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  title       String
+  body        String
+  sessionDate DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([chronicleId])
+  @@index([authorId])
+  @@map("chronicle_journal_entries")
+}
+
+model CharacterJournalEntry {
+  id          String    @id @default(uuid())
+  chronicleId String
+  chronicle   Chronicle @relation(fields: [chronicleId], references: [id], onDelete: Cascade)
+  authorId    String
+  author      Users     @relation("CharacterJournalAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  title       String
+  body        String
+  sessionDate DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([chronicleId, authorId])
+  @@map("character_journal_entries")
+}

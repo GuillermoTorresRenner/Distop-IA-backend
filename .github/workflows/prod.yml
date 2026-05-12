@@ -1,0 +1,144 @@
+name: Deploy Production Backend to Hostinger VPS
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+env:
+  PROJECT_PATH: /home/deployer/proyectos/distop-ia/prod/back
+  DOCKER_IMAGE: lebateleur/distop-ia-back
+  COMPOSE_PROJECT_NAME: distop_ia_prod
+
+jobs:
+  deploy:
+    name: Build, Push and Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Build project
+        run: npm run build
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Build and push Docker image
+        run: |
+          COMMIT_TAG=${{ github.sha }}
+          docker build -t $DOCKER_IMAGE:$COMMIT_TAG -t $DOCKER_IMAGE:latest .
+          docker push $DOCKER_IMAGE:$COMMIT_TAG
+          docker push $DOCKER_IMAGE:latest
+
+      - name: Upload compose file to VPS
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          source: 'docker-compose.yml'
+          target: ${{ env.PROJECT_PATH }}/
+          strip_components: 0
+          overwrite: true
+          timeout: 600s
+          rm: false
+
+      - name: Deploy to Hostinger VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          envs: PROJECT_PATH,DOCKER_IMAGE,COMPOSE_PROJECT_NAME
+          script: |
+            set -e
+            echo "=========================================="
+            echo "Starting production deployment..."
+            echo "=========================================="
+            mkdir -p $PROJECT_PATH
+            cd $PROJECT_PATH
+
+            echo "Configuring environment..."
+            echo "${{ secrets.PROD_ENV_VARS }}" > .env
+
+            set -a
+            source .env
+            set +a
+
+            PREFIX="${PREFIX:-distop_ia_prod}"
+
+            mkdir -p public
+            sudo chown -R 1001:1001 public
+
+            if [ ! -f docker-compose.yml ]; then
+              echo "ERROR: docker-compose.yml not found in $PROJECT_PATH"
+              exit 1
+            fi
+
+            echo "=========================================="
+            echo "Step 1: Stopping existing containers..."
+            echo "=========================================="
+            docker compose --project-name "$COMPOSE_PROJECT_NAME" down --remove-orphans || echo "No containers to stop"
+            for svc in db backend; do
+              docker rm -f "${PREFIX}_${svc}" 2>/dev/null || true
+            done
+
+            echo "=========================================="
+            echo "Step 2: Pulling latest Docker image..."
+            echo "=========================================="
+            for i in 1 2 3; do
+              if docker pull "$DOCKER_IMAGE:latest"; then
+                echo "Image pulled successfully"
+                break
+              else
+                echo "Pull attempt $i failed, retrying in 10 seconds..."
+                sleep 10
+                if [ $i -eq 3 ]; then
+                  echo "Failed to pull image after 3 attempts"
+                  exit 1
+                fi
+              fi
+            done
+
+            echo "=========================================="
+            echo "Step 3: Starting containers..."
+            echo "=========================================="
+            docker compose --project-name "$COMPOSE_PROJECT_NAME" up -d
+            docker compose --project-name "$COMPOSE_PROJECT_NAME" ps
+
+            echo "=========================================="
+            echo "Step 4: Waiting for PostgreSQL to initialize..."
+            echo "=========================================="
+            sleep 30
+
+            echo "=========================================="
+            echo "Step 5: Running database migrations..."
+            echo "=========================================="
+            if ! docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T backend npx prisma migrate deploy; then
+              echo "Database migration failed"
+              docker logs "${PREFIX}_backend" | tail -50
+              exit 1
+            fi
+
+            echo "=========================================="
+            echo "Deployment completed successfully"
+            echo "=========================================="

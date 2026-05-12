@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Únete a una crónica · Distop-IA VTT</title>
+  <style>
+    body { margin:0; padding:0; background:#0c0608; font-family: Georgia, 'Times New Roman', serif; color:#e8d8d3; }
+    .wrapper { background:#0c0608; padding:40px 16px; }
+    .container { max-width:600px; margin:0 auto; background:#15090c; border:1px solid #3a1418; border-radius:6px; overflow:hidden; box-shadow: 0 0 32px rgba(160,18,28,0.18); }
+    .header { background: linear-gradient(180deg, #5c0a14 0%, #2a0508 100%); color:#fff5ef; padding:42px 24px; text-align:center; border-bottom:1px solid #6a0d18; }
+    .crest { font-size:13px; letter-spacing:0.6em; text-transform:uppercase; color:#e6b8a7; margin-bottom:12px; }
+    .header h1 { margin:0; font-size:30px; letter-spacing:0.28em; text-transform:uppercase; text-shadow: 0 0 16px rgba(255,80,80,0.42); }
+    .header .tagline { margin-top:10px; font-style:italic; color:#c9a39a; font-size:13px; letter-spacing:0.16em; }
+    .content { padding:34px 32px; line-height:1.7; }
+    .content p { color:#b9a39d; margin:14px 0; font-size:15px; }
+    .chronicle-card { background:#1a0a0d; border:1px solid #3a1418; padding:20px 22px; border-radius:4px; margin:22px 0; }
+    .chronicle-card .label { color:#e6b8a7; letter-spacing:0.22em; text-transform:uppercase; font-size:11px; display:block; margin-bottom:6px; }
+    .chronicle-card .name { color:#f0e2dd; font-size:22px; letter-spacing:0.06em; margin:0 0 6px; }
+    .chronicle-card .narrator { color:#c9837a; font-style:italic; font-size:14px; }
+    .steps { background:#100507; border:1px solid #3a1418; padding:18px 22px; border-radius:4px; margin:22px 0; }
+    .steps h3 { color:#e6b8a7; letter-spacing:0.2em; text-transform:uppercase; font-size:12px; margin:0 0 12px; }
+    .steps ol { padding-left:20px; margin:0; color:#b9a39d; font-size:14px; line-height:1.8; }
+    .cta-wrap { text-align:center; margin:30px 0 14px; }
+    .cta { display:inline-block; background:#8a121c; color:#fff5ef !important; padding:14px 36px; text-decoration:none; border-radius:3px; letter-spacing:0.26em; text-transform:uppercase; font-size:13px; box-shadow: 0 0 16px rgba(160,18,28,0.45); }
+    .link-fallback { word-break:break-all; color:#c9837a; font-size:12px; background:#1a0a0d; border:1px dashed #3a1418; padding:10px 12px; border-radius:3px; }
+    .expiry { background:#1f0a0d; border-left:3px solid #c97a4a; padding:12px 16px; color:#d9b29a; font-size:13px; border-radius:3px; margin:22px 0; }
+    .ornament { text-align:center; color:#5a1a1f; letter-spacing:0.8em; margin:24px 0 6px; font-size:18px; }
+    .footer { background:#0a0406; padding:22px 20px; text-align:center; color:#6b4c47; font-size:11px; line-height:1.6; border-top:1px solid #3a1418; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="container">
+      <div class="header">
+        <div class="crest">· La Mascarada VTT ·</div>
+        <h1>El pacto te espera</h1>
+        <p class="tagline">Forja tu sello en Distop-IA VTT</p>
+      </div>
+      <div class="content">
+        <p><strong style="color:#f0e2dd;">{{inviterNickname}}</strong> <span style="color:#7a5b56; font-size:12px;">({{inviterEmail}})</span> te invita a unirte a su crónica en Distop-IA · La Mascarada VTT. Aún no tienes una cuenta en nuestro santuario — créala con este correo y el pacto quedará sellado automáticamente.</p>
+
+        <div class="chronicle-card">
+          <span class="label">Crónica</span>
+          <p class="name">{{chronicleName}}</p>
+          <p class="narrator">Narrada por {{inviterNickname}}</p>
+        </div>
+
+        <div class="cta-wrap">
+          <a class="cta" href="{{registerUrl}}">Crear cuenta y aceptar</a>
+        </div>
+
+        <p>¿No funciona el botón? Copia este enlace en tu navegador:</p>
+        <p class="link-fallback">{{registerUrl}}</p>
+
+        <div class="steps">
+          <h3>Cómo proceder</h3>
+          <ol>
+            <li>Registra tu cuenta con este correo: <strong>{{email}}</strong></li>
+            <li>Inicia sesión y serás añadido automáticamente a la crónica.</li>
+            <li>Comparte la sangre del juego con tu manada.</li>
+          </ol>
+        </div>
+
+        <div class="expiry">
+          La invitación caduca el <strong>{{expiresAt}}</strong>.
+        </div>
+
+        <div class="ornament">· · ✦ · ·</div>
+      </div>
+      <div class="footer">
+        <p>Si no esperabas esta invitación, descarta el correo: no se creará ninguna cuenta.</p>
+        <p>© {{year}} Distop-IA · La Mascarada VTT.</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

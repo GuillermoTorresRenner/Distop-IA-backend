@@ -1,0 +1,22 @@
+model Users {
+  id                   String                @id @default(uuid())
+  email                String                @unique
+  nickname             String                @unique
+  password             String
+  isActive             Boolean?              @default(true)
+  avatar               String?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  passwordResetTokens  PasswordResetToken[]
+  chroniclesNarrated   Chronicle[]           @relation("ChronicleNarrator")
+  chronicleMemberships ChronicleMember[]
+  invitationsSent      ChronicleInvitation[] @relation("InvitationInvitedBy")
+  invitationsReceived  ChronicleInvitation[] @relation("InvitationInvitedUser")
+  friendshipsSent      Friendship[]          @relation("FriendshipRequester")
+  friendshipsReceived  Friendship[]          @relation("FriendshipAddressee")
+  chronicleJournalEntries  ChronicleJournalEntry[] @relation("ChronicleJournalAuthor")
+  characterJournalEntries  CharacterJournalEntry[] @relation("CharacterJournalAuthor")
+  characters               Character[]
+
+  @@map("users")
+}

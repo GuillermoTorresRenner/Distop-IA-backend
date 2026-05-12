@@ -1,0 +1,83 @@
+/// Arquetipos compartidos entre Naturaleza y Conducta (Demeanor)
+model Archetype {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  charactersAsNature   Character[] @relation("CharacterNature")
+  charactersAsDemeanor Character[] @relation("CharacterDemeanor")
+
+  @@map("archetypes")
+}
+
+/// Disciplinas base (Auspex, Celeridad, Dominación, etc.)
+model Discipline {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  powers              DisciplinePower[]
+  characterDisciplines CharacterDiscipline[]
+
+  @@map("disciplines")
+}
+
+/// Poderes anidados bajo una Disciplina; un poder por nivel (1..5)
+model DisciplinePower {
+  id           String     @id @default(uuid())
+  disciplineId String
+  discipline   Discipline @relation(fields: [disciplineId], references: [id], onDelete: Cascade)
+  level        Int
+  name         String
+  description  String?
+
+  @@unique([disciplineId, level])
+  @@index([disciplineId])
+  @@map("discipline_powers")
+}
+
+enum MeritFlawKind {
+  MERIT
+  FLAW
+}
+
+/// Clanes y linajes del mundo VtM.
+model Clan {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  sect        String?  // Camarilla / Sabbat / Anarchs / Linaje / Independiente
+  description String?
+  disciplines String?  // Disciplinas de clan separadas por coma (texto descriptivo)
+  weakness    String?  // Debilidad de clan
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  characters Character[]
+
+  @@map("clans")
+}
+
+/// Catálogo de Méritos y Defectos.
+/// `value` positivo para méritos, negativo para defectos (valor canónico VtM).
+model MeritFlaw {
+  id          String        @id @default(uuid())
+  name        String        @unique
+  kind        MeritFlawKind
+  value       Int
+  category    String?
+  description String?
+  order       Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  characterMeritFlaws CharacterMeritFlaw[]
+
+  @@map("merits_flaws")
+}
