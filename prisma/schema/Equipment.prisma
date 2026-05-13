@@ -1,0 +1,130 @@
+/// Cuerpo a cuerpo vs. distancia.
+enum WeaponKind {
+  MELEE
+  RANGED
+}
+
+/// Base del daño: bono fijo o sumando Fuerza.
+enum WeaponDamageBase {
+  STRENGTH
+  FLAT
+}
+
+/// Categoría del arma (Porra, Pistola Ligera, Fusil, etc.).
+/// Categorías canónicas se preinsertan en el seed con `system = true`; los jugadores
+/// pueden crear sus propias armas reutilizando las mismas categorías para mantener la lista
+/// estable.
+model WeaponCategory {
+  id        String     @id @default(uuid())
+  name      String     @unique
+  kind      WeaponKind
+  order     Int        @default(0)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  weapons Weapon[]
+
+  @@map("weapon_categories")
+}
+
+/// Catálogo de armas — entradas del manual (`system = true`) o creadas por usuarios
+/// (con `userId` set; podrían reaprovecharse pero ahora solo se exponen al dueño).
+model Weapon {
+  id          String     @id @default(uuid())
+  name        String
+  kind        WeaponKind
+  categoryId  String
+  category    WeaponCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  /// Daño base: si STRENGTH → `Fuerza + damageBonus`; si FLAT → `damageBonus`.
+  damageBase  WeaponDamageBase
+  damageBonus Int        @default(0)
+
+  /// Letal por defecto: estaca y armas de fuego son letales; el bate/garrote etc. son contundentes salvo `aggravated`.
+  lethal      Boolean    @default(false)
+  /// True para armas con asterisco (estaca → puede paralizar al apuntar al corazón).
+  aggravated  Boolean    @default(false)
+  /// Marca el "+" del manual: objeto contundente que puede ser letal si se apunta a la cabeza.
+  bluntPlus   Boolean    @default(false)
+
+  // RANGED-only (null para MELEE)
+  range       Int?       // metros
+  rate        String?    // texto (p.ej. "3" o "1*")
+  magazine    Int?
+  /// Concealability code (B, P, J, G, N, V…) tal como aparece en el manual.
+  concealment String?
+
+  notes       String?
+  order       Int        @default(0)
+  system      Boolean    @default(false) // true para entradas seedeadas del manual
+  userId      String?    // null para system; sino dueño del custom
+  user        Users?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  characterWeapons CharacterWeapon[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([categoryId])
+  @@index([userId])
+  @@map("weapons")
+}
+
+/// Arma equipada por un personaje.
+model CharacterWeapon {
+  id          String   @id @default(uuid())
+  characterId String
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  /// Snapshot: siempre apunta a un Weapon (system o custom). Si el custom se borra,
+  /// `restrict` impide huérfanos; la UI normalmente debería duplicar al desvincular.
+  weaponId    String
+  weapon      Weapon   @relation(fields: [weaponId], references: [id], onDelete: Restrict)
+
+  notes       String?
+  order       Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([characterId])
+  @@map("character_weapons")
+}
+
+/// Catálogo de armaduras — sistema o custom.
+model Armor {
+  id          String   @id @default(uuid())
+  name        String
+  /// Clase del manual (1..5) — informativa, no se usa como FK.
+  rating      Int      // puntuación de absorción
+  penalty     Int      // penalización a reservas Destreza
+  description String?
+  order       Int      @default(0)
+  system      Boolean  @default(false)
+  userId      String?
+  user        Users?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  characterArmors CharacterArmor[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("armors")
+}
+
+model CharacterArmor {
+  id          String   @id @default(uuid())
+  characterId String
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  armorId     String
+  armor       Armor    @relation(fields: [armorId], references: [id], onDelete: Restrict)
+  notes       String?
+  order       Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([characterId])
+  @@map("character_armors")
+}

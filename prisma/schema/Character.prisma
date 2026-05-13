@@ -9,12 +9,24 @@ enum VirtueScheme {
   PATH
 }
 
+/// Tipo de personaje. Los PCs los crean los jugadores; los NPCs (aliados,
+/// contactos) y los ANTAGONISTs (cazadores, lupinos, etc.) solo los crea el
+/// narrador y se asocian a la crónica desde su detalle.
+enum CharacterKind {
+  PC
+  NPC
+  ANTAGONIST
+}
+
 /// Ficha de personaje (V20 — Vampiro: La Mascarada).
 /// Pertenece a un Usuario; puede asociarse a 0..N crónicas vía ChronicleCharacter.
 model Character {
   id            String   @id @default(uuid())
   userId        String
   user          Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Tipo de personaje (PC por defecto; NPC/Antagonist los crea el narrador).
+  kind          CharacterKind @default(PC)
 
   // Identidad
   name        String
@@ -67,6 +79,9 @@ model Character {
 
   experience Int @default(0)
 
+  /// Notas libres del jugador (markdown plano, sin parser por ahora).
+  notes      String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -75,6 +90,8 @@ model Character {
   disciplines  CharacterDiscipline[]
   meritsFlaws  CharacterMeritFlaw[]
   chronicles   ChronicleCharacter[]
+  weapons      CharacterWeapon[]
+  armors       CharacterArmor[]
 
   @@index([userId])
   @@map("characters")

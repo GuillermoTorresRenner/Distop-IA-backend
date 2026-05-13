@@ -49,6 +49,16 @@ export class CharactersController {
     return this.characters.update(id, userId, dto);
   }
 
+  @Post(':id/clone')
+  @Auth()
+  @ApiOperation({
+    summary:
+      'Clone one of my characters (full sheet copy, no chronicle links; new name "Copia de ...")',
+  })
+  clone(@Param('id') id: string, @GetUser('id') userId: string) {
+    return this.characters.clone(id, userId);
+  }
+
   @Delete(':id')
   @Auth()
   @ApiOperation({ summary: 'Delete a character (owner only)' })

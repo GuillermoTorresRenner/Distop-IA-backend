@@ -18,6 +18,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { CharactersService } from '../characters/characters.service';
 import { Auth, GetUser } from '../common/decorators';
 import {
   enrichChronicleWithImageUrl,
@@ -26,7 +27,12 @@ import {
 import { UploaderService } from '../uploader/uploader.service';
 import { ChroniclesService } from './chronicles.service';
 import { InvitationsService } from './invitations.service';
-import { CreateChronicleDto, InviteUserDto, UpdateChronicleDto } from './dto';
+import {
+  CreateChronicleCharacterDto,
+  CreateChronicleDto,
+  InviteUserDto,
+  UpdateChronicleDto,
+} from './dto';
 
 const ALLOWED_IMAGE_MIMES = [
   'image/jpeg',
@@ -43,6 +49,7 @@ export class ChroniclesController {
     private readonly chronicles: ChroniclesService,
     private readonly invitations: InvitationsService,
     private readonly uploader: UploaderService,
+    private readonly characters: CharactersService,
   ) {}
 
   @Post()
@@ -164,6 +171,76 @@ export class ChroniclesController {
     @GetUser('id') userId: string,
   ) {
     return this.invitations.cancel(id, userId, invitationId);
+  }
+
+  @Get(':id/characters')
+  @Auth()
+  @ApiOperation({
+    summary: 'List characters associated with this chronicle (members only)',
+  })
+  listCharacters(@Param('id') id: string, @GetUser('id') userId: string) {
+    return this.characters.findAllForChronicle(id, userId);
+  }
+
+  @Get(':id/associable-characters')
+  @Auth()
+  @ApiOperation({
+    summary:
+      'List characters that can still be associated to this chronicle. Narrator sees every member\'s characters; players see only their own.',
+  })
+  listAssociableCharacters(
+    @Param('id') id: string,
+    @GetUser('id') userId: string,
+  ) {
+    return this.characters.findAssociableForChronicle(id, userId);
+  }
+
+  @Post(':id/characters')
+  @Auth()
+  @ApiOperation({
+    summary:
+      'Create a character inside this chronicle. Narrator may create for any member via targetUserId; otherwise the caller owns the character.',
+  })
+  createCharacter(
+    @Param('id') id: string,
+    @GetUser('id') userId: string,
+    @Body() dto: CreateChronicleCharacterDto,
+  ) {
+    const { targetUserId, ...characterDto } = dto;
+    return this.characters.createForChronicle(
+      userId,
+      id,
+      characterDto,
+      targetUserId,
+    );
+  }
+
+  @Post(':id/characters/:characterId')
+  @Auth()
+  @ApiOperation({
+    summary:
+      'Associate an existing character with this chronicle. Allowed for the narrator or the character owner; the owner must be a chronicle member.',
+  })
+  linkCharacter(
+    @Param('id') id: string,
+    @Param('characterId') characterId: string,
+    @GetUser('id') userId: string,
+  ) {
+    return this.characters.linkExistingToChronicle(id, characterId, userId);
+  }
+
+  @Delete(':id/characters/:characterId')
+  @Auth()
+  @ApiOperation({
+    summary:
+      'Remove a character from this chronicle. Allowed for the narrator or the character owner.',
+  })
+  unlinkCharacter(
+    @Param('id') id: string,
+    @Param('characterId') characterId: string,
+    @GetUser('id') userId: string,
+  ) {
+    return this.characters.unlinkFromChronicle(id, characterId, userId);
   }
 
   @Delete(':id/members/:userId')

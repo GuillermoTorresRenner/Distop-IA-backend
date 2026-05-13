@@ -13,16 +13,21 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
-import { VirtueScheme } from '@prisma/client';
+import { CharacterKind, VirtueScheme } from '@prisma/client';
 import { CharacterAbilityDto } from './ability.dto';
+import { CharacterArmorDto } from './armor.dto';
 import { CharacterBackgroundDto } from './background.dto';
 import { CharacterDisciplineDto } from './discipline.dto';
 import { CharacterMeritFlawDto } from './merit-flaw.dto';
+import { CharacterWeaponDto } from './weapon.dto';
 
 const ATTR_MIN = 1;
 const ATTR_MAX = 5;
 
 export class CreateCharacterDto {
+  @ApiPropertyOptional({ enum: CharacterKind, default: 'PC' })
+  @IsOptional() @IsEnum(CharacterKind) kind?: CharacterKind;
+
   // Identidad
   @ApiProperty({ example: 'Lucius Carfax' })
   @IsString()
@@ -105,4 +110,18 @@ export class CreateCharacterDto {
   @IsOptional() @IsArray() @ArrayMaxSize(20)
   @ValidateNested({ each: true }) @Type(() => CharacterMeritFlawDto)
   meritsFlaws?: CharacterMeritFlawDto[];
+
+  @ApiPropertyOptional({ type: [CharacterWeaponDto] })
+  @IsOptional() @IsArray() @ArrayMaxSize(20)
+  @ValidateNested({ each: true }) @Type(() => CharacterWeaponDto)
+  weapons?: CharacterWeaponDto[];
+
+  @ApiPropertyOptional({ type: [CharacterArmorDto] })
+  @IsOptional() @IsArray() @ArrayMaxSize(10)
+  @ValidateNested({ each: true }) @Type(() => CharacterArmorDto)
+  armors?: CharacterArmorDto[];
+
+  @ApiPropertyOptional({ description: 'Notas libres del jugador (markdown plano).' })
+  @IsOptional() @IsString() @MaxLength(8000)
+  notes?: string;
 }

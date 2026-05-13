@@ -1,6 +1,11 @@
 /* eslint-disable @typescript-eslint/no-floating-promises */
 import 'dotenv/config';
-import { PrismaClient, MeritFlawKind } from '@prisma/client';
+import {
+  PrismaClient,
+  MeritFlawKind,
+  WeaponKind,
+  WeaponDamageBase,
+} from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 
 const adapter = new PrismaPg(process.env.DATABASE_URL!);
@@ -273,11 +278,184 @@ async function seedClans() {
   console.log(`✓ ${CLANS.length} clanes.`);
 }
 
+// =====================================================================
+// EQUIPO — armas (cuerpo a cuerpo + a distancia) y armaduras
+// Fuente: V20 Manual del jugador. Solo se seedan entradas "system": los
+// jugadores podrán crear customs reutilizando las mismas categorías.
+// =====================================================================
+
+interface WeaponCategoryDef {
+  name: string;
+  kind: WeaponKind;
+}
+
+const WEAPON_CATEGORIES: WeaponCategoryDef[] = [
+  // CC
+  { name: 'Porra', kind: 'MELEE' },
+  { name: 'Garrote', kind: 'MELEE' },
+  { name: 'Cuchillo', kind: 'MELEE' },
+  { name: 'Espada', kind: 'MELEE' },
+  { name: 'Hacha', kind: 'MELEE' },
+  { name: 'Estaca', kind: 'MELEE' },
+  // Distancia
+  { name: 'Revólver ligero', kind: 'RANGED' },
+  { name: 'Revólver pesado', kind: 'RANGED' },
+  { name: 'Pistola ligera', kind: 'RANGED' },
+  { name: 'Pistola pesada', kind: 'RANGED' },
+  { name: 'Fusil', kind: 'RANGED' },
+  { name: 'Ametralladora pequeña', kind: 'RANGED' },
+  { name: 'Ametralladora grande', kind: 'RANGED' },
+  { name: 'Escopeta', kind: 'RANGED' },
+  { name: 'Ballesta', kind: 'RANGED' },
+];
+
+interface SystemWeaponDef {
+  name: string;
+  category: string; // matches WeaponCategoryDef.name
+  kind: WeaponKind;
+  damageBase: WeaponDamageBase;
+  damageBonus: number;
+  lethal?: boolean;
+  aggravated?: boolean;
+  bluntPlus?: boolean;
+  range?: number;
+  rate?: string;
+  magazine?: number;
+  concealment?: string;
+  notes?: string;
+}
+
+const SYSTEM_WEAPONS: SystemWeaponDef[] = [
+  // ── Cuerpo a cuerpo (manual pág. ref. armas CC) ──
+  // El "+" del manual: contundente, letal si se apunta a la cabeza.
+  { name: 'Porra', category: 'Porra', kind: 'MELEE', damageBase: 'STRENGTH', damageBonus: 1, bluntPlus: true, concealment: 'B' },
+  { name: 'Garrote', category: 'Garrote', kind: 'MELEE', damageBase: 'STRENGTH', damageBonus: 2, bluntPlus: true, concealment: 'G' },
+  { name: 'Cuchillo', category: 'Cuchillo', kind: 'MELEE', damageBase: 'STRENGTH', damageBonus: 1, lethal: true, concealment: 'C' },
+  { name: 'Espada', category: 'Espada', kind: 'MELEE', damageBase: 'STRENGTH', damageBonus: 2, lethal: true, concealment: 'G' },
+  { name: 'Hacha', category: 'Hacha', kind: 'MELEE', damageBase: 'STRENGTH', damageBonus: 3, lethal: true, concealment: 'N' },
+  {
+    name: 'Estaca',
+    category: 'Estaca',
+    kind: 'MELEE',
+    damageBase: 'STRENGTH',
+    damageBonus: 1,
+    aggravated: true,
+    concealment: 'B',
+    notes: 'Puede paralizar a un vampiro si se clava en el corazón (apuntar, dificultad 9, 3 éxitos).',
+  },
+
+  // ── Armas a distancia (manual) ──
+  // Revólver ligero — ejemplo: SW M640 (.38 special)
+  { name: 'SW M640 (.38 special)', category: 'Revólver ligero', kind: 'RANGED', damageBase: 'FLAT', damageBonus: 4, lethal: true, range: 12, rate: '3', magazine: 6, concealment: 'B' },
+  // Revólver pesado — Colt Anaconda (.44 Magnum)
+  { name: 'Colt Anaconda (.44 Magnum)', category: 'Revólver pesado', kind: 'RANGED', damageBase: 'FLAT', damageBonus: 6, lethal: true, range: 35, rate: '2', magazine: 6, concealment: 'C' },
+  // Pistola ligera — Glock 17 (9 mm)
+  { name: 'Glock 17 (9 mm)', category: 'Pistola ligera', kind: 'RANGED', damageBase: 'FLAT', damageBonus: 4, lethal: true, range: 20, rate: '4', magazine: 17, concealment: 'P' },
+  // Pistola pesada — SIG P220 (.45 ACP)
+  { name: 'SIG P220 (.45 ACP)', category: 'Pistola pesada', kind: 'RANGED', damageBase: 'FLAT', damageBonus: 5, lethal: true, range: 30, rate: '3', magazine: 7, concealment: 'J' },
+  // Fusil — Remington M-700 (30.06)
+  { name: 'Remington M-700 (30.06)', category: 'Fusil', kind: 'RANGED', damageBase: 'FLAT', damageBonus: 8, lethal: true, range: 200, rate: '1', magazine: 5, concealment: 'N' },
+  // Ametralladora pequeña — Ingram Mac-10
+  { name: 'Ingram Mac-10', category: 'Ametralladora pequeña', kind: 'RANGED', damageBase: 'FLAT', damageBonus: 4, lethal: true, range: 25, rate: '3', magazine: 30, concealment: 'J' },
+  // Ametralladora grande — Uzi (9 mm)
+  { name: 'Uzi (9 mm)', category: 'Ametralladora grande', kind: 'RANGED', damageBase: 'FLAT', damageBonus: 4, lethal: true, range: 50, rate: '3', magazine: 32, concealment: 'J' },
+  // Ametralladora grande — Steyr-Aug (5.56 mm)
+  { name: 'Steyr-Aug (5.56 mm)', category: 'Ametralladora grande', kind: 'RANGED', damageBase: 'FLAT', damageBonus: 7, lethal: true, range: 150, rate: '3', magazine: 30, concealment: 'N' },
+  // Escopeta — Ithaca M-37
+  { name: 'Ithaca M-37', category: 'Escopeta', kind: 'RANGED', damageBase: 'FLAT', damageBonus: 8, lethal: true, range: 20, rate: '1', magazine: 5, concealment: 'N' },
+  // Escopeta semiautomática — Franchi-Law (.12)
+  { name: 'Franchi-Law (.12)', category: 'Escopeta', kind: 'RANGED', damageBase: 'FLAT', damageBonus: 8, lethal: true, range: 20, rate: '3', magazine: 8, concealment: 'N' },
+  // Ballesta — ejemplo
+  {
+    name: 'Ballesta',
+    category: 'Ballesta',
+    kind: 'RANGED',
+    damageBase: 'FLAT',
+    damageBonus: 5,
+    lethal: true,
+    range: 20,
+    rate: '1',
+    magazine: 1,
+    concealment: 'N',
+    notes: 'Apunta al corazón para paralizar a un vampiro (causa daño letal contundente, aggravado contra otros mortales).',
+    aggravated: true,
+  },
+];
+
+async function seedWeapons() {
+  // 1. Categorías (orden estable basado en el array)
+  const categoryByName = new Map<string, string>();
+  for (let i = 0; i < WEAPON_CATEGORIES.length; i++) {
+    const def = WEAPON_CATEGORIES[i];
+    const cat = await prisma.weaponCategory.upsert({
+      where: { name: def.name },
+      create: { name: def.name, kind: def.kind, order: i },
+      update: { kind: def.kind, order: i },
+    });
+    categoryByName.set(def.name, cat.id);
+  }
+
+  // 2. Armas del manual. Como el modelo Weapon no tiene unique en name+system,
+  //    primero borramos todas las system y reinsertamos — idempotente y simple.
+  await prisma.weapon.deleteMany({ where: { system: true } });
+
+  await prisma.weapon.createMany({
+    data: SYSTEM_WEAPONS.map((w, idx) => ({
+      name: w.name,
+      kind: w.kind,
+      categoryId: categoryByName.get(w.category)!,
+      damageBase: w.damageBase,
+      damageBonus: w.damageBonus,
+      lethal: w.lethal ?? false,
+      aggravated: w.aggravated ?? false,
+      bluntPlus: w.bluntPlus ?? false,
+      range: w.range ?? null,
+      rate: w.rate ?? null,
+      magazine: w.magazine ?? null,
+      concealment: w.concealment ?? null,
+      notes: w.notes ?? null,
+      order: idx,
+      system: true,
+      userId: null,
+    })),
+  });
+
+  console.log(
+    `✓ ${WEAPON_CATEGORIES.length} categorías de armas y ${SYSTEM_WEAPONS.length} armas (V20).`,
+  );
+}
+
+const SYSTEM_ARMORS: { name: string; rating: number; penalty: number; description: string }[] = [
+  { name: 'Clase Uno (ropa reforzada)', rating: 1, penalty: 0, description: 'Sumar a la absorción contra contundente, letal y agravado de colmillos/garras. No protege contra fuego ni luz solar.' },
+  { name: 'Clase Dos (chaleco)', rating: 2, penalty: 1, description: 'Idem clase 1. Penaliza reservas de Destreza.' },
+  { name: 'Clase Tres (Kevlar)', rating: 3, penalty: 1, description: 'Idem. Estándar policial moderno.' },
+  { name: 'Clase Cuatro (antibalas)', rating: 4, penalty: 2, description: 'Idem. Equipo táctico militar.' },
+  { name: 'Clase Cinco (antidisturbios)', rating: 5, penalty: 3, description: 'Idem. Equipo pesado, restringe la movilidad.' },
+];
+
+async function seedArmors() {
+  await prisma.armor.deleteMany({ where: { system: true } });
+  await prisma.armor.createMany({
+    data: SYSTEM_ARMORS.map((a, idx) => ({
+      name: a.name,
+      rating: a.rating,
+      penalty: a.penalty,
+      description: a.description,
+      order: idx,
+      system: true,
+      userId: null,
+    })),
+  });
+  console.log(`✓ ${SYSTEM_ARMORS.length} armaduras (V20).`);
+}
+
 async function main() {
   await seedArchetypes();
   await seedDisciplines();
   await seedMeritsFlaws();
   await seedClans();
+  await seedWeapons();
+  await seedArmors();
 }
 
 main()

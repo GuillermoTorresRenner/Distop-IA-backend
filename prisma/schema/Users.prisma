@@ -17,6 +17,8 @@ model Users {
   chronicleJournalEntries  ChronicleJournalEntry[] @relation("ChronicleJournalAuthor")
   characterJournalEntries  CharacterJournalEntry[] @relation("CharacterJournalAuthor")
   characters               Character[]
+  customWeapons            Weapon[]
+  customArmors             Armor[]
 
   @@map("users")
 }
