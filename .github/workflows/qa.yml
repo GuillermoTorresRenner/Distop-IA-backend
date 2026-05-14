@@ -145,5 +145,12 @@ jobs:
             fi
 
             echo "=========================================="
+            echo "Step 6: Running database seed (idempotent)..."
+            echo "=========================================="
+            if ! docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T backend npm run db:seed; then
+              echo "Seed failed (non-blocking)"
+            fi
+
+            echo "=========================================="
             echo "Deployment completed successfully"
             echo "=========================================="
