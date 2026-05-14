@@ -82,10 +82,7 @@ jobs:
             echo "Configuring environment..."
             echo "${{ secrets.QA_ENV_VARS }}" > .env
 
-            set -a
-            source .env
-            set +a
-
+            PREFIX=$(grep -E '^PREFIX=' .env | cut -d'=' -f2 | tr -d '"' | tr -d "'")
             PREFIX="${PREFIX:-distop_ia_qa}"
 
             mkdir -p public
