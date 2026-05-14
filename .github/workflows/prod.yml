@@ -10,10 +10,11 @@ env:
   PROJECT_PATH: /home/deployer/proyectos/distop-ia/prod/back
   DOCKER_IMAGE: lebateleur/distop-ia-back
   COMPOSE_PROJECT_NAME: distop_ia_prod
+  IMAGE_TAG: latest
 
 jobs:
   deploy:
-    name: Build, Push and Deploy
+    name: Build, Push and Deploy Production
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -43,9 +44,12 @@ jobs:
       - name: Build and push Docker image
         run: |
           COMMIT_TAG=${{ github.sha }}
-          docker build -t $DOCKER_IMAGE:$COMMIT_TAG -t $DOCKER_IMAGE:latest .
+          docker build \
+            -t $DOCKER_IMAGE:$COMMIT_TAG \
+            -t $DOCKER_IMAGE:$IMAGE_TAG \
+            .
           docker push $DOCKER_IMAGE:$COMMIT_TAG
-          docker push $DOCKER_IMAGE:latest
+          docker push $DOCKER_IMAGE:$IMAGE_TAG
 
       - name: Upload compose file to VPS
         uses: appleboy/scp-action@v0.1.4
@@ -68,11 +72,11 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           password: ${{ secrets.VPS_PASSWORD }}
           port: ${{ secrets.VPS_PORT || 22 }}
-          envs: PROJECT_PATH,DOCKER_IMAGE,COMPOSE_PROJECT_NAME
+          envs: PROJECT_PATH,DOCKER_IMAGE,COMPOSE_PROJECT_NAME,IMAGE_TAG
           script: |
             set -e
             echo "=========================================="
-            echo "Starting production deployment..."
+            echo "Starting production backend deployment..."
             echo "=========================================="
             mkdir -p $PROJECT_PATH
             cd $PROJECT_PATH
@@ -83,16 +87,10 @@ jobs:
             set -a
             source .env
             set +a
-
             PREFIX="${PREFIX:-distop_ia_prod}"
 
             mkdir -p public
-            sudo chown -R 1001:1001 public
-
-            if [ ! -f docker-compose.yml ]; then
-              echo "ERROR: docker-compose.yml not found in $PROJECT_PATH"
-              exit 1
-            fi
+            sudo chown -R 1001:1001 public || true
 
             echo "=========================================="
             echo "Step 1: Stopping existing containers..."
@@ -106,7 +104,7 @@ jobs:
             echo "Step 2: Pulling latest Docker image..."
             echo "=========================================="
             for i in 1 2 3; do
-              if docker pull "$DOCKER_IMAGE:latest"; then
+              if docker pull "$DOCKER_IMAGE:$IMAGE_TAG"; then
                 echo "Image pulled successfully"
                 break
               else
@@ -140,5 +138,5 @@ jobs:
             fi
 
             echo "=========================================="
-            echo "Deployment completed successfully"
+            echo "Production deployment completed successfully"
             echo "=========================================="

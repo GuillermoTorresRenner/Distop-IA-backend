@@ -2,22 +2,20 @@ name: distop_ia_prod
 
 services:
   db:
-    container_name: ${PREFIX}_db
     image: postgres:17
+    container_name: ${PREFIX}_db
     restart: always
-    ports:
-      - "5439:5432"
-    volumes:
-      - distop_ia_prod_data:/var/lib/postgresql/data
     env_file:
       - .env
-    networks:
-      - distop_ia_prod_network
-    shm_size: '128mb'
     environment:
       POSTGRES_USER: '${POSTGRES_USER}'
       POSTGRES_PASSWORD: '${POSTGRES_PASSWORD}'
       POSTGRES_DB: '${DB_NAME}'
+    volumes:
+      - distop_ia_prod_postgresql_data:/var/lib/postgresql/data
+    networks:
+      - internal
+    shm_size: '128mb'
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${DB_NAME}']
       interval: 10s
@@ -36,20 +34,19 @@ services:
       db:
         condition: service_healthy
     networks:
-      - distop_ia_prod_network
-      - web
+      internal:
+        aliases:
+          - backend
+          - backend-prod
     volumes:
       - ./public:/app/public
 
 networks:
-  distop_ia_prod_network:
-    driver: bridge
+  internal:
     name: distop_ia_prod_internal_net
-  web:
-    external: true
-    name: web
+    driver: bridge
 
 volumes:
-  distop_ia_prod_data:
-    driver: local
+  distop_ia_prod_postgresql_data:
     name: distop_ia_prod_postgresql_data
+    driver: local
