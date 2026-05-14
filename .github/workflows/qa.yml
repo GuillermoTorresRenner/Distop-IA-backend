@@ -9,7 +9,7 @@ on:
 env:
   PROJECT_PATH: /home/deployer/proyectos/distop-ia/qa/back
   DOCKER_IMAGE: lebateleur/distop-ia-back
-  COMPOSE_PROJECT_NAME: distop_ia_qa
+  COMPOSE_PROJECT_NAME: DISTOP-IA
 
 jobs:
   deploy:
