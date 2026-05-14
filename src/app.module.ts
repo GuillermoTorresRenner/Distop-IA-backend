@@ -9,6 +9,7 @@ import { SocialModule } from './social/social.module';
 import { JournalModule } from './journal/journal.module';
 import { CatalogModule } from './catalog/catalog.module';
 import { CharactersModule } from './characters/characters.module';
+import { TableModule } from './table/table.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { CharactersModule } from './characters/characters.module';
     JournalModule,
     CatalogModule,
     CharactersModule,
+    TableModule,
   ],
   controllers: [],
   providers: [],
