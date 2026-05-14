@@ -33,6 +33,7 @@ import {
   InviteUserDto,
   UpdateChronicleDto,
 } from './dto';
+import { UpdateCharacterDto } from '../characters/dto';
 
 const ALLOWED_IMAGE_MIMES = [
   'image/jpeg',
@@ -227,6 +228,21 @@ export class ChroniclesController {
     @GetUser('id') userId: string,
   ) {
     return this.characters.linkExistingToChronicle(id, characterId, userId);
+  }
+
+  @Patch(':id/characters/:characterId')
+  @Auth()
+  @ApiOperation({
+    summary:
+      'Update a character in the context of a chronicle. Allowed for the character owner, or for the narrator if the character is associated with this chronicle.',
+  })
+  updateCharacterInChronicle(
+    @Param('id') id: string,
+    @Param('characterId') characterId: string,
+    @GetUser('id') userId: string,
+    @Body() dto: UpdateCharacterDto,
+  ) {
+    return this.characters.updateFromChronicle(id, characterId, userId, dto);
   }
 
   @Delete(':id/characters/:characterId')

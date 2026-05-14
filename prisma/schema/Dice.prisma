@@ -1,0 +1,39 @@
+/// Tirada de dados V20 ejecutada en una mesa.
+/// Persistimos todas las tiradas (incluso las privadas) para histórico,
+/// auditoría y replay.
+model DiceRoll {
+  id              String     @id @default(uuid())
+  chronicleId     String
+  chronicle       Chronicle  @relation(fields: [chronicleId], references: [id], onDelete: Cascade)
+  userId          String
+  user            Users      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  characterId     String?
+  character       Character? @relation(fields: [characterId], references: [id], onDelete: SetNull)
+
+  /// Etiqueta libre que el usuario asigna (ej: "Percepción + Alerta").
+  label           String?
+  /// Cantidad de d10 base (atributo + habilidad + bonificadores).
+  pool            Int
+  /// Dificultad VtM V20. Por defecto 6.
+  difficulty      Int        @default(6)
+  /// Especialidad: los 10s cuentan doble éxito.
+  specialty       Boolean    @default(false)
+  /// Willpower gastada: agrega 1 éxito automático no removible por 1s.
+  willpowerSpent  Boolean    @default(false)
+
+  /// Resultados crudos de cada dado (1..10).
+  rolls           Int[]
+  /// Éxitos finales (tras restas y doble por specialty + willpower).
+  successes       Int
+  /// True si el resultado fue una pifia (botch): 0 éxitos finales con al menos un 1.
+  isBotch         Boolean    @default(false)
+
+  /// Si false, solo el narrador y el autor ven el resultado en el broadcast.
+  isPublic        Boolean    @default(true)
+
+  createdAt       DateTime   @default(now())
+
+  @@index([chronicleId, createdAt])
+  @@index([userId])
+  @@map("dice_rolls")
+}

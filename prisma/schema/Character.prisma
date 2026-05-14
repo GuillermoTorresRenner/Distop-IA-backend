@@ -92,6 +92,7 @@ model Character {
   chronicles   ChronicleCharacter[]
   weapons      CharacterWeapon[]
   armors       CharacterArmor[]
+  diceRolls    DiceRoll[]
 
   @@index([userId])
   @@map("characters")

@@ -16,7 +16,10 @@ import { parse as parseCookie } from 'cookie';
 import { JwtPayload } from '../common/interfaces/jwt-payload.interface';
 import { envs } from '../config/envs';
 import { TableService } from './table.service';
+import { DiceService } from './dice.service';
 import { ChatMessageDto } from './dto/chat-message.dto';
+import { RollVtmDto } from './dto/roll-vtm.dto';
+import { SheetUpdateAnnounceDto } from './dto/sheet-update-announce.dto';
 import { AuthenticatedSocketData } from './types/socket-with-user';
 
 // `Socket` se usa como anotación en decoradores: debe ser un valor en tiempo
@@ -59,6 +62,7 @@ export class TableGateway
   constructor(
     private readonly jwtService: JwtService,
     private readonly tableService: TableService,
+    private readonly diceService: DiceService,
   ) {}
 
   afterInit() {
@@ -208,9 +212,138 @@ export class TableGateway
     return { ok: true, id: message.id };
   }
 
+  @SubscribeMessage('roll:vtm')
+  async onRollVtm(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() body: RollVtmDto,
+  ) {
+    const { userId, chronicleId } = (client.data ?? {}) as AuthenticatedSocketData;
+    if (!userId || !chronicleId) throw new WsException('Not in a table');
+
+    // Persiste y obtiene la tirada con autor + personaje.
+    const roll = await this.diceService.rollAndPersist({
+      chronicleId,
+      userId,
+      characterId: body.characterId ?? null,
+      label: body.label ?? null,
+      pool: body.pool,
+      difficulty: body.difficulty,
+      specialty: body.specialty,
+      willpowerSpent: body.willpowerSpent,
+      isPublic: body.isPublic ?? true,
+    });
+
+    const room = this.roomName(chronicleId);
+
+    // Tirada pública: la ve toda la mesa.
+    if (roll.isPublic) {
+      this.server.to(room).emit('roll:result', roll);
+      return { ok: true, id: roll.id };
+    }
+
+    // Tirada privada: solo autor y narrador la ven.
+    // Buscamos al narrador de la crónica para mandarle el resultado.
+    const narratorId = await this.getNarratorIdInRoom(chronicleId);
+    const sockets = await this.server.in(room).fetchSockets();
+    for (const s of sockets) {
+      const sUid = (s.data as AuthenticatedSocketData)?.userId;
+      if (sUid === userId || (narratorId && sUid === narratorId)) {
+        s.emit('roll:result', roll);
+      }
+    }
+    return { ok: true, id: roll.id };
+  }
+
+  /**
+   * Anuncia un cambio en la hoja del personaje a la sala.
+   * Si el personaje es PC, lo ve toda la mesa.
+   * Si es NPC/ANTAGONIST, solo el narrador.
+   *
+   * El cliente ya hizo la persistencia vía REST (PATCH). Este evento
+   * solo difunde el "qué cambió" en formato legible para el chat.
+   */
+  @SubscribeMessage('sheet:announce')
+  async onSheetAnnounce(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() body: SheetUpdateAnnounceDto,
+  ) {
+    const { userId, chronicleId } = (client.data ?? {}) as AuthenticatedSocketData;
+    if (!userId || !chronicleId) throw new WsException('Not in a table');
+    if (!body?.characterId || !Array.isArray(body.deltas) || body.deltas.length === 0) {
+      return { ok: true };
+    }
+
+    const ctx = await this.tableService.getCharacterContext(
+      chronicleId,
+      body.characterId,
+    );
+    if (!ctx) throw new WsException('Character not in this chronicle');
+
+    // Solo el dueño o el narrador pueden anunciar cambios.
+    const narratorId = await this.tableService.getNarratorId(chronicleId);
+    const isOwner = ctx.ownerId === userId;
+    const isNarrator = narratorId === userId;
+    if (!isOwner && !isNarrator) {
+      throw new WsException(
+        'Forbidden: only owner or narrator can announce sheet changes',
+      );
+    }
+
+    const payload = {
+      id: `sheet-${Date.now()}-${client.id}`,
+      characterId: ctx.id,
+      characterName: ctx.name,
+      kind: ctx.kind,
+      authorId: userId,
+      deltas: body.deltas,
+      at: new Date().toISOString(),
+    };
+
+    const room = this.roomName(chronicleId);
+
+    if (ctx.kind === 'PC') {
+      this.server.to(room).emit('sheet:announce', payload);
+      return { ok: true };
+    }
+
+    // NPC / ANTAGONIST: solo el narrador (puede haber varios sockets del narrador).
+    if (!narratorId) return { ok: true };
+    const sockets = await this.server.in(room).fetchSockets();
+    for (const s of sockets) {
+      const sUid = (s.data as AuthenticatedSocketData)?.userId;
+      if (sUid === narratorId) {
+        s.emit('sheet:announce', payload);
+      }
+    }
+    return { ok: true };
+  }
+
   // ──────────────────────────────────────────────
   // Helpers
   // ──────────────────────────────────────────────
+
+  private async getNarratorIdInRoom(chronicleId: string): Promise<string | null> {
+    const sockets = await this.server.in(this.roomName(chronicleId)).fetchSockets();
+    for (const s of sockets) {
+      const uid = (s.data as AuthenticatedSocketData)?.userId;
+      if (!uid) continue;
+      const role = await this.tableService.getMembership(uid, chronicleId);
+      if (role === 'NARRATOR') return uid;
+    }
+    return null;
+  }
+
+  /**
+   * Notifica a toda la sala que el historial de tiradas fue limpiado.
+   * Lo invoca el controller después de un DELETE exitoso.
+   */
+  broadcastRollsCleared(chronicleId: string, by: { userId: string }) {
+    this.server.to(this.roomName(chronicleId)).emit('rolls:cleared', {
+      chronicleId,
+      by,
+      at: new Date().toISOString(),
+    });
+  }
 
   private roomName(chronicleId: string) {
     return `chronicle:${chronicleId}`;

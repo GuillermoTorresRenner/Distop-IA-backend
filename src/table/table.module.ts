@@ -3,6 +3,8 @@ import { JwtModule } from '@nestjs/jwt';
 import { envs } from '../config/envs';
 import { TableGateway } from './table.gateway';
 import { TableService } from './table.service';
+import { DiceService } from './dice.service';
+import { TableController } from './table.controller';
 
 @Module({
   imports: [
@@ -10,6 +12,7 @@ import { TableService } from './table.service';
       secret: envs.jwtSecret,
     }),
   ],
-  providers: [TableGateway, TableService],
+  controllers: [TableController],
+  providers: [TableGateway, TableService, DiceService],
 })
 export class TableModule {}

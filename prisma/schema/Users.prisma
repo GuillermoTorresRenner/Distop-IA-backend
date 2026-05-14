@@ -19,6 +19,7 @@ model Users {
   characters               Character[]
   customWeapons            Weapon[]
   customArmors             Armor[]
+  diceRolls                DiceRoll[]
 
   @@map("users")
 }

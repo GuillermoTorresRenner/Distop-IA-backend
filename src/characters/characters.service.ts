@@ -415,7 +415,61 @@ export class CharactersService {
   async update(id: string, userId: string, dto: UpdateCharacterDto) {
     const owned = await this.findOneOwned(id, userId);
     await this.validateCatalogIds(dto, owned.userId);
+    return this.applyUpdate(id, dto);
+  }
 
+  /**
+   * Actualiza un personaje en el contexto de una crónica.
+   * Permitido si el caller es el dueño, o si es narrador de la crónica
+   * y el personaje está asociado a ella.
+   */
+  async updateFromChronicle(
+    chronicleId: string,
+    characterId: string,
+    callerId: string,
+    dto: UpdateCharacterDto,
+  ) {
+    const chronicle = await this.prisma.chronicle.findUnique({
+      where: { id: chronicleId },
+      select: { id: true, narratorId: true },
+    });
+    if (!chronicle) throw new NotFoundException('Chronicle not found');
+
+    const character = await this.prisma.character.findUnique({
+      where: { id: characterId },
+      select: { id: true, userId: true },
+    });
+    if (!character) throw new NotFoundException('Character not found');
+
+    const isOwner = character.userId === callerId;
+    const isNarrator = chronicle.narratorId === callerId;
+    if (!isOwner && !isNarrator) {
+      throw new ForbiddenException(
+        'You must be the owner or the narrator to edit this character',
+      );
+    }
+
+    // Si NO es dueño, el personaje debe estar asociado a esta crónica
+    // (para limitar el alcance del narrador a su propia mesa).
+    if (!isOwner) {
+      const link = await this.prisma.chronicleCharacter.findUnique({
+        where: {
+          chronicleId_characterId: { chronicleId, characterId },
+        },
+        select: { id: true },
+      });
+      if (!link) {
+        throw new ForbiddenException(
+          'Character is not associated with this chronicle',
+        );
+      }
+    }
+
+    await this.validateCatalogIds(dto, character.userId);
+    return this.applyUpdate(characterId, dto);
+  }
+
+  private applyUpdate(id: string, dto: UpdateCharacterDto) {
     // Estrategia: scalars con update; listas con replace (delete + create) en una transacción.
     return this.prisma.$transaction(async (tx) => {
       await tx.character.update({
