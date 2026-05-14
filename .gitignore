@@ -63,4 +63,8 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 # k6 load testing results
 k6/results/
 *.json
+!package.json
 !package-lock.json
+!tsconfig.json
+!tsconfig.build.json
+!nest-cli.json
