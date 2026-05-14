@@ -25,9 +25,32 @@ export class RollVtmDto {
   @IsOptional()
   specialty?: boolean;
 
+  /**
+   * Gasta 1 punto de Voluntad para sumar 1 éxito automático no removible
+   * por 1s. El éxito se aplica al final, después del cálculo normal.
+   */
   @IsBoolean()
   @IsOptional()
-  willpowerSpent?: boolean;
+  willpowerForSuccess?: boolean;
+
+  /**
+   * Gasta 1 punto de Voluntad para anular el penalizador por heridas en
+   * esta tirada (el pool no se ve reducido por daño).
+   */
+  @IsBoolean()
+  @IsOptional()
+  willpowerForWound?: boolean;
+
+  /**
+   * Penalizador por heridas que el cliente calculó a partir del estado actual
+   * del personaje. Es un valor negativo o 0 (ej -1, -2, -5). El back lo persiste
+   * para reproducir el desglose en el historial.
+   */
+  @IsInt()
+  @Min(-10)
+  @Max(0)
+  @IsOptional()
+  woundPenalty?: number;
 
   @IsBoolean()
   @IsOptional()

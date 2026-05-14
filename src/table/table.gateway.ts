@@ -223,8 +223,8 @@ export class TableGateway
     const { userId, chronicleId } = (client.data ?? {}) as AuthenticatedSocketData;
     if (!userId || !chronicleId) throw new WsException('Not in a table');
 
-    // Persiste y obtiene la tirada con autor + personaje.
-    const roll = await this.diceService.rollAndPersist({
+    // Persiste y obtiene la tirada con autor + personaje + decremento de WP.
+    const { roll, willpower } = await this.diceService.rollAndPersist({
       chronicleId,
       userId,
       characterId: body.characterId ?? null,
@@ -232,28 +232,81 @@ export class TableGateway
       pool: body.pool,
       difficulty: body.difficulty,
       specialty: body.specialty,
-      willpowerSpent: body.willpowerSpent,
+      willpowerForSuccess: body.willpowerForSuccess,
+      willpowerForWound: body.willpowerForWound,
+      woundPenalty: body.woundPenalty,
       isPublic: body.isPublic ?? true,
     });
 
     const room = this.roomName(chronicleId);
 
-    // Tirada pública: la ve toda la mesa.
-    if (roll.isPublic) {
-      this.server.to(room).emit('roll:result', roll);
-      return { ok: true, id: roll.id };
-    }
+    // ── Reglas de visibilidad de la tirada ──────────────────
+    //
+    // 1) Si la tirada está asociada a un personaje NPC/ANTAGONIST, es secreta
+    //    por construcción: solo el autor y el narrador la ven, sin importar
+    //    el toggle "Privada".
+    // 2) Si el toggle "Privada" está activo: solo autor + narrador.
+    // 3) Caso normal (PC público): broadcast a toda la sala.
+    const characterKind = roll.character?.kind ?? null;
+    const isSecretByKind =
+      characterKind === 'NPC' || characterKind === 'ANTAGONIST';
+    const goesPublic = roll.isPublic && !isSecretByKind;
 
-    // Tirada privada: solo autor y narrador la ven.
-    // Buscamos al narrador de la crónica para mandarle el resultado.
-    const narratorId = await this.getNarratorIdInRoom(chronicleId);
-    const sockets = await this.server.in(room).fetchSockets();
-    for (const s of sockets) {
-      const sUid = (s.data as AuthenticatedSocketData)?.userId;
-      if (sUid === userId || (narratorId && sUid === narratorId)) {
-        s.emit('roll:result', roll);
+    const narratorId = await this.tableService.getNarratorId(chronicleId);
+
+    if (goesPublic) {
+      this.server.to(room).emit('roll:result', roll);
+    } else {
+      const sockets = await this.server.in(room).fetchSockets();
+      for (const s of sockets) {
+        const sUid = (s.data as AuthenticatedSocketData)?.userId;
+        if (sUid === userId || (narratorId && sUid === narratorId)) {
+          s.emit('roll:result', roll);
+        }
       }
     }
+
+    // ── Anuncio del consumo de Voluntad en el chat ──────────
+    //
+    // Si se gastó al menos 1 punto y la tirada está asociada a un personaje,
+    // emitimos un sheet:announce con el delta. La visibilidad sigue las mismas
+    // reglas que la tirada: si la tirada es secreta (kind no-PC) o privada
+    // (isPublic=false), el anuncio también lo es. Si la tirada va a la sala,
+    // el anuncio también va a la sala.
+    if (
+      roll.character &&
+      willpower.spent > 0 &&
+      willpower.before !== null &&
+      willpower.after !== null
+    ) {
+      const announce = {
+        id: `wp-${Date.now()}-${client.id}`,
+        characterId: roll.character.id,
+        characterName: roll.character.name,
+        kind: characterKind ?? 'PC',
+        authorId: userId,
+        deltas: [
+          {
+            label: 'Voluntad actual',
+            before: String(willpower.before),
+            after: String(willpower.after),
+          },
+        ],
+        at: new Date().toISOString(),
+      };
+      if (goesPublic) {
+        this.server.to(room).emit('sheet:announce', announce);
+      } else {
+        const sockets = await this.server.in(room).fetchSockets();
+        for (const s of sockets) {
+          const sUid = (s.data as AuthenticatedSocketData)?.userId;
+          if (sUid === userId || (narratorId && sUid === narratorId)) {
+            s.emit('sheet:announce', announce);
+          }
+        }
+      }
+    }
+
     return { ok: true, id: roll.id };
   }
 
