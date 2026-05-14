@@ -17,9 +17,11 @@ import { JwtPayload } from '../common/interfaces/jwt-payload.interface';
 import { envs } from '../config/envs';
 import { TableService } from './table.service';
 import { DiceService } from './dice.service';
+import { BoardShareDto, BoardUpdateDto } from './dto/board-update.dto';
 import { ChatMessageDto } from './dto/chat-message.dto';
 import { RollVtmDto } from './dto/roll-vtm.dto';
 import { SheetUpdateAnnounceDto } from './dto/sheet-update-announce.dto';
+import { BoardService } from './board.service';
 import { AuthenticatedSocketData } from './types/socket-with-user';
 
 // `Socket` se usa como anotación en decoradores: debe ser un valor en tiempo
@@ -63,6 +65,7 @@ export class TableGateway
     private readonly jwtService: JwtService,
     private readonly tableService: TableService,
     private readonly diceService: DiceService,
+    private readonly boardService: BoardService,
   ) {}
 
   afterInit() {
@@ -331,6 +334,77 @@ export class TableGateway
       if (role === 'NARRATOR') return uid;
     }
     return null;
+  }
+
+  // ──────────────────────────────────────────────
+  // Pizarra colaborativa
+  // ──────────────────────────────────────────────
+
+  /**
+   * El narrador activa/desactiva el modo "compartido" de la pizarra.
+   * Al activar, se broadcastea el snapshot actual a la sala así los jugadores
+   * pueden hidratar el lienzo. Al desactivar se les notifica para que vuelvan
+   * a su pizarra local.
+   */
+  @SubscribeMessage('board:share')
+  async onBoardShare(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() body: BoardShareDto,
+  ) {
+    const { userId, chronicleId } = (client.data ?? {}) as AuthenticatedSocketData;
+    if (!userId || !chronicleId) throw new WsException('Not in a table');
+
+    const board = await this.boardService.setShared(
+      chronicleId,
+      userId,
+      !!body?.isShared,
+    );
+    const room = this.roomName(chronicleId);
+    this.server.to(room).emit('board:shared', {
+      chronicleId,
+      isShared: board.isShared,
+      elements: board.elements as unknown[],
+      appState: board.appState as Record<string, unknown> | null,
+      at: new Date().toISOString(),
+    });
+    return { ok: true, isShared: board.isShared };
+  }
+
+  /**
+   * El narrador empuja un snapshot vivo de su lienzo (debounced en cliente).
+   * Solo se broadcastea si la pizarra está actualmente compartida: si no, es
+   * solo edición privada y no toca a los jugadores.
+   *
+   * No persistimos aquí (lo hace el PUT REST cuando el narrador guarda
+   * explícitamente o al cambiar el flag de share). Esto evita pegarle a la DB
+   * en cada movimiento de lápiz.
+   */
+  @SubscribeMessage('board:update')
+  async onBoardUpdate(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() body: BoardUpdateDto,
+  ) {
+    const { userId, chronicleId } = (client.data ?? {}) as AuthenticatedSocketData;
+    if (!userId || !chronicleId) throw new WsException('Not in a table');
+
+    // Solo el narrador puede empujar updates.
+    const narratorId = await this.tableService.getNarratorId(chronicleId);
+    if (narratorId !== userId) {
+      throw new WsException('Only the narrator can update the board');
+    }
+
+    // Si la pizarra no está compartida, ignoramos el broadcast.
+    const board = await this.boardService.getBoardForMember(chronicleId, userId);
+    if (!board.isShared) return { ok: true, broadcasted: false };
+
+    const room = this.roomName(chronicleId);
+    this.server.to(room).except(client.id).emit('board:updated', {
+      chronicleId,
+      elements: body.elements,
+      appState: body.appState ?? null,
+      at: new Date().toISOString(),
+    });
+    return { ok: true, broadcasted: true };
   }
 
   /**

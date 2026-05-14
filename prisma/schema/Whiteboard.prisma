@@ -1,0 +1,25 @@
+/// Pizarra colaborativa por crónica.
+/// Solo una por crónica. La edita y comparte el narrador; los jugadores
+/// la ven en read-only cuando `isShared = true`.
+model ChronicleBoard {
+  id          String     @id @default(uuid())
+  chronicleId String     @unique
+  chronicle   Chronicle  @relation(fields: [chronicleId], references: [id], onDelete: Cascade)
+
+  /// Snapshot de los elementos de Excalidraw (JSON serializado).
+  /// Persistir como `Json` permite consultas básicas y mantiene size bajo.
+  elements    Json       @default("[]")
+
+  /// Subconjunto del appState que vale la pena persistir (color de fondo, etc).
+  /// Excalidraw expone `appState` enorme; aquí guardamos solo lo persistible.
+  appState    Json?
+
+  /// Si true, el broadcast de cambios se envía a toda la sala y los jugadores
+  /// ven la pizarra en read-only.
+  isShared    Boolean    @default(false)
+
+  updatedAt   DateTime   @updatedAt
+  createdAt   DateTime   @default(now())
+
+  @@map("chronicle_boards")
+}

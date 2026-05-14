@@ -1,15 +1,19 @@
 import {
+  Body,
   Controller,
   Delete,
   ForbiddenException,
   Get,
   Param,
   ParseIntPipe,
+  Put,
   Query,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Auth, GetUser } from '../common/decorators';
+import { BoardService } from './board.service';
 import { DiceService } from './dice.service';
+import { SaveBoardDto } from './dto/save-board.dto';
 import { TableGateway } from './table.gateway';
 import { TableService } from './table.service';
 
@@ -19,6 +23,7 @@ export class TableController {
   constructor(
     private readonly diceService: DiceService,
     private readonly tableService: TableService,
+    private readonly boardService: BoardService,
     private readonly gateway: TableGateway,
   ) {}
 
@@ -53,5 +58,38 @@ export class TableController {
     const result = await this.diceService.clearForChronicle(chronicleId);
     this.gateway.broadcastRollsCleared(chronicleId, { userId });
     return { ok: true, ...result };
+  }
+
+  // ── Pizarra ──────────────────────────────────────────────
+
+  @Get(':id/board')
+  @Auth()
+  @ApiOperation({
+    summary:
+      'Devuelve la pizarra de la crónica. Si no existe la crea vacía. Miembros only.',
+  })
+  async getBoard(
+    @Param('id') chronicleId: string,
+    @GetUser('id') userId: string,
+  ) {
+    return this.boardService.getBoardForMember(chronicleId, userId);
+  }
+
+  @Put(':id/board')
+  @Auth()
+  @ApiOperation({
+    summary: 'Guarda el snapshot de la pizarra. Solo narrador.',
+  })
+  async saveBoard(
+    @Param('id') chronicleId: string,
+    @GetUser('id') userId: string,
+    @Body() dto: SaveBoardDto,
+  ) {
+    return this.boardService.saveBoardAsNarrator(
+      chronicleId,
+      userId,
+      dto.elements,
+      dto.appState ?? null,
+    );
   }
 }

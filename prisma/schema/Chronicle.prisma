@@ -12,6 +12,7 @@ model Chronicle {
   characterJournalEntries CharacterJournalEntry[]
   chronicleCharacters     ChronicleCharacter[]
   diceRolls               DiceRoll[]
+  board                   ChronicleBoard?
   createdAt   DateTime              @default(now())
   updatedAt   DateTime              @updatedAt
 
