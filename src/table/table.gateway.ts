@@ -418,6 +418,10 @@ export class TableGateway
       isShared: board.isShared,
       elements: board.elements as unknown[],
       appState: board.appState as Record<string, unknown> | null,
+      fileRefs: (board.fileRefs ?? {}) as Record<
+        string,
+        { url: string; mimeType: string }
+      >,
       at: new Date().toISOString(),
     });
     return { ok: true, isShared: board.isShared };

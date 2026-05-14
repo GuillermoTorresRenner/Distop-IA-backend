@@ -6,14 +6,17 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  Post,
   Put,
   Query,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Auth, GetUser } from '../common/decorators';
+import { UploaderService } from '../uploader/uploader.service';
 import { BoardService } from './board.service';
 import { DiceService } from './dice.service';
 import { SaveBoardDto } from './dto/save-board.dto';
+import { UploadBoardFileDto } from './dto/upload-board-file.dto';
 import { TableGateway } from './table.gateway';
 import { TableService } from './table.service';
 
@@ -24,6 +27,7 @@ export class TableController {
     private readonly diceService: DiceService,
     private readonly tableService: TableService,
     private readonly boardService: BoardService,
+    private readonly uploaderService: UploaderService,
     private readonly gateway: TableGateway,
   ) {}
 
@@ -90,6 +94,32 @@ export class TableController {
       userId,
       dto.elements,
       dto.appState ?? null,
+    );
+  }
+
+  @Post(':id/board/files')
+  @Auth()
+  @ApiOperation({
+    summary:
+      'Sube un binario (imagen) usado por la pizarra. dataURL base64. Solo narrador.',
+  })
+  async uploadBoardFile(
+    @Param('id') chronicleId: string,
+    @GetUser('id') userId: string,
+    @Body() dto: UploadBoardFileDto,
+  ) {
+    // El BoardService valida que el caller sea narrador antes de registrar.
+    const uploaded = await this.uploaderService.uploadBoardImage(
+      dto.dataURL,
+      chronicleId,
+    );
+    const url = `/images/boards/${chronicleId}/${uploaded.filename}`;
+    return this.boardService.addFileRef(
+      chronicleId,
+      userId,
+      dto.fileId,
+      url,
+      uploaded.mimetype,
     );
   }
 }

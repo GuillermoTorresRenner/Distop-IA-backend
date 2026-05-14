@@ -60,6 +60,35 @@ export class BoardService {
   }
 
   /**
+   * Registra una referencia a un archivo binario subido al disco.
+   * Solo el narrador puede agregar files (es quien edita la pizarra).
+   */
+  async addFileRef(
+    chronicleId: string,
+    callerId: string,
+    fileId: string,
+    url: string,
+    mimeType: string,
+  ): Promise<{ fileId: string; url: string; mimeType: string }> {
+    await this.assertNarrator(chronicleId, callerId);
+    // Read-modify-write del JSON de fileRefs.
+    const board = await this.getBoardForMember(chronicleId, callerId);
+    const current = (board.fileRefs ?? {}) as Record<
+      string,
+      { url: string; mimeType: string }
+    >;
+    const next: Record<string, { url: string; mimeType: string }> = {
+      ...current,
+      [fileId]: { url, mimeType },
+    };
+    await this.prisma.chronicleBoard.update({
+      where: { chronicleId },
+      data: { fileRefs: next as unknown as Prisma.InputJsonValue },
+    });
+    return { fileId, url, mimeType };
+  }
+
+  /**
    * Marca la pizarra como compartida (read-only para jugadores) o privada.
    * Solo el narrador puede cambiar este flag.
    */

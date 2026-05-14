@@ -14,6 +14,11 @@ model ChronicleBoard {
   /// Excalidraw expone `appState` enorme; aquí guardamos solo lo persistible.
   appState    Json?
 
+  /// Refs a los archivos binarios (imágenes) subidas al back.
+  /// Mapping de `fileId` (id que Excalidraw genera) → { url, mimeType }.
+  /// Los binarios viven en disco en /app/public/images/boards/.
+  fileRefs    Json       @default("{}")
+
   /// Si true, el broadcast de cambios se envía a toda la sala y los jugadores
   /// ven la pizarra en read-only.
   isShared    Boolean    @default(false)

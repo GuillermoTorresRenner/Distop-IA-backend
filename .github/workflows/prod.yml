@@ -138,5 +138,16 @@ jobs:
             fi
 
             echo "=========================================="
+            echo "Step 6: Running database seed (idempotent)..."
+            echo "=========================================="
+            # El seed puebla los catálogos canon V20 (arquetipos, disciplinas,
+            # clanes, méritos, armas y armaduras). Es idempotente: vuelve a
+            # correr sin duplicar. Sin esto, la hoja de personaje sale sin
+            # catálogo.
+            if ! docker compose --project-name "$COMPOSE_PROJECT_NAME" exec -T backend npm run db:seed; then
+              echo "Seed failed (non-blocking)"
+            fi
+
+            echo "=========================================="
             echo "Production deployment completed successfully"
             echo "=========================================="

@@ -4,6 +4,7 @@ import { envs } from './config/envs';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { json, urlencoded } from 'express';
 import { join } from 'path';
 import cookieParser from 'cookie-parser';
 
@@ -15,6 +16,13 @@ async function bootstrap() {
 
   // Cookie parser middleware
   app.use(cookieParser());
+
+  // Subimos el límite del body parser para aceptar uploads de imágenes
+  // como dataURL base64 (pizarra colaborativa). El DTO de upload limita
+  // cada dataURL a ~3MB (≈ 2.2MB binario); 5MB acá deja margen para el
+  // wrap JSON y otros campos.
+  app.use(json({ limit: '5mb' }));
+  app.use(urlencoded({ limit: '5mb', extended: true }));
 
   // Serve static files from public folder
   app.useStaticAssets(join(process.cwd(), 'public'), {
