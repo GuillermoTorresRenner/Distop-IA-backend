@@ -43,9 +43,9 @@ jobs:
       - name: Build and push Docker image
         run: |
           COMMIT_TAG=${{ github.sha }}
-          docker build -t $DOCKER_IMAGE:qa-$COMMIT_TAG -t $DOCKER_IMAGE:qa .
+          docker build -t $DOCKER_IMAGE:qa-$COMMIT_TAG -t $DOCKER_IMAGE:latest .
           docker push $DOCKER_IMAGE:qa-$COMMIT_TAG
-          docker push $DOCKER_IMAGE:qa
+          docker push $DOCKER_IMAGE:latest
 
       - name: Upload compose file to VPS
         uses: appleboy/scp-action@v0.1.4
@@ -96,9 +96,6 @@ jobs:
               exit 1
             fi
 
-            # En QA usamos el tag :qa
-            sed -i 's|lebateleur/distop-ia-back:latest|lebateleur/distop-ia-back:qa|g' docker-compose.yml
-
             echo "=========================================="
             echo "Step 1: Stopping existing containers..."
             echo "=========================================="
@@ -111,7 +108,7 @@ jobs:
             echo "Step 2: Pulling latest Docker image..."
             echo "=========================================="
             for i in 1 2 3; do
-              if docker pull "$DOCKER_IMAGE:qa"; then
+              if docker pull "$DOCKER_IMAGE:latest"; then
                 echo "Image pulled successfully"
                 break
               else
