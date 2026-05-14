@@ -1,10 +1,14 @@
-import { envs } from '../../config/envs';
-
+/**
+ * Devuelve una URL RELATIVA al dominio público (sin host) que sirve el avatar
+ * del usuario. Ver `chronicle.utils.ts` para el razonamiento completo:
+ * el back no está expuesto a internet, las imágenes se sirven a través de
+ * nginx-proxy-manager con una Custom Location `/images` apuntando al back.
+ */
 export function buildUserAvatarUrl(filename: string): string | null {
   if (!filename) {
     return null;
   }
-  return `${envs.backendUrl}/images/users/avatars/${filename}`;
+  return `/images/users/avatars/${filename}`;
 }
 
 export function enrichUserWithAvatarUrl<T extends { avatar?: string | null }>(
