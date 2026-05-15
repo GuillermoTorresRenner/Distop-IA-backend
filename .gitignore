@@ -67,4 +67,5 @@ k6/results/
 !package-lock.json
 !tsconfig.json
 !tsconfig.build.json
+!tsconfig.seed.json
 !nest-cli.json
