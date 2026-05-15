@@ -2,9 +2,9 @@
   "name": "distop-ia-back",
   "version": "0.0.1",
   "description": "Distop-IA backend",
-  "author": "",
+  "author": "Guillermo Torres Renner",
   "private": true,
-  "license": "UNLICENSED",
+  "license": "GPL-3.0-or-later",
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
