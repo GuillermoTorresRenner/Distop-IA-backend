@@ -1,5 +1,9 @@
 name: Deploy Production Backend to Hostinger VPS
 
+# La imagen ya fue construida y publicada por el workflow de QA. Aquí solo
+# subimos al VPS el docker-compose, hacemos `docker pull` de `:latest` y
+# levantamos los servicios. Sin build, sin push.
+
 on:
   workflow_dispatch:
   push:
@@ -10,46 +14,17 @@ env:
   PROJECT_PATH: /home/deployer/proyectos/distop-ia/prod/back
   DOCKER_IMAGE: lebateleur/distop-ia-back
   COMPOSE_PROJECT_NAME: distop_ia_prod
-  IMAGE_TAG: latest
+  # La imagen `:qa` es la única que existe en el registry; la construye el
+  # workflow de QA. Prod la consume directamente: misma imagen testeada en QA.
+  IMAGE_TAG: qa
 
 jobs:
   deploy:
-    name: Build, Push and Deploy Production
+    name: Deploy Production
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Generate Prisma client
-        run: npx prisma generate
-
-      - name: Build project
-        run: npm run build
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
-
-      - name: Build and push Docker image
-        run: |
-          COMMIT_TAG=${{ github.sha }}
-          docker build \
-            -t $DOCKER_IMAGE:$COMMIT_TAG \
-            -t $DOCKER_IMAGE:$IMAGE_TAG \
-            .
-          docker push $DOCKER_IMAGE:$COMMIT_TAG
-          docker push $DOCKER_IMAGE:$IMAGE_TAG
 
       - name: Upload compose file to VPS
         uses: appleboy/scp-action@v0.1.4
@@ -101,7 +76,7 @@ jobs:
             done
 
             echo "=========================================="
-            echo "Step 2: Pulling latest Docker image..."
+            echo "Step 2: Pulling Docker image (built in QA)..."
             echo "=========================================="
             for i in 1 2 3; do
               if docker pull "$DOCKER_IMAGE:$IMAGE_TAG"; then

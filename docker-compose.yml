@@ -23,7 +23,7 @@ services:
       retries: 30
 
   backend:
-    image: lebateleur/distop-ia-back:latest
+    image: lebateleur/distop-ia-back:qa
     container_name: ${PREFIX}_backend
     restart: unless-stopped
     env_file:
