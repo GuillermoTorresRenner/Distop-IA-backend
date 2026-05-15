@@ -94,6 +94,7 @@ model Character {
   armors       CharacterArmor[]
   diceRolls    DiceRoll[]
   journalEntries CharacterJournalEntry[]
+  combatParticipations CombatParticipant[]
 
   @@index([userId])
   @@map("characters")

@@ -22,6 +22,7 @@ import { ChatMessageDto } from './dto/chat-message.dto';
 import { RollVtmDto } from './dto/roll-vtm.dto';
 import { SheetUpdateAnnounceDto } from './dto/sheet-update-announce.dto';
 import { BoardService } from './board.service';
+import { CombatService, type CombatStateView } from './combat.service';
 import { AuthenticatedSocketData } from './types/socket-with-user';
 
 // `Socket` se usa como anotación en decoradores: debe ser un valor en tiempo
@@ -66,6 +67,7 @@ export class TableGateway
     private readonly tableService: TableService,
     private readonly diceService: DiceService,
     private readonly boardService: BoardService,
+    private readonly combatService: CombatService,
   ) {}
 
   afterInit() {
@@ -532,6 +534,26 @@ export class TableGateway
       by,
       at: new Date().toISOString(),
     });
+  }
+
+  /**
+   * Emite el estado del combate. La vista del MASTER se envía al narrador;
+   * la vista del jugador (filtrada — solo PCs, sin iniciativas) al resto.
+   * El narrador siempre se identifica por `chronicle.narratorId`.
+   */
+  async broadcastCombat(chronicleId: string, masterView: CombatStateView) {
+    const room = this.roomName(chronicleId);
+    const narratorId = await this.tableService.getNarratorId(chronicleId);
+    const playerView = this.combatService.buildPlayerView(masterView);
+    const sockets = await this.server.in(room).fetchSockets();
+    for (const s of sockets) {
+      const uid = (s.data as AuthenticatedSocketData)?.userId;
+      if (uid && uid === narratorId) {
+        s.emit('combat:state', masterView);
+      } else {
+        s.emit('combat:state', playerView);
+      }
+    }
   }
 
   private roomName(chronicleId: string) {

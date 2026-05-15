@@ -1,0 +1,44 @@
+/// Tracker de turnos por crónica. 1:1 con Chronicle.
+/// Persiste para que el combate sobreviva a recargas y desconexiones del WS.
+/// `cursor` es el índice del participante con el turno activo (0-based) en
+/// el orden actual; `round` se incrementa cada vez que el cursor cicla.
+model CombatTracker {
+  id           String              @id @default(uuid())
+  chronicleId  String              @unique
+  chronicle    Chronicle           @relation(fields: [chronicleId], references: [id], onDelete: Cascade)
+  cursor       Int                 @default(0)
+  round        Int                 @default(1)
+  participants CombatParticipant[]
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  @@map("combat_trackers")
+}
+
+/// Participante en el tracker. Puede estar asociado a un Character (PC, NPC o
+/// ANTAGONIST) o ser una entrada libre (sin characterId, solo displayName)
+/// para PNJs improvisados. El narrador anota la iniciativa manualmente.
+model CombatParticipant {
+  id          String        @id @default(uuid())
+  trackerId   String
+  tracker     CombatTracker @relation(fields: [trackerId], references: [id], onDelete: Cascade)
+  /// Character asociado. Opcional: si es null, la entrada es libre (displayName obligatorio).
+  characterId String?
+  character   Character?    @relation(fields: [characterId], references: [id], onDelete: SetNull)
+  /// Nombre visible. Si hay character asociado, sirve como override opcional.
+  /// Si no hay character, es el nombre del participante libre.
+  displayName String?
+  /// Valor de iniciativa anotado a mano por el master. Nullable mientras
+  /// el master aún no lo declara. Solo se usa para mostrar info al narrador
+  /// (el orden real lo dicta el campo `order`).
+  initiative  Int?
+  /// Orden 0-based dentro del tracker. El narrador lo cambia con drag & drop
+  /// o lo recalcula el back cuando inserta una entrada nueva.
+  order       Int
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([trackerId])
+  @@index([characterId])
+  @@map("combat_participants")
+}

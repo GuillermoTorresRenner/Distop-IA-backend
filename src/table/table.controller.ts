@@ -6,6 +6,7 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Put,
   Query,
@@ -14,7 +15,13 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Auth, GetUser } from '../common/decorators';
 import { UploaderService } from '../uploader/uploader.service';
 import { BoardService } from './board.service';
+import { CombatService } from './combat.service';
 import { DiceService } from './dice.service';
+import {
+  AddCombatParticipantDto,
+  ReorderCombatDto,
+  UpdateCombatParticipantDto,
+} from './dto/combat.dto';
 import { SaveBoardDto } from './dto/save-board.dto';
 import { UploadBoardFileDto } from './dto/upload-board-file.dto';
 import { TableGateway } from './table.gateway';
@@ -27,6 +34,7 @@ export class TableController {
     private readonly diceService: DiceService,
     private readonly tableService: TableService,
     private readonly boardService: BoardService,
+    private readonly combatService: CombatService,
     private readonly uploaderService: UploaderService,
     private readonly gateway: TableGateway,
   ) {}
@@ -121,5 +129,151 @@ export class TableController {
       url,
       uploaded.mimetype,
     );
+  }
+
+  // ── Combate / Turnos ────────────────────────────────────
+
+  @Get(':id/combat')
+  @Auth()
+  @ApiOperation({
+    summary:
+      'Devuelve el tracker de turnos de la crónica. Filtra según rol: jugador ve solo PCs sin iniciativas; narrador ve todo.',
+  })
+  async getCombat(
+    @Param('id') chronicleId: string,
+    @GetUser('id') userId: string,
+  ) {
+    const role = await this.tableService.getMembership(userId, chronicleId);
+    if (!role) {
+      throw new ForbiddenException('Not a member of this chronicle');
+    }
+    return this.combatService.getStateForRole(chronicleId, role);
+  }
+
+  @Post(':id/combat/participants')
+  @Auth()
+  @ApiOperation({
+    summary:
+      'Agrega un participante al tracker. Solo narrador. Si no hay characterId, displayName es requerido (entrada libre).',
+  })
+  async addCombatParticipant(
+    @Param('id') chronicleId: string,
+    @GetUser('id') userId: string,
+    @Body() dto: AddCombatParticipantDto,
+  ) {
+    const role = await this.tableService.getMembership(userId, chronicleId);
+    this.combatService.assertNarrator(role);
+    const state = await this.combatService.addParticipant(chronicleId, dto);
+    this.gateway.broadcastCombat(chronicleId, state);
+    return state;
+  }
+
+  @Patch(':id/combat/participants/:pid')
+  @Auth()
+  @ApiOperation({
+    summary: 'Actualiza un participante (iniciativa o displayName). Solo narrador.',
+  })
+  async updateCombatParticipant(
+    @Param('id') chronicleId: string,
+    @Param('pid') participantId: string,
+    @GetUser('id') userId: string,
+    @Body() dto: UpdateCombatParticipantDto,
+  ) {
+    const role = await this.tableService.getMembership(userId, chronicleId);
+    this.combatService.assertNarrator(role);
+    const state = await this.combatService.updateParticipant(
+      chronicleId,
+      participantId,
+      dto,
+    );
+    this.gateway.broadcastCombat(chronicleId, state);
+    return state;
+  }
+
+  @Delete(':id/combat/participants/:pid')
+  @Auth()
+  @ApiOperation({ summary: 'Quita un participante del tracker. Solo narrador.' })
+  async removeCombatParticipant(
+    @Param('id') chronicleId: string,
+    @Param('pid') participantId: string,
+    @GetUser('id') userId: string,
+  ) {
+    const role = await this.tableService.getMembership(userId, chronicleId);
+    this.combatService.assertNarrator(role);
+    const state = await this.combatService.removeParticipant(
+      chronicleId,
+      participantId,
+    );
+    this.gateway.broadcastCombat(chronicleId, state);
+    return state;
+  }
+
+  @Post(':id/combat/reorder')
+  @Auth()
+  @ApiOperation({
+    summary:
+      'Reordena los participantes (drag & drop). El cursor queda apuntando al mismo participante. Solo narrador.',
+  })
+  async reorderCombat(
+    @Param('id') chronicleId: string,
+    @GetUser('id') userId: string,
+    @Body() dto: ReorderCombatDto,
+  ) {
+    const role = await this.tableService.getMembership(userId, chronicleId);
+    this.combatService.assertNarrator(role);
+    const state = await this.combatService.reorder(chronicleId, dto.orderedIds);
+    this.gateway.broadcastCombat(chronicleId, state);
+    return state;
+  }
+
+  @Post(':id/combat/advance')
+  @Auth()
+  @ApiOperation({
+    summary:
+      'Avanza el cursor al siguiente turno. Cicla y suma asalto al pasar el último. Solo narrador.',
+  })
+  async advanceCombat(
+    @Param('id') chronicleId: string,
+    @GetUser('id') userId: string,
+  ) {
+    const role = await this.tableService.getMembership(userId, chronicleId);
+    this.combatService.assertNarrator(role);
+    const state = await this.combatService.advance(chronicleId);
+    this.gateway.broadcastCombat(chronicleId, state);
+    return state;
+  }
+
+  @Post(':id/combat/reset')
+  @Auth()
+  @ApiOperation({
+    summary:
+      'Reinicia el combate: cursor=0, round=1. Mantiene los participantes. Solo narrador.',
+  })
+  async resetCombat(
+    @Param('id') chronicleId: string,
+    @GetUser('id') userId: string,
+  ) {
+    const role = await this.tableService.getMembership(userId, chronicleId);
+    this.combatService.assertNarrator(role);
+    const state = await this.combatService.reset(chronicleId);
+    this.gateway.broadcastCombat(chronicleId, state);
+    return state;
+  }
+
+  @Delete(':id/combat')
+  @Auth()
+  @ApiOperation({
+    summary:
+      'Limpia el tracker: borra todos los participantes y reinicia cursor/round. Solo narrador.',
+  })
+  async clearCombat(
+    @Param('id') chronicleId: string,
+    @GetUser('id') userId: string,
+  ) {
+    const role = await this.tableService.getMembership(userId, chronicleId);
+    this.combatService.assertNarrator(role);
+    const state = await this.combatService.clear(chronicleId);
+    this.gateway.broadcastCombat(chronicleId, state);
+    return state;
   }
 }
