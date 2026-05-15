@@ -3,6 +3,7 @@ import {
   IsDateString,
   IsOptional,
   IsString,
+  IsUUID,
   MaxLength,
 } from 'class-validator';
 
@@ -23,4 +24,12 @@ export class UpdateCharacterJournalEntryDto {
   @IsOptional()
   @IsDateString()
   sessionDate?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Reasignar la nota a otro personaje del autor en la misma crónica.',
+  })
+  @IsOptional()
+  @IsUUID()
+  characterId?: string;
 }

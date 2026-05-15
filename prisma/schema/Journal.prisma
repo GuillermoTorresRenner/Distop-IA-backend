@@ -16,17 +16,20 @@ model ChronicleJournalEntry {
 }
 
 model CharacterJournalEntry {
-  id          String    @id @default(uuid())
+  id          String     @id @default(uuid())
   chronicleId String
-  chronicle   Chronicle @relation(fields: [chronicleId], references: [id], onDelete: Cascade)
+  chronicle   Chronicle  @relation(fields: [chronicleId], references: [id], onDelete: Cascade)
   authorId    String
-  author      Users     @relation("CharacterJournalAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  author      Users      @relation("CharacterJournalAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  characterId String?
+  character   Character? @relation(fields: [characterId], references: [id], onDelete: SetNull)
   title       String
   body        String
   sessionDate DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
   @@index([chronicleId, authorId])
+  @@index([characterId])
   @@map("character_journal_entries")
 }

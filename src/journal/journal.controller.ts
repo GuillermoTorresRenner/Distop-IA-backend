@@ -1,14 +1,21 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   Param,
   Patch,
   Post,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Auth, GetUser } from '../common/decorators';
+import { PrismaService } from '../prisma/prisma.service';
+import { UploaderService } from '../uploader/uploader.service';
 import {
   CreateCharacterJournalEntryDto,
   CreateChronicleJournalEntryDto,
@@ -17,10 +24,22 @@ import {
 } from './dto';
 import { JournalService } from './journal.service';
 
+const ALLOWED_IMAGE_MIMES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+];
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5MB
+
 @ApiTags('Journal')
 @Controller()
 export class JournalController {
-  constructor(private readonly journal: JournalService) {}
+  constructor(
+    private readonly journal: JournalService,
+    private readonly uploader: UploaderService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   @Get('journal/me')
   @Auth()
@@ -120,5 +139,44 @@ export class JournalController {
     @GetUser('id') userId: string,
   ) {
     return this.journal.removeCharacterEntry(chronicleId, entryId, userId);
+  }
+
+  // ── Upload de imágenes para markdown en notas ─────────────
+  @Post('chronicles/:chronicleId/journal/files')
+  @Auth()
+  @ApiOperation({
+    summary:
+      'Sube una imagen para insertar en una nota de bitácora. Devuelve la URL relativa.',
+  })
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadJournalFile(
+    @Param('chronicleId') chronicleId: string,
+    @GetUser('id') userId: string,
+    @UploadedFile() file: Express.Multer.File | undefined,
+  ) {
+    if (!file) {
+      throw new BadRequestException('Falta el archivo (campo "file").');
+    }
+    if (!ALLOWED_IMAGE_MIMES.includes(file.mimetype)) {
+      throw new BadRequestException(
+        `Tipo no permitido: ${file.mimetype}. Solo JPG, PNG, WEBP, GIF.`,
+      );
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      throw new BadRequestException('Imagen demasiado grande (máx 5MB).');
+    }
+    // Validar membresía a la crónica.
+    const member = await this.prisma.chronicleMember.findUnique({
+      where: { chronicleId_userId: { chronicleId, userId } },
+      select: { id: true },
+    });
+    if (!member) {
+      throw new ForbiddenException('No eres miembro de esta crónica.');
+    }
+    const uploaded = await this.uploader.uploadJournalImage(file, chronicleId);
+    return {
+      url: `/images/journal/${chronicleId}/${uploaded.filename}`,
+      mimeType: uploaded.mimetype,
+    };
   }
 }

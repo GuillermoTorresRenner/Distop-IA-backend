@@ -27,9 +27,25 @@ export class TableService {
       select: {
         id: true,
         email: true,
+        nickname: true,
         avatar: true,
       },
     });
+  }
+
+  /**
+   * Devuelve el nickname del usuario (o el local-part del email como
+   * fallback si todavía no tiene nick). Pensado para emitir chat con una
+   * identidad amigable en lugar del email.
+   */
+  async getUserDisplayName(userId: string): Promise<string> {
+    const user = await this.prisma.users.findUnique({
+      where: { id: userId },
+      select: { email: true, nickname: true },
+    });
+    if (!user) return 'Desconocido';
+    if (user.nickname && user.nickname.trim()) return user.nickname.trim();
+    return user.email.split('@')[0] ?? user.email;
   }
 
   /**

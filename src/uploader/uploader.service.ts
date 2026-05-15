@@ -158,6 +158,47 @@ export class UploaderService {
       mimetype: 'image/webp',
     };
   }
+
+  /**
+   * Sube una imagen para una nota de bitácora (markdown). El archivo se
+   * guarda en /app/public/images/journal/<chronicleId>/. Mismo pipeline que
+   * la pizarra (sharp, webp, resize 2048).
+   */
+  async uploadJournalImage(
+    file: Express.Multer.File,
+    chronicleId: string,
+  ): Promise<UploadResult> {
+    const uploadDir = join(
+      process.cwd(),
+      'public',
+      'images',
+      'journal',
+      chronicleId,
+    );
+    await ensureDir(uploadDir);
+
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).slice(2, 8);
+    const filename = `${timestamp}-${random}.webp`;
+    const filePath = join(uploadDir, filename);
+
+    await sharp(file.buffer)
+      .resize({
+        width: 2048,
+        height: 2048,
+        fit: 'inside',
+        withoutEnlargement: true,
+      })
+      .webp({ quality: 82 })
+      .toFile(filePath);
+
+    return {
+      filename,
+      path: filePath,
+      size: file.size,
+      mimetype: 'image/webp',
+    };
+  }
 }
 
 /**

@@ -4,6 +4,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUUID,
   MaxLength,
 } from 'class-validator';
 
@@ -24,4 +25,12 @@ export class CreateCharacterJournalEntryDto {
   @IsOptional()
   @IsDateString()
   sessionDate?: string;
+
+  @ApiProperty({
+    example: 'b94f9c4b-9c84-4a1f-9a8d-1f3e0a2bafe0',
+    description:
+      'Personaje al que pertenece la nota. Debe pertenecer al autor y estar asociado a la crónica.',
+  })
+  @IsUUID()
+  characterId: string;
 }

@@ -16,6 +16,12 @@ COPY . .
 
 RUN npm run build
 RUN test -f dist/main.js || (echo "Build failed: dist/main.js not found" && ls -la dist/ && exit 1)
+
+# Compilamos `prisma/seed.ts` por separado a CommonJS para que pueda correr
+# con `node` puro en la imagen de producción (que no tiene ts-node).
+RUN npm run build:seed
+RUN test -f dist-seed/prisma/seed.js || (echo "Seed build failed" && ls -la dist-seed/ && exit 1)
+
 RUN mkdir -p public
 
 FROM node:22-alpine AS production
@@ -34,6 +40,7 @@ RUN npm ci --only=production && npm cache clean --force
 RUN npx prisma generate
 
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/dist-seed ./dist-seed
 COPY --from=builder /app/public ./public
 
 RUN mkdir -p public/images/users/avatars && chown -R nestjs:nodejs /app

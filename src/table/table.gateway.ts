@@ -204,14 +204,72 @@ export class TableGateway
     if (text.length > 2000) throw new WsException('Message too long');
 
     const room = this.roomName(chronicleId);
+    const kind = body?.recipient?.kind ?? 'all';
+    const targetUserId =
+      kind === 'user' ? body?.recipient?.userId ?? null : null;
+
+    if (kind === 'user' && !targetUserId) {
+      throw new WsException('recipient.userId required when kind === "user"');
+    }
+
+    const narratorId = await this.tableService.getNarratorId(chronicleId);
+
+    // Identidad del hablante. Por defecto: nickname del usuario. Si pidió
+    // hablar como un PJ, validamos que sea suyo y esté asociado a la crónica.
+    let speaker: { kind: 'self' | 'character'; name: string; characterId: string | null };
+    const asReq = body?.as;
+    if (asReq?.kind === 'character' && asReq.characterId) {
+      const ctx = await this.tableService.getCharacterContext(
+        chronicleId,
+        asReq.characterId,
+      );
+      if (!ctx) {
+        throw new WsException('Personaje no asociado a esta crónica');
+      }
+      if (ctx.ownerId !== userId) {
+        throw new WsException('Solo puedes hablar como personajes propios');
+      }
+      speaker = {
+        kind: 'character',
+        name: ctx.name,
+        characterId: ctx.id,
+      };
+    } else {
+      const nick = await this.tableService.getUserDisplayName(userId);
+      speaker = { kind: 'self', name: nick, characterId: null };
+    }
+
     const message = {
       id: `${Date.now()}-${client.id}`,
       userId,
       email,
+      speaker,
       text,
       at: new Date().toISOString(),
+      recipient: {
+        kind,
+        userId: targetUserId,
+      } as { kind: 'all' | 'narrator' | 'user'; userId: string | null },
     };
-    this.server.to(room).emit('chat:message', message);
+
+    if (kind === 'all') {
+      this.server.to(room).emit('chat:message', message);
+      return { ok: true, id: message.id };
+    }
+
+    // Privado (narrador o usuario específico): emitimos sólo a autor + target.
+    // El autor siempre recibe copia para que el mensaje se vea en su feed.
+    const allowedIds = new Set<string>([userId]);
+    if (kind === 'narrator' && narratorId) allowedIds.add(narratorId);
+    if (kind === 'user' && targetUserId) allowedIds.add(targetUserId);
+
+    const sockets = await this.server.in(room).fetchSockets();
+    for (const s of sockets) {
+      const sUid = (s.data as AuthenticatedSocketData)?.userId;
+      if (sUid && allowedIds.has(sUid)) {
+        s.emit('chat:message', message);
+      }
+    }
     return { ok: true, id: message.id };
   }
 
@@ -516,6 +574,7 @@ export class TableGateway
     Array<{
       id: string;
       email: string;
+      nickname: string | null;
       avatar: string | null;
       role: string | null;
     }>
@@ -532,6 +591,7 @@ export class TableGateway
     const result: Array<{
       id: string;
       email: string;
+      nickname: string | null;
       avatar: string | null;
       role: string | null;
     }> = [];

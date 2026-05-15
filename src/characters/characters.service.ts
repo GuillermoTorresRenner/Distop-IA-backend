@@ -39,6 +39,11 @@ export class CharactersService {
           },
         },
       },
+      // Dueño del personaje — el frontend lo usa para pintar el campo
+      // "Jugador" de la hoja con el nickname.
+      user: {
+        select: { id: true, email: true, nickname: true, avatar: true },
+      },
     } satisfies Prisma.CharacterInclude;
   }
 
@@ -372,8 +377,19 @@ export class CharactersService {
     if (!membership) {
       throw new ForbiddenException('You are not a member of this chronicle');
     }
+    const chronicle = await this.prisma.chronicle.findUnique({
+      where: { id: chronicleId },
+      select: { narratorId: true },
+    });
+    const isNarrator = chronicle?.narratorId === callerId;
     const links = await this.prisma.chronicleCharacter.findMany({
-      where: { chronicleId },
+      where: {
+        chronicleId,
+        // Los PNJs y Antagonistas del narrador son herramientas suyas — los
+        // jugadores no deben verlos en la lista de la crónica. Solo PCs son
+        // públicos a toda la mesa.
+        ...(isNarrator ? {} : { character: { kind: 'PC' } }),
+      },
       orderBy: { joinedAt: 'asc' },
       include: {
         character: {

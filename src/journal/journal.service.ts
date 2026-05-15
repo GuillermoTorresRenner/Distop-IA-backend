@@ -20,6 +20,12 @@ const authorSelect = {
   avatar: true,
 } satisfies Prisma.UsersSelect;
 
+const characterSelect = {
+  id: true,
+  name: true,
+  kind: true,
+} satisfies Prisma.CharacterSelect;
+
 @Injectable()
 export class JournalService {
   constructor(private readonly prisma: PrismaService) {}
@@ -47,6 +53,39 @@ export class JournalService {
     if (!chronicle) throw new NotFoundException('Chronicle not found');
     if (chronicle.narratorId !== userId) {
       throw new ForbiddenException('Only the narrator can perform this action');
+    }
+  }
+
+  /**
+   * Verifica que `characterId` exista, sea del usuario y esté asociado a la
+   * crónica. Es la única forma legal de vincular una nota personal a un
+   * personaje: cada nota pertenece a un PJ específico del autor.
+   */
+  private async assertOwnedCharacterInChronicle(
+    chronicleId: string,
+    userId: string,
+    characterId: string,
+  ) {
+    const character = await this.prisma.character.findUnique({
+      where: { id: characterId },
+      select: { id: true, userId: true },
+    });
+    if (!character) {
+      throw new NotFoundException('Character not found');
+    }
+    if (character.userId !== userId) {
+      throw new ForbiddenException('This character is not yours');
+    }
+    const link = await this.prisma.chronicleCharacter.findUnique({
+      where: {
+        chronicleId_characterId: { chronicleId, characterId },
+      },
+      select: { id: true },
+    });
+    if (!link) {
+      throw new ForbiddenException(
+        'This character is not associated with this chronicle',
+      );
     }
   }
 
@@ -129,7 +168,10 @@ export class JournalService {
     await this.assertMember(chronicleId, userId);
     const entries = await this.prisma.characterJournalEntry.findMany({
       where: { chronicleId, authorId: userId },
-      include: { author: { select: authorSelect } },
+      include: {
+        author: { select: authorSelect },
+        character: { select: characterSelect },
+      },
       orderBy: [
         { sessionDate: { sort: 'desc', nulls: 'last' } },
         { createdAt: 'desc' },
@@ -144,15 +186,24 @@ export class JournalService {
     dto: CreateCharacterJournalEntryDto,
   ) {
     await this.assertMember(chronicleId, userId);
+    await this.assertOwnedCharacterInChronicle(
+      chronicleId,
+      userId,
+      dto.characterId,
+    );
     const entry = await this.prisma.characterJournalEntry.create({
       data: {
         chronicleId,
         authorId: userId,
+        characterId: dto.characterId,
         title: dto.title,
         body: dto.body,
         sessionDate: dto.sessionDate ? new Date(dto.sessionDate) : null,
       },
-      include: { author: { select: authorSelect } },
+      include: {
+        author: { select: authorSelect },
+        character: { select: characterSelect },
+      },
     });
     return this.serializeEntry(entry);
   }
@@ -172,6 +223,13 @@ export class JournalService {
     if (entry.authorId !== userId) {
       throw new ForbiddenException('You can only edit your own entries');
     }
+    if (dto.characterId !== undefined) {
+      await this.assertOwnedCharacterInChronicle(
+        chronicleId,
+        userId,
+        dto.characterId,
+      );
+    }
     const updated = await this.prisma.characterJournalEntry.update({
       where: { id: entryId },
       data: {
@@ -180,8 +238,14 @@ export class JournalService {
         ...(dto.sessionDate !== undefined
           ? { sessionDate: dto.sessionDate ? new Date(dto.sessionDate) : null }
           : {}),
+        ...(dto.characterId !== undefined
+          ? { characterId: dto.characterId }
+          : {}),
       },
-      include: { author: { select: authorSelect } },
+      include: {
+        author: { select: authorSelect },
+        character: { select: characterSelect },
+      },
     });
     return this.serializeEntry(updated);
   }
@@ -223,6 +287,7 @@ export class JournalService {
         include: {
           author: { select: authorSelect },
           chronicle: { select: { id: true, name: true } },
+          character: { select: characterSelect },
         },
         orderBy: [
           { sessionDate: { sort: 'desc', nulls: 'last' } },
@@ -238,11 +303,16 @@ export class JournalService {
   }
 
   private serializeEntry(
-    e: Prisma.ChronicleJournalEntryGetPayload<{
-      include: { author: { select: typeof authorSelect } };
-    }> | Prisma.CharacterJournalEntryGetPayload<{
-      include: { author: { select: typeof authorSelect } };
-    }>,
+    e:
+      | Prisma.ChronicleJournalEntryGetPayload<{
+          include: { author: { select: typeof authorSelect } };
+        }>
+      | Prisma.CharacterJournalEntryGetPayload<{
+          include: {
+            author: { select: typeof authorSelect };
+            character: { select: typeof characterSelect };
+          };
+        }>,
   ) {
     return {
       id: e.id,
@@ -253,6 +323,7 @@ export class JournalService {
       createdAt: e.createdAt,
       updatedAt: e.updatedAt,
       author: enrichUserWithAvatarUrl(e.author),
+      character: 'character' in e ? e.character : null,
     };
   }
 
@@ -268,6 +339,7 @@ export class JournalService {
           include: {
             author: { select: typeof authorSelect };
             chronicle: { select: { id: true; name: true } };
+            character: { select: typeof characterSelect };
           };
         }>,
     kind: 'CHRONICLE' | 'CHARACTER',
@@ -282,6 +354,7 @@ export class JournalService {
       createdAt: e.createdAt,
       updatedAt: e.updatedAt,
       author: enrichUserWithAvatarUrl(e.author),
+      character: 'character' in e ? e.character : null,
     };
   }
 }
