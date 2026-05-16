@@ -36,6 +36,16 @@ export class RollVtmDto {
   skillRating?: number;
 
   /**
+   * Texto (markdown) de la especialidad declarada en la habilidad. Se
+   * persiste con la tirada como snapshot histórico para mostrarlo en
+   * hover desde el chat. Sólo aplica cuando specialty=true.
+   */
+  @IsString()
+  @IsOptional()
+  @MaxLength(2000)
+  specialtyText?: string;
+
+  /**
    * Gasta 1 punto de Voluntad para sumar 1 éxito automático no removible
    * por 1s. El éxito se aplica al final, después del cálculo normal.
    */

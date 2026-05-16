@@ -293,6 +293,7 @@ export class TableGateway
       difficulty: body.difficulty,
       specialty: body.specialty,
       skillRating: body.skillRating,
+      specialtyText: body.specialtyText,
       willpowerForSuccess: body.willpowerForSuccess,
       willpowerForWound: body.willpowerForWound,
       willpowerForReroll: body.willpowerForReroll,

@@ -35,6 +35,11 @@ model DiceRoll {
   /// Nivel de la habilidad declarada al momento de la tirada (1..5).
   /// Se persiste para auditar la regla de especialidad>=4.
   skillRating     Int?
+  /// Snapshot del texto de la especialidad usada en esta tirada (markdown).
+  /// Se persiste para que el historial muestre lo que el jugador tenía
+  /// declarado en ese momento, aunque después lo edite. Sólo tiene sentido
+  /// cuando specialty=true; en el resto de casos queda null.
+  specialtyText   String?
   /// Compatibilidad: marca si se gastó algún punto de voluntad.
   /// La intención exacta se describe en los flags wpForSuccess/Wound/Reroll
   /// y en el campo derivado `willpowerEffect` (legacy).

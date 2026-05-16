@@ -17,6 +17,8 @@ export interface RollVtmInput {
   specialty?: boolean;
   /** Valor de la habilidad declarada (1..5). Requerido si specialty=true. */
   skillRating?: number;
+  /** Texto (markdown) de la especialidad para snapshot histórico. */
+  specialtyText?: string | null;
   /** +1 éxito automático no removible por 1s. */
   willpowerForSuccess?: boolean;
   /** Anula el penalizador por heridas (lo deja en 0 efectivo). */
@@ -285,6 +287,11 @@ export class DiceService {
           difficulty: result.difficulty,
           specialty: result.specialty,
           skillRating: result.skillRating,
+          // Sólo persistimos el texto si efectivamente la tirada usó
+          // especialidad. Si no, queda null para no llenar la columna.
+          specialtyText: result.specialty
+            ? (input.specialtyText ?? null) || null
+            : null,
           willpowerSpent: result.willpowerSpent,
           wpForSuccess: result.wpForSuccess,
           wpForWound: result.wpForWound,
