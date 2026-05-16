@@ -20,6 +20,8 @@ model Users {
   customWeapons            Weapon[]
   customArmors             Armor[]
   diceRolls                DiceRoll[]
+  directMessagesSent       DirectMessage[]         @relation("DirectMessageSender")
+  directMessagesReceived   DirectMessage[]         @relation("DirectMessageRecipient")
 
   @@map("users")
 }

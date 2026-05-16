@@ -1,0 +1,32 @@
+/// Mensaje directo 1-a-1 entre dos usuarios que ya son amigos.
+///
+/// No modelamos `Conversation`: por simplicidad la "conversación" es el par
+/// ordenado (a,b). Para listar conversaciones agrupamos por el otro extremo.
+///
+/// `readAt` marca cuándo el destinatario lo leyó. Vacío = no leído.
+/// `deletedAt` es un soft-delete por el autor: el mensaje queda en BD pero
+/// el cliente muestra "mensaje eliminado".
+model DirectMessage {
+  id          String   @id @default(uuid())
+  senderId    String
+  sender      Users    @relation("DirectMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  recipientId String
+  recipient   Users    @relation("DirectMessageRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  /// Cuerpo en markdown. El cliente lo renderiza con remark-gfm.
+  body        String
+
+  /// Cuándo el destinatario lo leyó. Null = aún no leído.
+  readAt      DateTime?
+  /// Soft-delete por el autor. Si está, el cuerpo se oculta en el front.
+  deletedAt   DateTime?
+
+  createdAt   DateTime @default(now())
+
+  /// Índices: por par para listar la conversación, y por destinatario+unread
+  /// para contar no leídos rápido.
+  @@index([senderId, recipientId, createdAt])
+  @@index([recipientId, senderId, createdAt])
+  @@index([recipientId, readAt])
+  @@map("direct_messages")
+}
