@@ -305,14 +305,15 @@ export class TableGateway
 
     // ── Reglas de visibilidad de la tirada ──────────────────
     //
-    // 1) Si la tirada está asociada a un personaje NPC/ANTAGONIST, es secreta
-    //    por construcción: solo el autor y el narrador la ven, sin importar
-    //    el toggle "Privada".
-    // 2) Si el toggle "Privada" está activo: solo autor + narrador.
+    // 1) Si la tirada está asociada a un personaje NPC/ANTAGONIST, va al autor
+    //    y al narrador (herramienta del narrador, jugadores no la ven).
+    // 2) Si el jugador marcó "Secreta" (isPublic=false): SOLO el autor. Nadie
+    //    más la ve, ni siquiera el narrador.
     // 3) Caso normal (PC público): broadcast a toda la sala.
     const characterKind = roll.character?.kind ?? null;
     const isSecretByKind =
       characterKind === 'NPC' || characterKind === 'ANTAGONIST';
+    const isSecret = !roll.isPublic;
     const goesPublic = roll.isPublic && !isSecretByKind;
 
     const narratorId = await this.tableService.getNarratorId(chronicleId);
@@ -323,7 +324,14 @@ export class TableGateway
       const sockets = await this.server.in(room).fetchSockets();
       for (const s of sockets) {
         const sUid = (s.data as AuthenticatedSocketData)?.userId;
-        if (sUid === userId || (narratorId && sUid === narratorId)) {
+        // Secreta del jugador: sólo el autor.
+        // Secreta por kind (NPC/Antag): autor + narrador.
+        const isAuthor = sUid === userId;
+        const isNarrator = !!narratorId && sUid === narratorId;
+        const allowed = isSecret
+          ? isAuthor
+          : isAuthor || isNarrator;
+        if (allowed) {
           s.emit('roll:result', roll);
         }
       }
@@ -363,7 +371,13 @@ export class TableGateway
         const sockets = await this.server.in(room).fetchSockets();
         for (const s of sockets) {
           const sUid = (s.data as AuthenticatedSocketData)?.userId;
-          if (sUid === userId || (narratorId && sUid === narratorId)) {
+          const isAuthor = sUid === userId;
+          const isNarrator = !!narratorId && sUid === narratorId;
+          // Misma regla que la tirada que dispara este anuncio.
+          const allowed = isSecret
+            ? isAuthor
+            : isAuthor || isNarrator;
+          if (allowed) {
             s.emit('sheet:announce', announce);
           }
         }

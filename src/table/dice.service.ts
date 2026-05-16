@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { WillpowerEffect } from '@prisma/client';
+import { Prisma, WillpowerEffect } from '@prisma/client';
 import { randomInt } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -322,11 +322,45 @@ export class DiceService {
     });
   }
 
-  async listByChronicle(chronicleId: string, limit = 50, before?: Date) {
+  /**
+   * Historial de tiradas filtrado por las mismas reglas que la emisión WS:
+   *   - Públicas (isPublic=true) y de PC: todos las ven.
+   *   - Secretas (isPublic=false): sólo el autor (`userId`).
+   *   - NPC/ANTAGONIST: autor + narrador.
+   *
+   * El caller pasa `viewerUserId` y `isViewerNarrator` (lo calcula el
+   * controller a partir del membership).
+   */
+  async listByChronicle(
+    chronicleId: string,
+    viewerUserId: string,
+    isViewerNarrator: boolean,
+    limit = 50,
+    before?: Date,
+  ) {
     return this.prisma.diceRoll.findMany({
       where: {
         chronicleId,
         ...(before ? { createdAt: { lt: before } } : {}),
+        OR: [
+          // 1) Tiradas públicas de PCs (o sin personaje) — visibles a todos.
+          {
+            isPublic: true,
+            OR: [{ character: null }, { character: { kind: 'PC' } }],
+          },
+          // 2) Las del propio viewer (cualquier visibilidad).
+          { userId: viewerUserId },
+          // 3) Si el viewer es narrador: también ve las de NPC/Antag,
+          //    pero NO las secretas (isPublic=false) de otros jugadores.
+          ...(isViewerNarrator
+            ? [
+                {
+                  isPublic: true,
+                  character: { kind: { in: ['NPC', 'ANTAGONIST'] } },
+                } as Prisma.DiceRollWhereInput,
+              ]
+            : []),
+        ],
       },
       orderBy: { createdAt: 'desc' },
       take: Math.min(200, Math.max(1, limit)),

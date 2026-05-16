@@ -51,7 +51,12 @@ export class TableController {
     if (!role) {
       throw new ForbiddenException('Not a member of this chronicle');
     }
-    return this.diceService.listByChronicle(chronicleId, limit ?? 50);
+    return this.diceService.listByChronicle(
+      chronicleId,
+      userId,
+      role === 'NARRATOR',
+      limit ?? 50,
+    );
   }
 
   @Delete(':id/rolls')
