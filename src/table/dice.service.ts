@@ -35,6 +35,10 @@ export interface RollVtmInput {
   characterId?: string | null;
   chronicleId: string;
   userId: string;
+  /** Origen de la tirada (ej. "DISCIPLINE"). */
+  sourceKind?: string | null;
+  /** Etiqueta legible del origen (ej. nombre de la disciplina). */
+  sourceName?: string | null;
 }
 
 export interface RollVtmResult {
@@ -116,7 +120,13 @@ export class DiceService {
     const effectivePool = Math.max(1, basePool + effectivePenalty);
 
     // 1) Tirada inicial.
+    //
+    // `rawSuccesses` cuenta sólo dados >= dificultad (sin restar 1s).
+    // `netSuccesses` aplica la resta de 1s para el resultado final.
+    // `onesInPool` cuenta los 1 (no se compensan con rerolls de voluntad
+    // a efectos de pifia: un 1 ya hecho es un 1 hecho).
     const rolls: number[] = [];
+    let rawSuccesses = 0;
     let netSuccesses = 0;
     let onesInPool = 0;
     for (let i = 0; i < effectivePool; i++) {
@@ -125,6 +135,7 @@ export class DiceService {
       const { delta, ones } = this.scoreDie(d, safeDiff);
       netSuccesses += delta;
       onesInPool += ones;
+      if (d >= safeDiff) rawSuccesses += 1;
     }
 
     // 2) Reroll de fallos por Voluntad (antes que la especialidad sobre el
@@ -147,6 +158,7 @@ export class DiceService {
         const { delta, ones } = this.scoreDie(d, safeDiff);
         netSuccesses += delta;
         onesInPool += ones;
+        if (d >= safeDiff) rawSuccesses += 1;
       }
     }
 
@@ -167,15 +179,17 @@ export class DiceService {
         const { delta } = this.scoreDie(d, safeDiff);
         netSuccesses += delta;
         if (d === 10) pendingTens += 1;
-        // Nota: los 1 del rerroll de especialidad SÍ restan éxitos (delta=-1).
+        if (d >= safeDiff) rawSuccesses += 1;
+        // Nota: los 1 del rerroll de especialidad SÍ restan éxitos (delta=-1),
+        // pero NO disparan pifia: la pifia se evalúa por el pool original.
       }
     }
 
-    // 4) Botch: se evalúa sobre el resultado net (sin el éxito de Voluntad).
-    // La voluntad no rescata de un botch. Solo cuenta si hubo al menos un 1
-    // en el pool inicial (los 1s del reroll/especialidad cuentan al neto pero
-    // por canon V20 el botch lo detonan los 1 del pool original).
-    const isBotch = onesInPool > 0 && netSuccesses <= 0;
+    // 4) Botch: SÓLO si no hubo ningún éxito crudo en toda la tirada
+    // (pool + rerolls) y hubo al menos un 1. Si el jugador sacó al menos un
+    // dado por encima de la dificultad, no es pifia aunque los 1s lo dejen
+    // en cero éxitos netos.
+    const isBotch = onesInPool > 0 && rawSuccesses === 0;
 
     let finalSuccesses: number;
     if (isBotch) {
@@ -304,6 +318,8 @@ export class DiceService {
           successes: result.successes,
           isBotch: result.isBotch,
           isPublic: input.isPublic ?? true,
+          sourceKind: input.sourceKind ?? null,
+          sourceName: input.sourceName ?? null,
         },
         include: {
           user: { select: { id: true, email: true, nickname: true, avatar: true } },

@@ -28,14 +28,38 @@ model Discipline {
   @@map("disciplines")
 }
 
-/// Poderes anidados bajo una Disciplina; un poder por nivel (1..5)
+/// Poderes anidados bajo una Disciplina; un poder por nivel (1..5).
+///
+/// Mecánica codificada (cuando aplica):
+///   - `bloodCost`: puntos de sangre que cuesta activar (0 = gratuito).
+///   - `rollAttribute` + `rollAbility`: si el poder requiere una tirada
+///     activa, qué claves del personaje (ej. "manipulation" + "Intimidación").
+///     Si ambos son null el poder se considera pasivo / activación simple.
+///   - `rollDifficulty`: dificultad por defecto cuando hay tirada. Por canon
+///     V20 suele ser 6, pero algunos poderes específicos varían.
+///   - `summary`: resumen corto para el tooltip (1-2 líneas). `description`
+///     sigue siendo el texto largo del manual.
 model DisciplinePower {
-  id           String     @id @default(uuid())
-  disciplineId String
-  discipline   Discipline @relation(fields: [disciplineId], references: [id], onDelete: Cascade)
-  level        Int
-  name         String
-  description  String?
+  id             String     @id @default(uuid())
+  disciplineId   String
+  discipline     Discipline @relation(fields: [disciplineId], references: [id], onDelete: Cascade)
+  level          Int
+  name           String
+  description    String?
+
+  /// Resumen corto para el tooltip de la mesa (versión condensada).
+  summary        String?
+  /// Puntos de sangre que cuesta activar. 0 = sin coste.
+  bloodCost      Int        @default(0)
+  /// Clave del atributo a usar en la tirada activa, en formato del modelo
+  /// Character (ej. "manipulation", "strength", "perception"). Null = pasivo.
+  rollAttribute  String?
+  /// Nombre de la habilidad a usar en la tirada activa (ej. "Intimidación",
+  /// "Empatía"). Si la "habilidad" es la propia disciplina, ponemos su
+  /// nombre exacto (ej. "Dominación"). Null = pasivo o el roller usa solo el atributo.
+  rollAbility    String?
+  /// Dificultad por defecto cuando hay tirada activa. Default 6 si null.
+  rollDifficulty Int?
 
   @@unique([disciplineId, level])
   @@index([disciplineId])

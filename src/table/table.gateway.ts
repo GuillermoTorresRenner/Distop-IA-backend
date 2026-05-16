@@ -294,6 +294,8 @@ export class TableGateway
       specialty: body.specialty,
       skillRating: body.skillRating,
       specialtyText: body.specialtyText,
+      sourceKind: body.sourceKind,
+      sourceName: body.sourceName,
       willpowerForSuccess: body.willpowerForSuccess,
       willpowerForWound: body.willpowerForWound,
       willpowerForReroll: body.willpowerForReroll,
@@ -340,12 +342,16 @@ export class TableGateway
     // ── Anuncio del consumo de Voluntad en el chat ──────────
     //
     // Si se gastó al menos 1 punto y la tirada está asociada a un personaje,
-    // emitimos un sheet:announce con el delta. La visibilidad sigue las mismas
-    // reglas que la tirada: si la tirada es secreta (kind no-PC) o privada
-    // (isPublic=false), el anuncio también lo es. Si la tirada va a la sala,
-    // el anuncio también va a la sala.
+    // emitimos un sheet:announce con el delta — pero SÓLO para PCs. Las
+    // hojas de NPCs/Antagonistas son herramientas internas del narrador:
+    // no anunciamos sus cambios en el chat para evitar spam (ni siquiera
+    // al narrador, que ya ve el estado en el panel embebido).
+    //
+    // Si la tirada es secreta (isPublic=false), el anuncio del PC sigue
+    // siendo privado (sólo el autor). Si es pública, va a toda la sala.
     if (
       roll.character &&
+      roll.character.kind === 'PC' &&
       willpower.spent > 0 &&
       willpower.before !== null &&
       willpower.after !== null
@@ -439,16 +445,109 @@ export class TableGateway
       return { ok: true };
     }
 
-    // NPC / ANTAGONIST: solo el narrador (puede haber varios sockets del narrador).
-    if (!narratorId) return { ok: true };
-    const sockets = await this.server.in(room).fetchSockets();
-    for (const s of sockets) {
-      const sUid = (s.data as AuthenticatedSocketData)?.userId;
-      if (sUid === narratorId) {
-        s.emit('sheet:announce', payload);
+    // NPC / ANTAGONIST: no se emite el cambio a nadie. La hoja es interna
+    // del narrador y los demás participantes no necesitan ver sus ediciones
+    // en el chat. El narrador ya tiene el panel embebido para auditar.
+    return { ok: true };
+  }
+
+  /**
+   * Activación de un poder de disciplina por parte del jugador.
+   *
+   * Body: { characterId, powerId }
+   *
+   * Flujo:
+   *   1. Valida pertenencia / nivel aprendido / sangre disponible.
+   *   2. Descuenta sangre atómicamente si bloodCost > 0.
+   *   3. Emite `chat:message` a la sala (mensaje del sistema con el nombre
+   *      del personaje y la activación del poder).
+   *   4. Si hubo gasto de sangre, emite `sheet:announce` con el delta de
+   *      Reserva de sangre (la hoja embebida lo aplica en vivo).
+   *
+   * Devuelve metadata del poder para que el cliente decida si quiere
+   * preparar el roller (si rollAttribute está definido). La tirada en sí
+   * se dispara con `roll:vtm`, no se encadena desde aquí.
+   */
+  @SubscribeMessage('discipline:activate')
+  async onActivateDiscipline(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() body: { characterId: string; powerId: string },
+  ) {
+    const { userId, chronicleId } = (client.data ?? {}) as AuthenticatedSocketData;
+    if (!userId || !chronicleId) throw new WsException('Not in a table');
+    if (!body?.characterId || !body?.powerId) {
+      throw new WsException('characterId y powerId requeridos');
+    }
+
+    // Validamos que el personaje esté asociado a esta crónica (no permitir
+    // usar un personaje de otra mesa por accidente).
+    const ctx = await this.tableService.getCharacterContext(
+      chronicleId,
+      body.characterId,
+    );
+    if (!ctx) throw new WsException('Personaje no asociado a esta crónica');
+
+    const result = await this.tableService.activateDisciplinePower(
+      userId,
+      body.characterId,
+      body.powerId,
+    );
+
+    const room = this.roomName(chronicleId);
+
+    // Anuncio en el chat (mensaje del sistema).
+    const chatLine =
+      result.power.bloodCost > 0
+        ? `${result.character.name} activa ${result.discipline.name} ${result.power.level} — ${result.power.name} (gasta ${result.power.bloodCost} de sangre).`
+        : `${result.character.name} activa ${result.discipline.name} ${result.power.level} — ${result.power.name}.`;
+
+    const chatMessage = {
+      id: `disc-${Date.now()}-${client.id}`,
+      userId,
+      email: (client.data as AuthenticatedSocketData)?.email ?? '',
+      speaker: {
+        kind: 'system' as const,
+        name: 'Sistema',
+        characterId: null,
+      },
+      text: chatLine,
+      at: new Date().toISOString(),
+      recipient: { kind: 'all' as const, userId: null },
+    };
+    // Línea narrativa en el chat: SOLO si es PC. Las activaciones del
+    // narrador con sus NPCs/Antagonistas no se transmiten — el descuento
+    // de sangre se hizo en BD y el panel embebido del narrador refleja el
+    // nuevo saldo, pero el chat queda limpio.
+    if (ctx.kind === 'PC') {
+      this.server.to(room).emit('chat:message', chatMessage);
+
+      // Anuncio del delta de sangre, también solo para PCs.
+      if (result.blood.spent > 0) {
+        const announce = {
+          id: `disc-blood-${Date.now()}-${client.id}`,
+          characterId: ctx.id,
+          characterName: ctx.name,
+          kind: ctx.kind,
+          authorId: userId,
+          deltas: [
+            {
+              label: 'Reserva de sangre',
+              before: String(result.blood.before),
+              after: String(result.blood.after),
+            },
+          ],
+          at: new Date().toISOString(),
+        };
+        this.server.to(room).emit('sheet:announce', announce);
       }
     }
-    return { ok: true };
+
+    return {
+      ok: true,
+      power: result.power,
+      discipline: result.discipline,
+      blood: result.blood,
+    };
   }
 
   // ──────────────────────────────────────────────

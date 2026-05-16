@@ -89,6 +89,18 @@ export class RollVtmDto {
   @MaxLength(120)
   label?: string;
 
+  /** Origen de la tirada. Hoy se usa "DISCIPLINE"; null = tirada normal. */
+  @IsString()
+  @IsOptional()
+  @MaxLength(32)
+  sourceKind?: string;
+
+  /** Etiqueta legible asociada al origen (ej. nombre de la disciplina). */
+  @IsString()
+  @IsOptional()
+  @MaxLength(64)
+  sourceName?: string;
+
   @IsUUID()
   @IsOptional()
   characterId?: string;

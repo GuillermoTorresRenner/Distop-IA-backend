@@ -1,4 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -63,6 +68,91 @@ export class TableService {
    * Resuelve si un personaje pertenece a la crónica y devuelve su tipo y dueño.
    * Lo usa el gateway para anuncios de actualización de hoja.
    */
+  /**
+   * Activa un poder de disciplina para un personaje:
+   *   - Verifica que el personaje pertenezca al usuario.
+   *   - Verifica que el personaje haya aprendido esa disciplina al nivel >= power.level.
+   *   - Si el poder requiere sangre, descuenta atómicamente (clamp a >=0).
+   *   - Devuelve metadata para que el gateway emita los anuncios apropiados.
+   */
+  async activateDisciplinePower(
+    userId: string,
+    characterId: string,
+    powerId: string,
+  ) {
+    const power = await this.prisma.disciplinePower.findUnique({
+      where: { id: powerId },
+      include: {
+        discipline: { select: { id: true, name: true } },
+      },
+    });
+    if (!power) throw new NotFoundException('Discipline power not found');
+
+    const character = await this.prisma.character.findUnique({
+      where: { id: characterId },
+      select: {
+        id: true,
+        userId: true,
+        name: true,
+        bloodPool: true,
+        disciplines: {
+          where: { disciplineId: power.disciplineId },
+          select: { level: true },
+        },
+      },
+    });
+    if (!character) throw new NotFoundException('Character not found');
+    if (character.userId !== userId) {
+      throw new ForbiddenException(
+        'You can only activate powers on your own characters',
+      );
+    }
+    const learned = character.disciplines[0]?.level ?? 0;
+    if (learned < power.level) {
+      throw new BadRequestException(
+        `El personaje no domina ${power.discipline.name} a nivel ${power.level} (tiene ${learned}).`,
+      );
+    }
+
+    const cost = power.bloodCost ?? 0;
+    if (cost > 0 && character.bloodPool < cost) {
+      throw new BadRequestException(
+        `Sangre insuficiente: el poder requiere ${cost} y el personaje tiene ${character.bloodPool}.`,
+      );
+    }
+
+    let bloodBefore = character.bloodPool;
+    let bloodAfter = character.bloodPool;
+    if (cost > 0) {
+      const updated = await this.prisma.character.update({
+        where: { id: characterId },
+        data: { bloodPool: { decrement: cost } },
+        select: { bloodPool: true },
+      });
+      bloodAfter = updated.bloodPool;
+    }
+
+    return {
+      power: {
+        id: power.id,
+        name: power.name,
+        level: power.level,
+        description: power.description,
+        summary: power.summary,
+        bloodCost: cost,
+        rollAttribute: power.rollAttribute,
+        rollAbility: power.rollAbility,
+        rollDifficulty: power.rollDifficulty,
+      },
+      discipline: power.discipline,
+      character: {
+        id: character.id,
+        name: character.name,
+      },
+      blood: { before: bloodBefore, after: bloodAfter, spent: cost },
+    };
+  }
+
   async getCharacterContext(
     chronicleId: string,
     characterId: string,

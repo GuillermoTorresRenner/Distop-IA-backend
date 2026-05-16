@@ -76,6 +76,14 @@ model DiceRoll {
   /// Si false, solo el narrador y el autor ven el resultado en el broadcast.
   isPublic        Boolean    @default(true)
 
+  /// De dónde se originó la tirada. Por ahora "DISCIPLINE" cuando el roller
+  /// fue rellenado por activar un poder. Null para tiradas manuales o
+  /// click-to-roll de atributo+habilidad.
+  sourceKind      String?
+  /// Etiqueta legible asociada al `sourceKind`. Para DISCIPLINE es el nombre
+  /// de la disciplina (ej. "Dominación"). Renderizado como badge en el chat.
+  sourceName      String?
+
   createdAt       DateTime   @default(now())
 
   @@index([chronicleId, createdAt])
