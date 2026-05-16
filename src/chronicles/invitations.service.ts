@@ -9,13 +9,16 @@ import { randomBytes } from 'crypto';
 import {
   ChronicleInvitationStatus,
   ChronicleMemberRole,
+  Prisma,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
+import { enrichUserWithAvatarUrl } from '../common/utils/avatar.utils';
 import { envs } from '../config/envs';
 import { ChroniclesService } from './chronicles.service';
 
 const INVITE_TTL_HOURS = 168;
+const INVITABLE_RESULT_LIMIT = 10;
 
 @Injectable()
 export class InvitationsService {
@@ -27,7 +30,11 @@ export class InvitationsService {
     private readonly chronicles: ChroniclesService,
   ) {}
 
-  async invite(chronicleId: string, narratorId: string, email: string) {
+  async invite(
+    chronicleId: string,
+    narratorId: string,
+    payload: { email?: string; userId?: string },
+  ) {
     const chronicle = await this.prisma.chronicle.findUnique({
       where: { id: chronicleId },
       include: {
@@ -39,16 +46,33 @@ export class InvitationsService {
       throw new ForbiddenException('Only the narrator can invite players');
     }
 
-    const normalizedEmail = email.trim().toLowerCase();
+    let existingUser: { id: string; email: string } | null = null;
+    let normalizedEmail: string;
+
+    if (payload.userId) {
+      const target = await this.prisma.users.findUnique({
+        where: { id: payload.userId },
+        select: { id: true, email: true, isActive: true },
+      });
+      if (!target || target.isActive === false) {
+        throw new NotFoundException('User not found');
+      }
+      existingUser = { id: target.id, email: target.email };
+      normalizedEmail = target.email.toLowerCase();
+    } else {
+      if (!payload.email) {
+        throw new BadRequestException('email or userId is required');
+      }
+      normalizedEmail = payload.email.trim().toLowerCase();
+      existingUser = await this.prisma.users.findUnique({
+        where: { email: normalizedEmail },
+        select: { id: true, email: true },
+      });
+    }
 
     if (normalizedEmail === chronicle.narrator.email.toLowerCase()) {
       throw new BadRequestException('The narrator is already a member');
     }
-
-    const existingUser = await this.prisma.users.findUnique({
-      where: { email: normalizedEmail },
-      select: { id: true, email: true },
-    });
 
     if (existingUser) {
       const alreadyMember = await this.prisma.chronicleMember.findUnique({
@@ -241,5 +265,62 @@ export class InvitationsService {
       ok: true,
       chronicleId: invitation.chronicleId,
     };
+  }
+
+  async searchInvitable(
+    chronicleId: string,
+    narratorId: string,
+    rawQuery: string,
+  ) {
+    await this.chronicles.assertNarrator(chronicleId, narratorId);
+    const q = rawQuery.trim();
+    if (q.length < 2) return [];
+
+    const [members, pendingInvites] = await Promise.all([
+      this.prisma.chronicleMember.findMany({
+        where: { chronicleId },
+        select: { userId: true },
+      }),
+      this.prisma.chronicleInvitation.findMany({
+        where: {
+          chronicleId,
+          status: ChronicleInvitationStatus.PENDING,
+        },
+        select: { email: true, invitedUserId: true },
+      }),
+    ]);
+
+    const excludeUserIds = new Set<string>(members.map((m) => m.userId));
+    for (const inv of pendingInvites) {
+      if (inv.invitedUserId) excludeUserIds.add(inv.invitedUserId);
+    }
+    const excludeEmails = new Set<string>(
+      pendingInvites.map((i) => i.email.toLowerCase()),
+    );
+
+    const where: Prisma.UsersWhereInput = {
+      isActive: true,
+      id: { notIn: Array.from(excludeUserIds) },
+      OR: [
+        { email: { contains: q, mode: 'insensitive' } },
+        { nickname: { contains: q, mode: 'insensitive' } },
+      ],
+    };
+
+    const matches = await this.prisma.users.findMany({
+      where,
+      take: INVITABLE_RESULT_LIMIT,
+      orderBy: [{ nickname: 'asc' }, { email: 'asc' }],
+      select: {
+        id: true,
+        email: true,
+        nickname: true,
+        avatar: true,
+      },
+    });
+
+    return matches
+      .filter((u) => !excludeEmails.has(u.email.toLowerCase()))
+      .map((u) => enrichUserWithAvatarUrl(u));
   }
 }

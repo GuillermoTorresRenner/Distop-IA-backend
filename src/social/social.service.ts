@@ -24,18 +24,39 @@ export class SocialService {
     const page = dto.page ?? 1;
     const pageSize = dto.pageSize ?? 10;
     const skip = (page - 1) * pageSize;
+    const q = dto.q?.trim() ?? '';
+
+    if (!q) {
+      const suggestions = await this.suggestFriendsOfFriends(
+        currentUserId,
+        pageSize,
+      );
+      return {
+        data: suggestions,
+        total: suggestions.length,
+        page: 1,
+        pageSize,
+        totalPages: 1,
+      };
+    }
+
+    if (q.length < 2) {
+      return {
+        data: [],
+        total: 0,
+        page,
+        pageSize,
+        totalPages: 0,
+      };
+    }
 
     const where: Prisma.UsersWhereInput = {
       id: { not: currentUserId },
       isActive: true,
-      ...(dto.q
-        ? {
-            OR: [
-              { email: { contains: dto.q, mode: 'insensitive' } },
-              { nickname: { contains: dto.q, mode: 'insensitive' } },
-            ],
-          }
-        : {}),
+      OR: [
+        { email: { contains: q, mode: 'insensitive' } },
+        { nickname: { contains: q, mode: 'insensitive' } },
+      ],
     };
 
     const [users, total] = await Promise.all([
@@ -44,11 +65,87 @@ export class SocialService {
         skip,
         take: pageSize,
         select: userSummarySelect,
-        orderBy: { email: 'asc' },
+        orderBy: [{ nickname: 'asc' }, { email: 'asc' }],
       }),
       this.prisma.users.count({ where }),
     ]);
 
+    const data = await this.attachRelations(currentUserId, users);
+
+    return {
+      data,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize),
+    };
+  }
+
+  private async suggestFriendsOfFriends(
+    currentUserId: string,
+    take: number,
+  ) {
+    const myFriendships = await this.prisma.friendship.findMany({
+      where: {
+        status: FriendshipStatus.ACCEPTED,
+        OR: [{ requesterId: currentUserId }, { addresseeId: currentUserId }],
+      },
+      select: { requesterId: true, addresseeId: true },
+    });
+
+    const friendIds = new Set<string>();
+    for (const f of myFriendships) {
+      friendIds.add(
+        f.requesterId === currentUserId ? f.addresseeId : f.requesterId,
+      );
+    }
+
+    if (friendIds.size === 0) return [];
+
+    const secondDegree = await this.prisma.friendship.findMany({
+      where: {
+        status: FriendshipStatus.ACCEPTED,
+        OR: [
+          { requesterId: { in: Array.from(friendIds) } },
+          { addresseeId: { in: Array.from(friendIds) } },
+        ],
+      },
+      select: { requesterId: true, addresseeId: true },
+    });
+
+    const exclude = new Set<string>(friendIds);
+    exclude.add(currentUserId);
+
+    const candidateIds = new Set<string>();
+    for (const f of secondDegree) {
+      if (friendIds.has(f.requesterId) && !exclude.has(f.addresseeId)) {
+        candidateIds.add(f.addresseeId);
+      }
+      if (friendIds.has(f.addresseeId) && !exclude.has(f.requesterId)) {
+        candidateIds.add(f.requesterId);
+      }
+    }
+
+    if (candidateIds.size === 0) return [];
+
+    const users = await this.prisma.users.findMany({
+      where: {
+        id: { in: Array.from(candidateIds) },
+        isActive: true,
+      },
+      take,
+      select: userSummarySelect,
+      orderBy: [{ nickname: 'asc' }, { email: 'asc' }],
+    });
+
+    return this.attachRelations(currentUserId, users);
+  }
+
+  private async attachRelations(
+    currentUserId: string,
+    users: { id: string; email: string; nickname: string; avatar: string | null }[],
+  ) {
+    if (users.length === 0) return [];
     const userIds = users.map((u) => u.id);
     const friendships = await this.prisma.friendship.findMany({
       where: {
@@ -59,7 +156,7 @@ export class SocialService {
       },
     });
 
-    const data = users.map((u) => {
+    return users.map((u) => {
       const f = friendships.find(
         (fr) =>
           (fr.requesterId === currentUserId && fr.addresseeId === u.id) ||
@@ -76,14 +173,6 @@ export class SocialService {
       }
       return { ...enrichUserWithAvatarUrl(u), relation };
     });
-
-    return {
-      data,
-      total,
-      page,
-      pageSize,
-      totalPages: Math.ceil(total / pageSize),
-    };
   }
 
   async request(requesterId: string, addresseeId: string) {

@@ -1,17 +1,28 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { WillpowerEffect } from '@prisma/client';
 import { randomInt } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
+
+/// Nivel mínimo de habilidad para poder declarar especialidad (V20).
+const MIN_SKILL_FOR_SPECIALTY = 4;
+/// Tope defensivo para encadenamiento de rerolls de especialidad: evita un
+/// improbable bucle infinito si el RNG saca muchos 10 seguidos.
+const MAX_SPECIALTY_CHAIN = 200;
 
 export interface RollVtmInput {
   /** Pool base = atributo + habilidad + bonificadores. Sin restar heridas todavía. */
   pool: number;
   difficulty?: number;
+  /** Solo válida si skillRating >= 4. El service revalida y rechaza si no. */
   specialty?: boolean;
+  /** Valor de la habilidad declarada (1..5). Requerido si specialty=true. */
+  skillRating?: number;
   /** +1 éxito automático no removible por 1s. */
   willpowerForSuccess?: boolean;
   /** Anula el penalizador por heridas (lo deja en 0 efectivo). */
   willpowerForWound?: boolean;
+  /** Relanza todos los fallos del pool inicial una sola vez (1s del reroll restan). */
+  willpowerForReroll?: boolean;
   /**
    * Penalizador por heridas que el cliente calculó (negativo o 0). El back lo
    * persiste tal cual para reproducir el desglose en el historial.
@@ -25,13 +36,24 @@ export interface RollVtmInput {
 }
 
 export interface RollVtmResult {
+  /** Dados del pool inicial. */
   rolls: number[];
+  /** Dados extras lanzados por la regla de especialidad (10s detonan). */
+  specialtyRerolls: number[];
+  /** Dados extras lanzados por la voluntad de reroll (fallos del pool inicial). */
+  willpowerRerolls: number[];
   successes: number;
   isBotch: boolean;
   difficulty: number;
   specialty: boolean;
+  skillRating: number | null;
   willpowerEffect: WillpowerEffect;
   willpowerSpent: boolean;
+  /** Cuántos puntos de voluntad gasta esta tirada (1 por cada flag activo). */
+  willpowerCost: number;
+  wpForSuccess: boolean;
+  wpForWound: boolean;
+  wpForReroll: boolean;
   woundPenalty: number;
   /** Pool efectivo tras aplicar heridas (o ignorarlas si willpowerForWound). */
   pool: number;
@@ -42,88 +64,163 @@ export class DiceService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Tira d10s y aplica reglas VtM V20:
-   *   - El penalizador por heridas se resta del pool, salvo que el personaje
-   *     gaste 1 punto de Voluntad para anularlo (willpowerForWound = true).
-   *   - dado >= difficulty cuenta como éxito.
-   *   - dado == 10 con specialty cuenta como 2 éxitos.
-   *   - 1s restan éxitos (cada 1 -1 éxito).
-   *   - Si se gasta 1 punto de Voluntad para éxito (willpowerForSuccess),
-   *     se suma 1 éxito automático al final, no removible por 1s.
-   *   - Botch: 0 éxitos finales con al menos un 1, ANTES de aplicar el éxito
-   *     de Voluntad. La Voluntad no rescata de un botch.
+   * Tira d10s y aplica reglas VtM V20 (variante de la mesa):
+   *   - Penalizador por heridas se resta del pool, salvo voluntad WOUND.
+   *   - dado >= difficulty cuenta como 1 éxito (10 NO dobla por defecto).
+   *   - 1 = -1 éxito (cada 1 del pool resta).
+   *   - Especialidad (solo si skillRating>=4): cada 10 detona un dado extra
+   *     que se relanza. En ese dado extra: 10 = otro dado encadenado;
+   *     1 = -1 éxito; cualquier otro >= dif suma 1 éxito; resto, nada.
+   *   - Voluntad éxito: +1 éxito automático no removible por 1s, al final.
+   *   - Voluntad reroll: relanza una vez todos los dados del pool inicial
+   *     que no fueron éxito (incluidos los 1). En el reroll los 1 también
+   *     restan y los 10 vuelven a detonar especialidad si está activa.
+   *   - Voluntad herida: anula el penalizador por heridas.
+   *   - Botch: 0 o menos éxitos netos pre-WP y al menos un 1 del pool inicial.
+   *     La voluntad no rescata de un botch.
    */
   rollVtm(input: {
     pool: number;
     difficulty?: number;
     specialty?: boolean;
+    skillRating?: number;
     willpowerForSuccess?: boolean;
     willpowerForWound?: boolean;
+    willpowerForReroll?: boolean;
     woundPenalty?: number;
   }): RollVtmResult {
     const basePool = Math.max(1, Math.min(30, Math.floor(input.pool)));
     const safeDiff = Math.max(2, Math.min(10, Math.floor(input.difficulty ?? 6)));
-    const specialty = !!input.specialty;
+    const skillRating =
+      typeof input.skillRating === 'number'
+        ? Math.max(0, Math.min(5, Math.floor(input.skillRating)))
+        : null;
+    const wantedSpecialty = !!input.specialty;
+    // La especialidad solo es válida si skillRating>=4. Si no se cumple, el
+    // service la deniega: el front debería bloquear el botón pero defendemos
+    // la regla del lado del servidor también.
+    if (wantedSpecialty && (skillRating === null || skillRating < MIN_SKILL_FOR_SPECIALTY)) {
+      throw new BadRequestException(
+        `Specialty requires a skill rating of at least ${MIN_SKILL_FOR_SPECIALTY}`,
+      );
+    }
+    const specialty = wantedSpecialty;
     const wpSuccess = !!input.willpowerForSuccess;
     const wpWound = !!input.willpowerForWound;
+    const wpReroll = !!input.willpowerForReroll;
 
-    // Penalizador por heridas (negativo o 0). Si gastamos voluntad para anular,
-    // queda 0 efectivo (igual lo conservamos para mostrar el desglose).
     const rawPenalty = Math.min(0, input.woundPenalty ?? 0);
     const effectivePenalty = wpWound ? 0 : rawPenalty;
-
-    // Pool efectivo: nunca por debajo de 1 si la suma base con habilidad/attr era > 0.
-    // Como `basePool` ya está clampeado a >= 1, hacemos lo mismo después de aplicar penalty.
     const effectivePool = Math.max(1, basePool + effectivePenalty);
 
+    // 1) Tirada inicial.
     const rolls: number[] = [];
-    let rawSuccesses = 0;
-    let ones = 0;
-
+    let netSuccesses = 0;
+    let onesInPool = 0;
     for (let i = 0; i < effectivePool; i++) {
       const d = randomInt(1, 11);
       rolls.push(d);
-      if (d === 1) ones += 1;
-      if (d >= safeDiff) {
-        rawSuccesses += specialty && d === 10 ? 2 : 1;
+      const { delta, ones } = this.scoreDie(d, safeDiff);
+      netSuccesses += delta;
+      onesInPool += ones;
+    }
+
+    // 2) Reroll de fallos por Voluntad (antes que la especialidad sobre el
+    // pool inicial: una decisión razonable, ya que el reroll busca rescatar
+    // los fallos; los 10s del reroll detonan especialidad como dados normales).
+    const willpowerRerolls: number[] = [];
+    if (wpReroll) {
+      for (let i = 0; i < rolls.length; i++) {
+        const original = rolls[i];
+        if (original >= safeDiff) continue;
+        // Antes de relanzar: anulamos el efecto del dado original (los 1
+        // contaban -1; los demás no contaban nada, así que no hace falta
+        // restar para los 2..(diff-1), pero sí "devolver" el -1 si era 1).
+        if (original === 1) {
+          netSuccesses += 1; // anular el -1 del 1 que vamos a relanzar
+          onesInPool -= 1;
+        }
+        const d = randomInt(1, 11);
+        willpowerRerolls.push(d);
+        const { delta, ones } = this.scoreDie(d, safeDiff);
+        netSuccesses += delta;
+        onesInPool += ones;
       }
     }
 
-    const net = rawSuccesses - ones;
-    // Botch: cero o menos éxitos pre-WP y al menos un 1. La WP no rescata.
-    const isBotch = ones > 0 && net <= 0 && rawSuccesses === 0;
+    // 3) Especialidad: cada 10 del pool inicial + del reroll de voluntad
+    // detona un dado extra (encadenable). Si specialty está apagada, no se
+    // detona nada.
+    const specialtyRerolls: number[] = [];
+    if (specialty) {
+      let pendingTens =
+        rolls.filter((d) => d === 10).length +
+        willpowerRerolls.filter((d) => d === 10).length;
+      let safety = 0;
+      while (pendingTens > 0 && safety < MAX_SPECIALTY_CHAIN) {
+        const d = randomInt(1, 11);
+        specialtyRerolls.push(d);
+        safety += 1;
+        pendingTens -= 1;
+        const { delta } = this.scoreDie(d, safeDiff);
+        netSuccesses += delta;
+        if (d === 10) pendingTens += 1;
+        // Nota: los 1 del rerroll de especialidad SÍ restan éxitos (delta=-1).
+      }
+    }
+
+    // 4) Botch: se evalúa sobre el resultado net (sin el éxito de Voluntad).
+    // La voluntad no rescata de un botch. Solo cuenta si hubo al menos un 1
+    // en el pool inicial (los 1s del reroll/especialidad cuentan al neto pero
+    // por canon V20 el botch lo detonan los 1 del pool original).
+    const isBotch = onesInPool > 0 && netSuccesses <= 0;
 
     let finalSuccesses: number;
     if (isBotch) {
-      // No clampeamos a 0 para reflejar que la voluntad no rescata.
-      finalSuccesses = Math.min(net, 0);
-      // Aun en botch, si gastó voluntad para éxito, el éxito automático sigue
-      // existiendo: pero por canon el éxito de WP solo se suma al final si no
-      // hay botch. Lo dejamos sin sumar para reflejar regla común.
+      finalSuccesses = Math.min(netSuccesses, 0);
     } else {
-      finalSuccesses = Math.max(0, net + (wpSuccess ? 1 : 0));
+      finalSuccesses = Math.max(0, netSuccesses + (wpSuccess ? 1 : 0));
     }
 
-    // Calcular el enum según los flags.
-    const willpowerEffect: WillpowerEffect = wpSuccess && wpWound
-      ? WillpowerEffect.BOTH
-      : wpSuccess
-        ? WillpowerEffect.SUCCESS
-        : wpWound
-          ? WillpowerEffect.WOUND
-          : WillpowerEffect.NONE;
+    // Compat: enum legacy solo refleja SUCCESS/WOUND (no REROLL).
+    const willpowerEffect: WillpowerEffect =
+      wpSuccess && wpWound
+        ? WillpowerEffect.BOTH
+        : wpSuccess
+          ? WillpowerEffect.SUCCESS
+          : wpWound
+            ? WillpowerEffect.WOUND
+            : WillpowerEffect.NONE;
+
+    const willpowerCost =
+      (wpSuccess ? 1 : 0) + (wpWound ? 1 : 0) + (wpReroll ? 1 : 0);
 
     return {
       rolls,
+      specialtyRerolls,
+      willpowerRerolls,
       successes: finalSuccesses,
       isBotch,
       difficulty: safeDiff,
       specialty,
+      skillRating,
       willpowerEffect,
-      willpowerSpent: willpowerEffect !== WillpowerEffect.NONE,
+      willpowerSpent: willpowerCost > 0,
+      willpowerCost,
+      wpForSuccess: wpSuccess,
+      wpForWound: wpWound,
+      wpForReroll: wpReroll,
       woundPenalty: rawPenalty,
       pool: effectivePool,
     };
+  }
+
+  /// Puntúa un dado individual: devuelve `delta` (cambio en éxitos netos:
+  /// +1 si >=dif, -1 si 1, 0 en otro caso) y si fue un 1.
+  private scoreDie(d: number, difficulty: number): { delta: number; ones: number } {
+    if (d === 1) return { delta: -1, ones: 1 };
+    if (d >= difficulty) return { delta: 1, ones: 0 };
+    return { delta: 0, ones: 0 };
   }
 
   /**
@@ -140,15 +237,14 @@ export class DiceService {
       pool: input.pool,
       difficulty: input.difficulty,
       specialty: input.specialty,
+      skillRating: input.skillRating,
       willpowerForSuccess: input.willpowerForSuccess,
       willpowerForWound: input.willpowerForWound,
+      willpowerForReroll: input.willpowerForReroll,
       woundPenalty: input.woundPenalty,
     });
 
-    // Cálculo del costo en Voluntad según los flags efectivos.
-    const wpCost =
-      (input.willpowerForSuccess ? 1 : 0) +
-      (input.willpowerForWound ? 1 : 0);
+    const wpCost = result.willpowerCost;
 
     return this.prisma.$transaction(async (tx) => {
       let willpowerBefore: number | null = null;
@@ -188,10 +284,16 @@ export class DiceService {
           pool: result.pool,
           difficulty: result.difficulty,
           specialty: result.specialty,
+          skillRating: result.skillRating,
           willpowerSpent: result.willpowerSpent,
+          wpForSuccess: result.wpForSuccess,
+          wpForWound: result.wpForWound,
+          wpForReroll: result.wpForReroll,
           willpowerEffect: result.willpowerEffect,
           woundPenalty: result.woundPenalty,
           rolls: result.rolls,
+          specialtyRerolls: result.specialtyRerolls,
+          willpowerRerolls: result.willpowerRerolls,
           successes: result.successes,
           isBotch: result.isBotch,
           isPublic: input.isPublic ?? true,

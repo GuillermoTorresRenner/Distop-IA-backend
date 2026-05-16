@@ -28,26 +28,42 @@ model DiceRoll {
   pool            Int
   /// Dificultad VtM V20. Por defecto 6.
   difficulty      Int        @default(6)
-  /// Especialidad: los 10s cuentan doble éxito.
+  /// Especialidad declarada en la habilidad: solo permitida si skillRating>=4.
+  /// Cuando es true, cada 10 detona un dado extra que se relanza (1 = -1 éxito,
+  /// 10 = nuevo dado extra encadenado). Los 10s NO doblan éxitos.
   specialty       Boolean    @default(false)
+  /// Nivel de la habilidad declarada al momento de la tirada (1..5).
+  /// Se persiste para auditar la regla de especialidad>=4.
+  skillRating     Int?
   /// Compatibilidad: marca si se gastó algún punto de voluntad.
-  /// La intención exacta se describe en `willpowerEffect`.
+  /// La intención exacta se describe en los flags wpForSuccess/Wound/Reroll
+  /// y en el campo derivado `willpowerEffect` (legacy).
   willpowerSpent  Boolean    @default(false)
-  /// Cómo se usó la voluntad gastada:
-  ///   NONE    → no se gastó.
-  ///   SUCCESS → suma 1 éxito automático no removible por 1s.
-  ///   WOUND   → anula el penalizador por heridas en esta tirada.
-  ///   BOTH    → gasta 2 puntos: suma 1 éxito y anula heridas.
+  /// Voluntad: 1 punto por +1 éxito automático no removible por 1s.
+  wpForSuccess    Boolean    @default(false)
+  /// Voluntad: 1 punto para anular el penalizador por heridas.
+  wpForWound      Boolean    @default(false)
+  /// Voluntad: 1 punto para relanzar todos los dados que no fueron éxito
+  /// una sola vez (los 1s del reroll restan éxitos como un fallo normal).
+  wpForReroll     Boolean    @default(false)
+  /// Compatibilidad legacy: combinación de SUCCESS/WOUND (no refleja REROLL).
   willpowerEffect WillpowerEffect @default(NONE)
 
   /// Penalizador por heridas que se aplicó a esta tirada (negativo o 0).
-  /// Si willpowerEffect = WOUND o BOTH, este valor representa lo que
-  /// hubiera sido el penalizador y se anula (no afecta al pool final).
+  /// Si wpForWound = true, este valor representa lo que hubiera sido el
+  /// penalizador y se anula (no afecta al pool final).
   woundPenalty    Int        @default(0)
 
-  /// Resultados crudos de cada dado (1..10).
+  /// Resultados crudos de cada dado del pool inicial (1..10).
   rolls           Int[]
-  /// Éxitos finales (tras restas y doble por specialty + willpower).
+  /// Dados extras lanzados por la regla de especialidad (cada 10 detona uno).
+  /// Vacío si no hubo especialidad o ningún 10. Los 10s consecutivos
+  /// encadenan más dados (la lista refleja el orden cronológico del rerroll).
+  specialtyRerolls Int[]
+  /// Dados extras lanzados por el reroll de voluntad (todos los fallos del
+  /// pool inicial se relanzan una vez). Vacío si no se usó wpForReroll.
+  willpowerRerolls Int[]
+  /// Éxitos finales (tras restas y bonos).
   successes       Int
   /// True si el resultado fue una pifia (botch): 0 éxitos finales con al menos un 1.
   isBotch         Boolean    @default(false)

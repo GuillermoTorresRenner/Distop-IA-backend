@@ -292,8 +292,10 @@ export class TableGateway
       pool: body.pool,
       difficulty: body.difficulty,
       specialty: body.specialty,
+      skillRating: body.skillRating,
       willpowerForSuccess: body.willpowerForSuccess,
       willpowerForWound: body.willpowerForWound,
+      willpowerForReroll: body.willpowerForReroll,
       woundPenalty: body.woundPenalty,
       isPublic: body.isPublic ?? true,
     });

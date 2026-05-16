@@ -7,6 +7,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -14,6 +15,7 @@ import {
   ApiBody,
   ApiConsumes,
   ApiOperation,
+  ApiQuery,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -153,14 +155,38 @@ export class ChroniclesController {
   @Post(':id/invitations')
   @Auth()
   @ApiOperation({
-    summary: 'Invite a user by email (sends email; works for registered or new users)',
+    summary:
+      'Invite a player by email or by userId (sends email; works for registered or new users)',
   })
   invite(
     @Param('id') id: string,
     @GetUser('id') userId: string,
     @Body() dto: InviteUserDto,
   ) {
-    return this.invitations.invite(id, userId, dto.email);
+    return this.invitations.invite(id, userId, {
+      email: dto.email,
+      userId: dto.userId,
+    });
+  }
+
+  @Get(':id/invitable-users')
+  @Auth()
+  @ApiOperation({
+    summary:
+      'Search registered users that can still be invited to this chronicle (narrator only). Matches nickname/email by LIKE; excludes the narrator, current members and users with pending invitations.',
+  })
+  @ApiQuery({
+    name: 'q',
+    type: String,
+    required: true,
+    description: 'Search term (>=2 chars) matched against nickname/email',
+  })
+  searchInvitable(
+    @Param('id') id: string,
+    @GetUser('id') userId: string,
+    @Query('q') q: string,
+  ) {
+    return this.invitations.searchInvitable(id, userId, q ?? '');
   }
 
   @Delete(':id/invitations/:invitationId')

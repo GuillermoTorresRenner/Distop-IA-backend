@@ -1,9 +1,21 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsEmail, IsOptional, IsUUID, ValidateIf } from 'class-validator';
 
 export class InviteUserDto {
-  @ApiProperty({ example: 'jugador@dominio.com' })
+  @ApiPropertyOptional({
+    description:
+      'Email of the player to invite. Required when userId is not provided.',
+    example: 'jugador@dominio.com',
+  })
+  @ValidateIf((o: InviteUserDto) => !o.userId)
   @IsEmail()
-  @IsNotEmpty()
-  email: string;
+  email?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Id of an already registered user to invite. Takes precedence over email when provided.',
+  })
+  @IsOptional()
+  @IsUUID()
+  userId?: string;
 }
