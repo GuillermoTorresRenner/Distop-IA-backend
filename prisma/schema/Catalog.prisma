@@ -1,3 +1,58 @@
+enum AttributeCategoryInfo {
+  PHYSICAL
+  SOCIAL
+  MENTAL
+}
+
+/// Info de catálogo para los 9 atributos canónicos V20. El campo `key` matchea
+/// el nombre de la columna en `Character` (strength, dexterity, …) para que el
+/// frontend pueda referenciar el atributo desde la hoja por su key.
+model AttributeInfo {
+  id          String                @id @default(uuid())
+  key         String                @unique
+  name        String
+  category    AttributeCategoryInfo
+  description String?
+  order       Int                   @default(0)
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+
+  @@map("attribute_info")
+}
+
+/// Info de catálogo para las habilidades V20 (Talentos / Técnicas / Conocimientos).
+/// `key` es el slug interno (ej. "trato-con-animales") y `name` el nombre canónico
+/// que se usa también como `CharacterAbility.name` y `DisciplinePower.rollAbility`.
+/// Reusamos el enum `AbilityCategory` ya definido en Character.prisma.
+model AbilityInfo {
+  id          String          @id @default(uuid())
+  key         String          @unique
+  name        String          @unique
+  category    AbilityCategory
+  description String?
+  order       Int             @default(0)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@map("ability_info")
+}
+
+/// Info de catálogo para los niveles de salud (Magullado, Lastimado, …).
+/// `key` matchea el sufijo de las columnas de salud en Character
+/// (bruised, hurt, injured, wounded, mauled, crippled, incapacitated).
+model HealthLevelInfo {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  name        String   @unique
+  penalty     Int      @default(0)
+  description String?
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("health_level_info")
+}
+
 /// Arquetipos compartidos entre Naturaleza y Conducta (Demeanor)
 model Archetype {
   id          String   @id @default(uuid())

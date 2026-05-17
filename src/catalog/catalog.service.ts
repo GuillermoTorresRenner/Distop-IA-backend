@@ -16,6 +16,24 @@ export class CatalogService {
     return this.prisma.archetype.findMany({ orderBy: { order: 'asc' } });
   }
 
+  listAttributes() {
+    return this.prisma.attributeInfo.findMany({
+      orderBy: { order: 'asc' },
+    });
+  }
+
+  listAbilities() {
+    return this.prisma.abilityInfo.findMany({
+      orderBy: { order: 'asc' },
+    });
+  }
+
+  listHealthLevels() {
+    return this.prisma.healthLevelInfo.findMany({
+      orderBy: { order: 'asc' },
+    });
+  }
+
   listDisciplines() {
     return this.prisma.discipline.findMany({
       orderBy: { order: 'asc' },

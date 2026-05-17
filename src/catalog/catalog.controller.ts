@@ -25,6 +25,27 @@ export class CatalogController {
     return this.catalog.listArchetypes();
   }
 
+  @Get('attributes')
+  @Auth()
+  @ApiOperation({ summary: 'Attribute info (V20) with key, name, category, description' })
+  attributes() {
+    return this.catalog.listAttributes();
+  }
+
+  @Get('abilities')
+  @Auth()
+  @ApiOperation({ summary: 'Ability info (V20) with key, name, category, description' })
+  abilities() {
+    return this.catalog.listAbilities();
+  }
+
+  @Get('health-levels')
+  @Auth()
+  @ApiOperation({ summary: 'Health level info (V20) with key, name, penalty, description' })
+  healthLevels() {
+    return this.catalog.listHealthLevels();
+  }
+
   @Get('disciplines')
   @Auth()
   @ApiOperation({ summary: 'Disciplines with nested powers per level (1..5)' })
