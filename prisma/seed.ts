@@ -267,7 +267,7 @@ async function main() {
   console.log('▶ Seed Distop-IA — leyendo vault…');
   // El orden importa: las disciplinas validan contra los nombres de habilidades.
   const abilities = loadAbilities();
-  const abilityNames = new Set(abilities.map((a) => a.name));
+  const abilityNames = new Set<string>(abilities.map((a) => a.name));
 
   await seedAttributes();
   await seedAbilities();

@@ -13,6 +13,6 @@
     "typeRoots": ["./node_modules/@types"],
     "types": ["node"]
   },
-  "include": ["prisma/seed.ts"],
+  "include": ["prisma/seed.ts", "prisma/vault-loader.ts"],
   "exclude": ["node_modules", "dist", "src"]
 }
