@@ -38,6 +38,7 @@ vault/
 ├── arquetipos/               ← Naturalezas y Conductas (compartidos)
 ├── meritos-defectos/         ← Méritos y Defectos
 ├── trasfondos/               ← Aliados, Contactos, Recursos, Generación, …
+├── virtudes/                 ← Virtudes canónicas V20 (Conciencia, Autocontrol, Coraje, Convicción, Instintos)
 ├── armas/                    ← Catálogo de armas system
 ├── armaduras/                ← Catálogo de armaduras system
 └── salud/                    ← Niveles de salud (Magullado, Lastimado, …)
@@ -52,6 +53,7 @@ cuerpo libre de Markdown que será mostrado tal cual en el modal de la app.
 ---
 campo: valor
 otro: 12
+tooltip: Descripción corta y concisa (máx. ~140 caracteres, 1-2 frases sin saltos de línea).
 lista:
   - elemento1
   - elemento2
@@ -66,9 +68,20 @@ Texto largo en **Markdown**. Puedes usar:
 - > citas
 - enlaces, encabezados, tablas, etc.
 
-El cuerpo entero del archivo se guarda en el campo `description` de la base
-de datos y se renderiza con soporte GFM en el modal.
+**IMPORTANTE**: deja una línea en blanco entre párrafos del cuerpo (Markdown estándar).
+El body entero se guarda en el campo `description` y se renderiza con soporte GFM en el modal.
+Si no hay espacios en blanco, los párrafos aparecerán pegados en la UI.
 ```
+
+### El campo `tooltip`
+
+El **`tooltip`** es un campo **opcional** presente en la mayoría de entidades de catálogo:
+- Descripción muy breve (máximo ~140 caracteres, idealmente 1-2 frases cortas).
+- **Sin saltos de línea** ni markdown elaborado.
+- Aparece cuando el jugador pasa el ratón sobre el nombre del rasgo/habilidad/poder/etc. en la hoja de personaje.
+- El `description` (body del markdown) sigue siendo la explicación larga y narrativa que aparece en el modal.
+
+**En disciplinas**, el `tooltip` aparece **dos veces**: una al top-level (para la disciplina en general) y una en cada `power` dentro del array `powers:`.
 
 > ⚠️ El `name` del frontmatter es la **clave única** que enlaza con la base
 > de datos. Cambiar el `name` de un archivo equivale a crear una entrada
@@ -86,6 +99,7 @@ de datos y se renderiza con soporte GFM en el modal.
 key: strength          # OBLIGATORIO. Debe matchear la columna del modelo Character.
 name: Fuerza           # OBLIGATORIO. Nombre canónico en español.
 category: PHYSICAL     # PHYSICAL | SOCIAL | MENTAL
+tooltip: Tooltip corto (opcional)
 order: 0               # opcional, controla el orden de display
 ---
 ```
@@ -103,6 +117,7 @@ order: 0               # opcional, controla el orden de display
 key: pelea             # slug interno en kebab-case
 name: Pelea            # OBLIGATORIO. Nombre canónico V20.
 category: TALENT       # TALENT | SKILL | KNOWLEDGE
+tooltip: Tooltip corto (opcional)
 order: 0
 ---
 ```
@@ -116,17 +131,20 @@ de actualizar la referencia en las disciplinas correspondientes.
 ```yaml
 ---
 name: Dominación
+tooltip: Tooltip de la disciplina (opcional)
 order: 4
 powers:
   - level: 1
     name: Orden
     summary: Una orden cargada de mandato fuerza una acción simple.
+    tooltip: Tooltip del poder de nivel 1 (opcional, max ~140 chars)
     bloodCost: 0
     rollAttribute: manipulation   # key del modelo Character o null
     rollAbility: Intimidación     # name de una habilidad o null
     rollDifficulty: 7             # número o null (default 6)
   - level: 2
     name: Hipnotismo
+    tooltip: Tooltip del poder de nivel 2 (opcional)
     ...
 ---
 
@@ -164,6 +182,7 @@ name: Brujah
 sect: Camarilla        # texto libre
 disciplines: Celeridad, Potencia, Presencia
 weakness: La Bestia siempre cerca: penalización para resistir el frenesí.
+tooltip: Tooltip corto (opcional)
 order: 0
 ---
 
@@ -177,6 +196,7 @@ Texto narrativo del clan.
 ```yaml
 ---
 name: Arquitecto
+tooltip: Tooltip corto (opcional)
 order: 0
 ---
 
@@ -193,6 +213,7 @@ name: Buen oído
 kind: MERIT            # MERIT | FLAW
 value: 1               # positivo para méritos, negativo para defectos
 category: Físico       # Físico | Mental | Social | Sobrenatural
+tooltip: Tooltip corto (opcional)
 order: 0
 ---
 
@@ -221,6 +242,7 @@ queda inline en el personaje y no se persiste como entrada del catálogo.
 key: aliados           # slug interno en kebab-case
 name: Aliados          # OBLIGATORIO. Nombre canónico V20.
 category: Social       # opcional, texto libre (Social, Sobrenatural, Material).
+tooltip: Tooltip corto (opcional)
 order: 0               # orden en el dropdown.
 ---
 
@@ -255,6 +277,8 @@ range: null                       # solo RANGED
 rate: null                        # solo RANGED, texto (ej. "3" o "1*")
 magazine: null                    # solo RANGED
 concealment: C                    # B | P | J | G | N (ocultabilidad)
+tooltip: Tooltip corto (opcional)
+description: null                 # Descripción larga (opcional)
 order: 0
 ---
 
@@ -271,6 +295,7 @@ todas las categorías en YAML; las armas las referencian por `name`).
 name: Clase Tres (Kevlar)
 rating: 3              # absorción
 penalty: 1             # penalización a reservas de Destreza
+tooltip: Tooltip corto (opcional)
 order: 0
 ---
 
@@ -284,11 +309,36 @@ Texto del manual.
 key: bruised           # bruised | hurt | injured | wounded | mauled | crippled | incapacitated
 name: Magullado
 penalty: 0
+tooltip: Tooltip corto (opcional)
 order: 0
 ---
 
 Sin penalización a las acciones. Daño superficial visible.
 ```
+
+### `virtudes/` — cinco virtudes canónicas V20
+
+```yaml
+---
+key: conscience         # conscience | self-control | courage | conviction | instinct
+name: Conciencia        # OBLIGATORIO. Nombre canónico V20 en español.
+tooltip: Tooltip corto (opcional)
+order: 0                # 0=Conciencia, 1=Autocontrol, 2=Coraje, 3=Convicción, 4=Instintos
+---
+
+# Conciencia
+
+Descripción narrativa de la virtud (cuerpo Markdown, aparece en el modal).
+```
+
+**Notas**:
+
+- Las virtudes se cargan en el seed en orden de aparición (Conciencia, Autocontrol, Coraje, Convicción, Instintos).
+- El frontend agrupa virtudes según el tipo de senda:
+  - **Humanidad**: suma de Conciencia + Autocontrol.
+  - **Senda** (Camarilla/Sabbat): suma de Convicción + Instintos.
+  - **Coraje**: valor independiente.
+- El backend **no aplica lógica especial** de agrupamiento; solo expone las cinco entidades. El frontend decide la UI.
 
 ---
 

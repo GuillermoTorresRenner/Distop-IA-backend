@@ -3,6 +3,7 @@ key: armas-de-fuego
 name: Armas de fuego
 category: SKILL
 order: 11
+tooltip: Manejo de armas de fuego; pistolas, revólveres, escopetas, fusiles, apuntería.
 ---
 
 # Armas de fuego

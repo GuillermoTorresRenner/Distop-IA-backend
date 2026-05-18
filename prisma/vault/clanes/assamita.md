@@ -4,6 +4,7 @@ sect: Independiente
 disciplines: "Celeridad, Ofuscación, Quietus"
 weakness: La sangre adictiva los doblega tras diablerie.
 order: 9
+tooltip: Asesinos persas diezmadores; adicción a la sangre tras diablerie.
 ---
 
 # Assamita

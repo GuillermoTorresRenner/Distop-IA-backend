@@ -1,6 +1,7 @@
 ---
 name: Bon vivant
 order: 2
+tooltip: Disfruta la (no)vida mediante apetitos sensoriales y placer.
 ---
 
 # Bon vivant

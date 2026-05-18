@@ -4,6 +4,7 @@ sect: Linaje
 disciplines: "Daimoinon, Ofuscación, Presencia"
 weakness: Reciben daño agravado de símbolos sagrados verdaderos.
 order: 18
+tooltip: Adoradores demoníacos; linaje infernal, daño agravado por símbolos sagrados.
 ---
 
 # Baali

@@ -12,6 +12,7 @@ rate: 1
 magazine: 5
 concealment: N
 order: 10
+tooltip: "Rifle de francotirador de largo alcance."
 ---
 
 # Remington M-700 (30.06)

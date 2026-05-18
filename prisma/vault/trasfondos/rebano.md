@@ -3,6 +3,7 @@ key: rebano
 name: Rebaño
 category: Sobrenatural
 order: 8
+tooltip: "Fuente de alimentación garantizada entre mortales."
 ---
 
 # Rebaño

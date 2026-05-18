@@ -3,6 +3,7 @@ key: wounded
 name: Apaleado
 penalty: -2
 order: 3
+tooltip: "Apaleado health level."
 ---
 
 # Apaleado

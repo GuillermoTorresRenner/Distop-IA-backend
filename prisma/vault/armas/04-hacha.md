@@ -9,6 +9,7 @@ aggravated: false
 bluntPlus: false
 concealment: N
 order: 4
+tooltip: "Arma pesada de corte; daño letal alto."
 ---
 
 # Hacha

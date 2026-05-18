@@ -1,6 +1,7 @@
 ---
 name: Rufián
 order: 20
+tooltip: Resuelve a base de fuerza bruta; violencia sin cuestionamiento.
 ---
 
 # Rufián

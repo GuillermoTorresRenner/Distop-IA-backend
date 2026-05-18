@@ -4,6 +4,7 @@ kind: MERIT
 value: 1
 category: Mental
 order: 3
+tooltip: "Siempre sabes la hora exacta sin reloj."
 ---
 
 # Sentido del tiempo

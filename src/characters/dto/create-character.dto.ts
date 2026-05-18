@@ -26,7 +26,9 @@ const ATTR_MAX = 5;
 
 export class CreateCharacterDto {
   @ApiPropertyOptional({ enum: CharacterKind, default: 'PC' })
-  @IsOptional() @IsEnum(CharacterKind) kind?: CharacterKind;
+  @IsOptional()
+  @IsEnum(CharacterKind)
+  kind?: CharacterKind;
 
   // Identidad
   @ApiProperty({ example: 'Lucius Carfax' })
@@ -36,21 +38,34 @@ export class CreateCharacterDto {
   name!: string;
 
   @ApiPropertyOptional({ example: 'Inquisidor renegado' })
-  @IsOptional() @IsString() @MaxLength(200)
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
   concept?: string;
 
-  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(120)
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
   chronicleName?: string;
 
   @ApiPropertyOptional({ minimum: 4, maximum: 15 })
-  @IsOptional() @IsInt() @Min(4) @Max(15)
+  @IsOptional()
+  @IsInt()
+  @Min(4)
+  @Max(15)
   generation?: number;
 
-  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(200)
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
   haven?: string;
 
   @ApiPropertyOptional({ description: 'Clan catalog id' })
-  @IsOptional() @IsString() clanId?: string;
+  @IsOptional()
+  @IsString()
+  clanId?: string;
 
   @ApiPropertyOptional() @IsOptional() @IsString() natureId?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() demeanorId?: string;
@@ -68,7 +83,9 @@ export class CreateCharacterDto {
 
   // Virtudes
   @ApiPropertyOptional({ enum: VirtueScheme })
-  @IsOptional() @IsEnum(VirtueScheme) virtueScheme?: VirtueScheme;
+  @IsOptional()
+  @IsEnum(VirtueScheme)
+  virtueScheme?: VirtueScheme;
   @IsOptional() @IsInt() @Min(1) @Max(5) conscience?: number;
   @IsOptional() @IsInt() @Min(1) @Max(5) selfControl?: number;
   @IsOptional() @IsInt() @Min(1) @Max(5) courage?: number;
@@ -94,36 +111,58 @@ export class CreateCharacterDto {
 
   // Listas
   @ApiPropertyOptional({ type: [CharacterAbilityDto] })
-  @IsOptional() @IsArray() @ArrayMaxSize(60)
-  @ValidateNested({ each: true }) @Type(() => CharacterAbilityDto)
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(60)
+  @ValidateNested({ each: true })
+  @Type(() => CharacterAbilityDto)
   abilities?: CharacterAbilityDto[];
 
   @ApiPropertyOptional({ type: [CharacterBackgroundDto] })
-  @IsOptional() @IsArray() @ArrayMaxSize(10)
-  @ValidateNested({ each: true }) @Type(() => CharacterBackgroundDto)
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(10)
+  @ValidateNested({ each: true })
+  @Type(() => CharacterBackgroundDto)
   backgrounds?: CharacterBackgroundDto[];
 
   @ApiPropertyOptional({ type: [CharacterDisciplineDto] })
-  @IsOptional() @IsArray() @ArrayMaxSize(15)
-  @ValidateNested({ each: true }) @Type(() => CharacterDisciplineDto)
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(15)
+  @ValidateNested({ each: true })
+  @Type(() => CharacterDisciplineDto)
   disciplines?: CharacterDisciplineDto[];
 
   @ApiPropertyOptional({ type: [CharacterMeritFlawDto] })
-  @IsOptional() @IsArray() @ArrayMaxSize(20)
-  @ValidateNested({ each: true }) @Type(() => CharacterMeritFlawDto)
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(20)
+  @ValidateNested({ each: true })
+  @Type(() => CharacterMeritFlawDto)
   meritsFlaws?: CharacterMeritFlawDto[];
 
   @ApiPropertyOptional({ type: [CharacterWeaponDto] })
-  @IsOptional() @IsArray() @ArrayMaxSize(20)
-  @ValidateNested({ each: true }) @Type(() => CharacterWeaponDto)
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(20)
+  @ValidateNested({ each: true })
+  @Type(() => CharacterWeaponDto)
   weapons?: CharacterWeaponDto[];
 
   @ApiPropertyOptional({ type: [CharacterArmorDto] })
-  @IsOptional() @IsArray() @ArrayMaxSize(10)
-  @ValidateNested({ each: true }) @Type(() => CharacterArmorDto)
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(10)
+  @ValidateNested({ each: true })
+  @Type(() => CharacterArmorDto)
   armors?: CharacterArmorDto[];
 
-  @ApiPropertyOptional({ description: 'Notas libres del jugador (markdown plano).' })
-  @IsOptional() @IsString() @MaxLength(8000)
+  @ApiPropertyOptional({
+    description: 'Notas libres del jugador (markdown plano).',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(8000)
   notes?: string;
 }

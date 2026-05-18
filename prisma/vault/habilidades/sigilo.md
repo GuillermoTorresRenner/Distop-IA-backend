@@ -3,6 +3,7 @@ key: sigilo
 name: Sigilo
 category: SKILL
 order: 18
+tooltip: Moverse sin ser visto u oído; acechar, esconderse, deslizarse sin detectar.
 ---
 
 # Sigilo

@@ -3,6 +3,7 @@ key: mentor
 name: Mentor
 category: Sobrenatural
 order: 6
+tooltip: "Vampiro veterano que te guía y protege."
 ---
 
 # Mentor

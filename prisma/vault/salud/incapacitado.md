@@ -3,6 +3,7 @@ key: crippled
 name: Incapacitado
 penalty: -5
 order: 5
+tooltip: "-5 a tiradas; apenas puede actuar."
 ---
 
 # Incapacitado

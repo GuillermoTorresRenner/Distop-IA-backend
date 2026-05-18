@@ -3,6 +3,7 @@ key: hurt
 name: Lastimado
 penalty: -1
 order: 1
+tooltip: "-1 a tiradas; herido pero funcional aún."
 ---
 
 # Lastimado

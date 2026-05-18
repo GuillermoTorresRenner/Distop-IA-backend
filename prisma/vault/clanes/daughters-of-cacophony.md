@@ -4,6 +4,7 @@ sect: Linaje
 disciplines: "Fortaleza, Melpominee, Presencia"
 weakness: "Música etérea las acompaña, delatando su presencia."
 order: 14
+tooltip: Cantantes vampiras; voces hipnóticas, música etérea las delata.
 ---
 
 # Daughters of Cacophony

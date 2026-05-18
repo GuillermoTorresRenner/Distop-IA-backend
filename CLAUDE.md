@@ -64,11 +64,12 @@ Schemas modulares en [prisma/schema/](prisma/schema/):
 - `ChronicleInvitation` - invitación con `token`, `email`, `invitedById`, `invitedUserId?`, `status: PENDING|ACCEPTED|CANCELLED|EXPIRED`, `expiresAt` (7 días), `acceptedAt?`.
 
 **Catálogos:**
-- `Archetype` - Naturaleza y Conducta (V20).
-- `Discipline` + `DisciplinePower` - Disciplinas vampíricas.
-- `Clan` - Clanes del Camarilla y Sabbat.
-- `MeritFlaw` - Méritos y Defectos del catálogo.
-- `Background` - 10 trasfondos V20 (Aliados, Contactos, Criados, Fama, Generación, Influencia, Mentor, Posición, Rebaño, Recursos). Campos: `id`, `key` (unique), `name` (unique), `category?`, `description?`, `order`, timestamps.
+- `Archetype` - Naturaleza y Conducta (V20). Campos: `id`, `name` (unique), `description?`, `tooltip?`, `order`, timestamps.
+- `Discipline` + `DisciplinePower` - Disciplinas vampíricas. `Discipline`: `id`, `name` (unique), `description?`, `tooltip?`, `order`, timestamps. `DisciplinePower`: `id`, `disciplineId`, `level`, `name`, `summary`, `rollAttribute?`, `rollAbility?`, `rollDifficulty?`, `bloodCost`, `description?`, `tooltip?`, timestamps.
+- `Clan` - Clanes del Camarilla y Sabbat. Campos: `id`, `name` (unique), `sect?`, `disciplines?`, `weakness?`, `description?`, `tooltip?`, `order`, timestamps.
+- `MeritFlaw` - Méritos y Defectos del catálogo. Campos: `id`, `name` (unique), `kind` (MERIT | FLAW), `value`, `category?`, `description?`, `tooltip?`, `order`, timestamps.
+- `Background` - 10 trasfondos V20 (Aliados, Contactos, Criados, Fama, Generación, Influencia, Mentor, Posición, Rebaño, Recursos). Campos: `id`, `key` (unique), `name` (unique), `category?`, `description?`, `tooltip?`, `order`, timestamps.
+- `VirtueInfo` - Virtudes V20 (Conciencia, Autocontrol, Coraje, Convicción, Instintos). Campos: `id`, `key` (unique: conscience|self-control|courage|conviction|instinct), `name` (unique), `description?`, `tooltip?`, `order`, timestamps.
 
 **Personajes:**
 - `Character` - atributos, habilidades, ventajas, equipo, humanidad, voluntad, sangre, experiencia, salud. Enum `CharacterKind: PC | NPC | ANTAGONIST`.
@@ -79,8 +80,8 @@ Schemas modulares en [prisma/schema/](prisma/schema/):
 - `CharacterMeritFlaw` - entrada con `meritFlawId?` (FK) O `customName+customKind+customValue+customCategory` (modo custom). Mutuamente excluyentes.
 
 **Equipamiento:**
-- `WeaponCategory`, `Weapon`, `CharacterWeapon` - armas cuerpo a cuerpo y a distancia (system V20 + custom).
-- `Armor`, `CharacterArmor` - armaduras (system V20 + custom).
+- `WeaponCategory`, `Weapon`, `CharacterWeapon` - armas cuerpo a cuerpo y a distancia (system V20 + custom). `Weapon`: `id`, `name` (unique), `category`, `kind`, `damageBase`, `damageBonus`, `lethal?`, `aggravated?`, `bluntPlus?`, `range?`, `rate?`, `magazine?`, `concealment?`, `description?`, `tooltip?`, `order`, timestamps.
+- `Armor`, `CharacterArmor` - armaduras (system V20 + custom). `Armor`: `id`, `name` (unique), `rating`, `penalty`, `description?`, `tooltip?`, `order`, timestamps.
 
 **Mesa Virtual:**
 - `DiceRoll` - registro persistente de tiradas: `id`, `characterId`, `chronicleId`, `sourceKind` (enum: VTM, INITIATIVE, ...), `notation`, `rolls[]`, `total`, `metadata` (Json: para INITIATIVE contiene `{ d10, dexterity, wits, modifier, total }`), timestamps.
@@ -112,7 +113,8 @@ Schemas modulares en [prisma/schema/](prisma/schema/):
 - `POST /api/upload/user-avatar/:userId` - endpoint alternativo de subida.
 
 **Catalog** ([src/catalog/catalog.controller.ts](src/catalog/catalog.controller.ts)):
-- `GET /api/catalog/{archetypes,disciplines,merits-flaws,clans,backgrounds,weapon-categories,weapons,armors}` - listados de catálogos.
+- `GET /api/catalog/{archetypes,disciplines,merits-flaws,clans,backgrounds,weapon-categories,weapons,armors,virtues}` - listados de catálogos.
+- `GET /api/catalog/{attributes,abilities}` - catálogos de rasgo/habilidad con tooltips (incluyen `tooltip?` en cada entrada).
 - `POST/PATCH/DELETE /api/catalog/weapons[/:id]` - custom weapons (solo dueño).
 - `POST/PATCH/DELETE /api/catalog/armors[/:id]` - custom armors (solo dueño).
 
@@ -154,6 +156,7 @@ Schemas modulares en [prisma/schema/](prisma/schema/):
 **Migraciones recientes:**
 - `20260518020826_add_dice_roll_metadata` - agrega columna `metadata Json?` a `DiceRoll` para guardar desglose de tiradas (ej. iniciativa con d10, dexterity, wits, modifier).
 - `20260518025656_add_background_catalog` - nuevo modelo `Background` con catálogo de trasfondos V20.
+- `20260518055413_add_catalog_tooltips_and_virtues` - agrega columna `tooltip String?` a todos los modelos de catálogo (AttributeInfo, AbilityInfo, MeritFlaw, Clan, Discipline, DisciplinePower, Background, HealthLevelInfo, Archetype, Armor, Weapon); nuevo modelo `VirtueInfo` para virtudes canónicas V20.
 
 Swagger: `http://localhost:3000/docs`.
 

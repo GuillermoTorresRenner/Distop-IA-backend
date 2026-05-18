@@ -3,6 +3,7 @@ key: armas-cc
 name: Armas CC
 category: SKILL
 order: 10
+tooltip: Combate cuerpo a cuerpo; cuchillos, espadas, hachas, garrotes y armas de contacto.
 ---
 
 # Armas CC

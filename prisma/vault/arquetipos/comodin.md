@@ -1,6 +1,7 @@
 ---
 name: Comodín
 order: 8
+tooltip: Sorprende con burla y bromas; impredecible y burlador.
 ---
 
 # Comodín

@@ -3,6 +3,7 @@ key: appearance
 name: Apariencia
 category: SOCIAL
 order: 5
+tooltip: Atractivo físico y presencia; belleza, porte y movimiento. Impacto en primera impresión.
 ---
 
 # Apariencia

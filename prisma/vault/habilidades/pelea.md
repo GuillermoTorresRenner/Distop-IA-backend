@@ -3,6 +3,7 @@ key: pelea
 name: Pelea
 category: TALENT
 order: 7
+tooltip: Combate sin armas; puños, codos, rodillas, agarres, toda violencia corporal.
 ---
 
 # Pelea

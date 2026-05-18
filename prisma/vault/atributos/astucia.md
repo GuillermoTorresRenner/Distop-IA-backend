@@ -3,6 +3,7 @@ key: wits
 name: Astucia
 category: MENTAL
 order: 8
+tooltip: Inteligencia bajo presión; reacción rápida, improvisación, salida de emergencia.
 ---
 
 # Astucia

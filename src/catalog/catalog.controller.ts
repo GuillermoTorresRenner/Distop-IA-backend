@@ -74,6 +74,13 @@ export class CatalogController {
     return this.catalog.listClans();
   }
 
+  @Get('virtues')
+  @Auth()
+  @ApiOperation({ summary: 'Virtue catalog (Conciencia, Autocontrol, Coraje, Convicción, Instintos)' })
+  virtues() {
+    return this.catalog.listVirtues();
+  }
+
   // ── Equipo ──
 
   @Get('weapon-categories')

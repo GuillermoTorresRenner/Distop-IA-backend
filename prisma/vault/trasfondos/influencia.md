@@ -3,6 +3,7 @@ key: influencia
 name: Influencia
 category: Social
 order: 5
+tooltip: "Poder político y económico en instituciones."
 ---
 
 # Influencia

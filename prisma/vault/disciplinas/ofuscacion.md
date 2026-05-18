@@ -1,15 +1,18 @@
 ---
 name: Ofuscación
 order: 5
+tooltip: Eludir percepción ajena; nubla el ojo y mente del observador sin invisibilidad literal.
 powers:
   - level: 1
     name: Manto sombrío
     summary: Pasas desapercibido en sombras y rincones (sin tirada).
     bloodCost: 0
+    tooltip: "En sombra o rincón te integras al entorno; quien no busca no te ve."
   - level: 2
     name: Inadvertencia
     summary: Eres invisible a quien no te busca activamente.
     bloodCost: 0
+    tooltip: "Prácticamente invisible; requiere búsqueda activa de Percepción para detectarte."
   - level: 3
     name: Máscara de los mil rostros
     summary: Apareces como otra persona genérica.
@@ -17,10 +20,12 @@ powers:
     rollAttribute: manipulation
     rollAbility: Subterfugio
     rollDifficulty: 7
+    tooltip: "Aspecto se modifica para parecer persona común olvidable; útil en multitudes."
   - level: 4
     name: Mente velada
     summary: Borra impresiones y rastros mentales que dejas tras de ti.
     bloodCost: 1
+    tooltip: "Impresiones que dejas se borran minutos después; disciplina del fantasma."
   - level: 5
     name: Soslayar la mirada
     summary: Invisibilidad incluso a quien te observa fijamente.
@@ -28,6 +33,7 @@ powers:
     rollAttribute: charisma
     rollAbility: Subterfugio
     rollDifficulty: 8
+    tooltip: "Incluso observación directa fija no te ve; cénit de disciplina con esfuerzo."
 ---
 
 # Ofuscación

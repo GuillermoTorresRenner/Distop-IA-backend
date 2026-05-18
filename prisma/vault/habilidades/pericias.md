@@ -2,7 +2,8 @@
 key: pericias
 name: Pericias
 category: SKILL
-order: 16
+order: 12
+tooltip: Técnicas variadas; cerrajería, falsificación, forzar cajas, picking de cerraduras.
 ---
 
 # Pericias

@@ -3,6 +3,7 @@ key: atletismo
 name: Atletismo
 category: TALENT
 order: 1
+tooltip: Proezas físicas; correr, saltar, escalar, lanzar, nadar, agilidad corporal.
 ---
 
 # Atletismo

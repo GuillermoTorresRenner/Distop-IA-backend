@@ -3,6 +3,7 @@ key: perception
 name: Percepción
 category: MENTAL
 order: 6
+tooltip: Detectar lo que rodea; agudeza sensorial y capacidad de captar detalles relevantes.
 ---
 
 # Percepción

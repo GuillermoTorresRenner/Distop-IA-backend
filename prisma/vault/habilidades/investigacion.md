@@ -3,6 +3,7 @@ key: investigacion
 name: Investigación
 category: KNOWLEDGE
 order: 25
+tooltip: Búsqueda metódica de información; archivos, indicios, testigos, cabos sueltos.
 ---
 
 # Investigación

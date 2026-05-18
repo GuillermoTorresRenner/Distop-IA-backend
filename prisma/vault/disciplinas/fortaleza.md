@@ -1,27 +1,33 @@
 ---
 name: Fortaleza
 order: 4
+tooltip: Resistencia física sobrenatural; suma dados de absorción incluso contra agravado.
 powers:
   - level: 1
     name: Fortaleza I
     summary: +1 dado de absorción (también contra agravado). Pasivo.
     bloodCost: 0
+    tooltip: "+1 dado a todas las tiradas de absorción, incluso contra daño agravado."
   - level: 2
     name: Fortaleza II
     summary: +2 dados de absorción. Pasivo.
     bloodCost: 0
+    tooltip: "+2 dados a todas las tiradas de absorción, incluso contra daño agravado."
   - level: 3
     name: Fortaleza III
     summary: +3 dados de absorción. Pasivo.
     bloodCost: 0
+    tooltip: "+3 dados a todas las tiradas de absorción, incluso contra daño agravado."
   - level: 4
     name: Fortaleza IV
     summary: +4 dados de absorción. Pasivo.
     bloodCost: 0
+    tooltip: "+4 dados a todas las tiradas de absorción, incluso contra daño agravado."
   - level: 5
     name: Fortaleza V
     summary: +5 dados de absorción. Pasivo.
     bloodCost: 0
+    tooltip: "+5 dados a todas las tiradas de absorción; resistencia casi inhumana."
 ---
 
 # Fortaleza

@@ -1,6 +1,7 @@
 ---
 name: Lacayo
 order: 14
+tooltip: Sirve fielmente sin ambición propia; subordinado leal.
 ---
 
 # Lacayo

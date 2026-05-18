@@ -3,6 +3,7 @@ key: politica
 name: Política
 category: KNOWLEDGE
 order: 30
+tooltip: Facciones mortal y vampírica; alianzas, agendas, quién es quién, estrategia.
 ---
 
 # Política

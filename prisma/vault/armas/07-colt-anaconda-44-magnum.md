@@ -12,6 +12,7 @@ rate: 2
 magazine: 6
 concealment: C
 order: 7
+tooltip: "Colt Anaconda (.44 Magnum) weapon."
 ---
 
 # Colt Anaconda (.44 Magnum)

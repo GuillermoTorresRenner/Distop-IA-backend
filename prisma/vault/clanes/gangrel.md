@@ -4,6 +4,7 @@ sect: Camarilla
 disciplines: "Animalismo, Fortaleza, Protean"
 weakness: Tras cada frenesí ganan un rasgo animal permanente.
 order: 1
+tooltip: Salvajes vagabundos cercanos a Bestia; rasgos animales tras frenesí.
 ---
 
 # Gangrel

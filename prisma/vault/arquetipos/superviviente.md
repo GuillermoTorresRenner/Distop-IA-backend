@@ -1,6 +1,7 @@
 ---
 name: Superviviente
 order: 22
+tooltip: Lo único que importa es seguir adelante; pragmatismo absoluto.
 ---
 
 # Superviviente

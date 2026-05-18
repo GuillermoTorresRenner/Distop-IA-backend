@@ -3,6 +3,7 @@ key: strength
 name: Fuerza
 category: PHYSICAL
 order: 0
+tooltip: Poder muscular bruto; levantar, romper, golpear y daño en combate cuerpo a cuerpo.
 ---
 
 # Fuerza

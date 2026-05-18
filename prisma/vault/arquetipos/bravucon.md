@@ -1,6 +1,7 @@
 ---
 name: Bravucón
 order: 3
+tooltip: Intimida para obtener lo que quiere; amenaza y agresión.
 ---
 
 # Bravucón

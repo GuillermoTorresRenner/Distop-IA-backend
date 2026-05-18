@@ -22,6 +22,7 @@ import {
   loadDisciplines,
   loadMeritsFlaws,
   loadClans,
+  loadVirtues,
   loadWeaponCategories,
   loadWeapons,
   loadArmors,
@@ -41,12 +42,14 @@ async function seedAttributes() {
         name: a.name,
         category: a.category,
         description: a.description,
+        tooltip: a.tooltip,
         order: a.order || i,
       },
       update: {
         name: a.name,
         category: a.category,
         description: a.description,
+        tooltip: a.tooltip,
         order: a.order || i,
       },
     });
@@ -65,12 +68,14 @@ async function seedAbilities() {
         name: a.name,
         category: a.category,
         description: a.description,
+        tooltip: a.tooltip,
         order: a.order || i,
       },
       update: {
         name: a.name,
         category: a.category,
         description: a.description,
+        tooltip: a.tooltip,
         order: a.order || i,
       },
     });
@@ -89,12 +94,14 @@ async function seedHealthLevels() {
         name: h.name,
         penalty: h.penalty,
         description: h.description,
+        tooltip: h.tooltip,
         order: h.order || i,
       },
       update: {
         name: h.name,
         penalty: h.penalty,
         description: h.description,
+        tooltip: h.tooltip,
         order: h.order || i,
       },
     });
@@ -108,8 +115,13 @@ async function seedArchetypes() {
     const a = items[i];
     await prisma.archetype.upsert({
       where: { name: a.name },
-      create: { name: a.name, description: a.description, order: a.order || i },
-      update: { description: a.description, order: a.order || i },
+      create: {
+        name: a.name,
+        description: a.description,
+        tooltip: a.tooltip,
+        order: a.order || i,
+      },
+      update: { description: a.description, tooltip: a.tooltip, order: a.order || i },
     });
   }
   console.log(`✓ ${items.length} arquetipos.`);
@@ -127,6 +139,7 @@ async function seedMeritsFlaws() {
         value: m.value,
         category: m.category,
         description: m.description,
+        tooltip: m.tooltip,
         order: m.order || i,
       },
       update: {
@@ -134,6 +147,7 @@ async function seedMeritsFlaws() {
         value: m.value,
         category: m.category,
         description: m.description,
+        tooltip: m.tooltip,
         order: m.order || i,
       },
     });
@@ -152,12 +166,14 @@ async function seedBackgrounds() {
         name: b.name,
         category: b.category,
         description: b.description,
+        tooltip: b.tooltip,
         order: b.order || i,
       },
       update: {
         name: b.name,
         category: b.category,
         description: b.description,
+        tooltip: b.tooltip,
         order: b.order || i,
       },
     });
@@ -177,6 +193,7 @@ async function seedClans() {
         disciplines: c.disciplines,
         weakness: c.weakness,
         description: c.description,
+        tooltip: c.tooltip,
         order: c.order || i,
       },
       update: {
@@ -184,11 +201,36 @@ async function seedClans() {
         disciplines: c.disciplines,
         weakness: c.weakness,
         description: c.description,
+        tooltip: c.tooltip,
         order: c.order || i,
       },
     });
   }
   console.log(`✓ ${items.length} clanes.`);
+}
+
+async function seedVirtues() {
+  const items = loadVirtues();
+  for (let i = 0; i < items.length; i++) {
+    const v = items[i];
+    await prisma.virtueInfo.upsert({
+      where: { key: v.key },
+      create: {
+        key: v.key,
+        name: v.name,
+        description: v.description,
+        tooltip: v.tooltip,
+        order: v.order || i,
+      },
+      update: {
+        name: v.name,
+        description: v.description,
+        tooltip: v.tooltip,
+        order: v.order || i,
+      },
+    });
+  }
+  console.log(`✓ ${items.length} virtudes.`);
 }
 
 async function seedDisciplines(abilityNames: Set<string>) {
@@ -197,13 +239,19 @@ async function seedDisciplines(abilityNames: Set<string>) {
     const d = items[i];
     const discipline = await prisma.discipline.upsert({
       where: { name: d.name },
-      create: { name: d.name, description: d.description, order: d.order || i },
-      update: { description: d.description, order: d.order || i },
+      create: {
+        name: d.name,
+        description: d.description,
+        tooltip: d.tooltip,
+        order: d.order || i,
+      },
+      update: { description: d.description, tooltip: d.tooltip, order: d.order || i },
     });
     for (const p of d.powers) {
       const description = d.powerDescriptions[p.level] ?? null;
       const mechanics = {
         summary: p.summary ?? null,
+        tooltip: p.tooltip ?? null,
         bloodCost: p.bloodCost,
         rollAttribute: p.rollAttribute,
         rollAbility: p.rollAbility,
@@ -260,6 +308,8 @@ async function seedWeapons() {
       rate: w.rate,
       magazine: w.magazine,
       concealment: w.concealment,
+      description: w.description ?? null,
+      tooltip: w.tooltip,
       notes: w.notes,
       order: w.order || idx,
       system: true,
@@ -280,6 +330,7 @@ async function seedArmors() {
       rating: a.rating,
       penalty: a.penalty,
       description: a.description,
+      tooltip: a.tooltip,
       order: a.order || idx,
       system: true,
       userId: null,
@@ -301,6 +352,7 @@ async function main() {
   await seedMeritsFlaws();
   await seedBackgrounds();
   await seedClans();
+  await seedVirtues();
   await seedDisciplines(abilityNames);
   await seedWeapons();
   await seedArmors();

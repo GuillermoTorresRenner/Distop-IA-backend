@@ -9,6 +9,7 @@ aggravated: true
 bluntPlus: false
 concealment: B
 order: 5
+tooltip: "Peligrosa para vampiros; puede incapacitar."
 ---
 
 # Estaca

@@ -3,6 +3,7 @@ key: trato-con-animales
 name: Trato con animales
 category: TALENT
 order: 9
+tooltip: Calmar y dirigir bestias; entender animales, domesticar, imposición de órdenes.
 ---
 
 # Trato con animales

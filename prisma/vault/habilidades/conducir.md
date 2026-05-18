@@ -3,6 +3,7 @@ key: conducir
 name: Conducir
 category: SKILL
 order: 13
+tooltip: Manejo de vehículos terrestres; autos, motos, persecuciones, maniobras complejas.
 ---
 
 # Conducir

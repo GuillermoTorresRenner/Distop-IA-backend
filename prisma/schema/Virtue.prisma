@@ -1,0 +1,23 @@
+/// Catálogo de Virtudes canónicas V20 (Conciencia, Autocontrol, Coraje, Convicción, Instintos).
+/// Cada virtud es una entidad separada en el catálogo; el frontend decide el agrupamiento
+/// según Humanidad (Conciencia + Autocontrol) o Senda (Convicción + Instintos) + Coraje.
+///
+/// `key` es el slug único para identificación interna: "conscience", "self-control",
+/// "courage", "conviction", "instinct".
+model VirtueInfo {
+  id          String   @id @default(uuid())
+  /// Slug único (ej. "conscience", "self-control", "courage", "conviction", "instinct").
+  key         String   @unique
+  /// Nombre canónico en español (ej. "Conciencia", "Autocontrol", "Coraje").
+  name        String   @unique
+  /// Descripción narrativa larga del manual.
+  description String?
+  /// Tooltip corto (1-2 líneas, max ~140 chars).
+  tooltip     String?
+  /// Orden de aparición en la UI (ej. 0=Conciencia, 1=Autocontrol, 2=Coraje, 3=Convicción, 4=Instintos).
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("virtue_info")
+}

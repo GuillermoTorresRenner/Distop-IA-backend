@@ -3,6 +3,7 @@ key: fama
 name: Fama
 category: Social
 order: 3
+tooltip: "Reconocimiento público que abre puertas y atención."
 ---
 
 # Fama

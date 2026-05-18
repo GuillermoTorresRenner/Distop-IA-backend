@@ -3,6 +3,7 @@ key: academicismo
 name: Academicismo
 category: KNOWLEDGE
 order: 20
+tooltip: Cultura humanística; historia, literatura, filosofía, arte, contexto académico.
 ---
 
 # Academicismo

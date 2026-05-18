@@ -3,6 +3,7 @@ key: etiqueta
 name: Etiqueta
 category: SKILL
 order: 14
+tooltip: Protocolo social vampírico; moverse en altas cortes, galas, élders sin ofender.
 ---
 
 # Etiqueta

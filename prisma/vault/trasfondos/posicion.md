@@ -3,6 +3,7 @@ key: posicion
 name: Posición
 category: Sobrenatural
 order: 7
+tooltip: "Rango social o político en la Mascarada."
 ---
 
 # Posición

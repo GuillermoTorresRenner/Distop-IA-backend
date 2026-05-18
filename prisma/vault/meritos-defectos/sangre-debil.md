@@ -4,6 +4,7 @@ kind: FLAW
 value: -4
 category: Sobrenatural
 order: 15
+tooltip: "Sangre vampírica debilitada; menos potencia."
 ---
 
 # Sangre débil

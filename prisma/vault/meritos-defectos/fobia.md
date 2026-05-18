@@ -4,6 +4,7 @@ kind: FLAW
 value: -3
 category: Mental
 order: 11
+tooltip: "Pánico incontrolable frente a estímulo específico."
 ---
 
 # Fobia

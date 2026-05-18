@@ -3,6 +3,7 @@ key: expresion
 name: Expresión
 category: TALENT
 order: 4
+tooltip: Comunicación poderosa; oratoria, escritura, poesía, canto, impacto artístico.
 ---
 
 # Expresión

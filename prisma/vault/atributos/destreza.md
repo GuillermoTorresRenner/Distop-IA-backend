@@ -3,6 +3,7 @@ key: dexterity
 name: Destreza
 category: PHYSICAL
 order: 1
+tooltip: Coordinación, agilidad y reflejos; la base de acción rápida, esquiva y disparo.
 ---
 
 # Destreza

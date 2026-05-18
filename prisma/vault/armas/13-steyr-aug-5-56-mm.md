@@ -12,6 +12,7 @@ rate: 3
 magazine: 30
 concealment: N
 order: 13
+tooltip: "Rifle de asalto con capacidad de ráfaga."
 ---
 
 # Steyr-Aug (5.56 mm)

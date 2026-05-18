@@ -4,6 +4,7 @@ sect: Sabbat
 disciplines: "Dominación, Obtenebración, Potencia"
 weakness: No reflejan en superficies; daño doble por luz solar y santa.
 order: 7
+tooltip: Señores de oscuridad; amos de sombras sin reflejo, daño luz doble.
 ---
 
 # Lasombra

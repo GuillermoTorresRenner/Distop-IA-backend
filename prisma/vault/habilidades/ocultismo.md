@@ -3,6 +3,7 @@ key: ocultismo
 name: Ocultismo
 category: KNOWLEDGE
 order: 29
+tooltip: Sobrenatural y tradiciones; rituales, criaturas, mitos, base de Taumaturgia.
 ---
 
 # Ocultismo

@@ -1,6 +1,7 @@
 ---
 name: Maquinador
 order: 15
+tooltip: Manipula desde las sombras; titiritero invisible.
 ---
 
 # Maquinador

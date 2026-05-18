@@ -3,6 +3,7 @@ key: liderazgo
 name: Liderazgo
 category: TALENT
 order: 6
+tooltip: Dirigir grupos; inspirar, organizar, mantener moral, sostener equipo bajo presión.
 ---
 
 # Liderazgo

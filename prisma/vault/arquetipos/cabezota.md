@@ -1,6 +1,7 @@
 ---
 name: Cabezota
 order: 4
+tooltip: Una vez decide, no cambia de idea; obstinado e inflexible.
 ---
 
 # Cabezota

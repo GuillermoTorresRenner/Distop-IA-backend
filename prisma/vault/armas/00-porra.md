@@ -9,6 +9,7 @@ aggravated: false
 bluntPlus: true
 concealment: B
 order: 0
+tooltip: "Arma improvisada; daño contundente básico."
 ---
 
 # Porra

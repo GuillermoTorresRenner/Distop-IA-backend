@@ -1,6 +1,7 @@
 ---
 name: Dominación
 order: 3
+tooltip: Imponer voluntad sobre otra mente; requiere contacto ocular directo.
 powers:
   - level: 1
     name: Orden
@@ -9,6 +10,7 @@ powers:
     rollAttribute: manipulation
     rollAbility: Intimidación
     rollDifficulty: 7
+    tooltip: "Palabra cargada de mandato fuerza acción simple e inmediata obedecida."
   - level: 2
     name: Hipnotismo
     summary: "Implanta una sugestión compleja en la mente del sujeto."
@@ -16,6 +18,7 @@ powers:
     rollAttribute: manipulation
     rollAbility: Liderazgo
     rollDifficulty: 7
+    tooltip: "Implanta orden compleja activable mediante condición que tú defines."
   - level: 3
     name: Olvido
     summary: "Borra o altera recuerdos recientes del sujeto."
@@ -23,6 +26,7 @@ powers:
     rollAttribute: charisma
     rollAbility: Subterfugio
     rollDifficulty: 7
+    tooltip: "Borra o reescribe recuerdos recientes; más éxitos = episodios completos."
   - level: 4
     name: Acondicionamiento
     summary: "Doblega la mente del sujeto a largo plazo, escena tras escena."
@@ -30,6 +34,7 @@ powers:
     rollAttribute: charisma
     rollAbility: Liderazgo
     rollDifficulty: 7
+    tooltip: "Sesiones múltiples doblegan mente; vinculación moral sin haber bebido sangre."
   - level: 5
     name: Posesión
     summary: "Tu mente toma el cuerpo del sujeto."
@@ -37,6 +42,7 @@ powers:
     rollAttribute: charisma
     rollAbility: Intimidación
     rollDifficulty: 8
+    tooltip: "Tu mente entra en cuerpo ajeno; consciencia del sujeto duerme vulnerable."
 ---
 
 # Dominación

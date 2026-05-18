@@ -3,6 +3,7 @@ name: Clase Cuatro (antibalas)
 rating: 4
 penalty: 2
 order: 3
+tooltip: "Clase Cuatro (antibalas) armor."
 ---
 
 # Clase Cuatro (antibalas)

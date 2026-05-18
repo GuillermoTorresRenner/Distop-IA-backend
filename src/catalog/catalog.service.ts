@@ -57,6 +57,10 @@ export class CatalogService {
     return this.prisma.clan.findMany({ orderBy: { order: 'asc' } });
   }
 
+  listVirtues() {
+    return this.prisma.virtueInfo.findMany({ orderBy: { order: 'asc' } });
+  }
+
   // ── Equipo ──
 
   listWeaponCategories() {

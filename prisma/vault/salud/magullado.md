@@ -3,6 +3,7 @@ key: bruised
 name: Magullado
 penalty: 0
 order: 0
+tooltip: "Magullado health level."
 ---
 
 # Magullado

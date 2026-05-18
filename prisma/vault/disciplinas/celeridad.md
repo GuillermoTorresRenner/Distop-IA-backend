@@ -1,27 +1,33 @@
 ---
 name: Celeridad
 order: 2
+tooltip: Velocidad sobrenatural; acciones reflexivas extra mediante gasto de sangre.
 powers:
   - level: 1
     name: Celeridad I
     summary: "1 sangre → +1 acción reflexiva este turno."
     bloodCost: 1
+    tooltip: "Gastar 1 sangre desbloquea 1 acción reflexiva extra en el turno."
   - level: 2
     name: Celeridad II
     summary: "1 sangre → +2 acciones reflexivas este turno."
     bloodCost: 1
+    tooltip: "Gastar 1 sangre desbloquea 2 acciones reflexivas extra en el turno."
   - level: 3
     name: Celeridad III
     summary: "1 sangre → +3 acciones reflexivas este turno."
     bloodCost: 1
+    tooltip: "Gastar 1 sangre desbloquea 3 acciones reflexivas extra en el turno."
   - level: 4
     name: Celeridad IV
     summary: "1 sangre → +4 acciones reflexivas este turno."
     bloodCost: 1
+    tooltip: "Gastar 1 sangre desbloquea 4 acciones reflexivas extra en el turno."
   - level: 5
     name: Celeridad V
     summary: "1 sangre → +5 acciones reflexivas este turno."
     bloodCost: 1
+    tooltip: "Gastar 1 sangre desbloquea 5 acciones reflexivas; eres un borrón en el espacio."
 ---
 
 # Celeridad

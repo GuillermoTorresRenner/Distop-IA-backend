@@ -1,6 +1,7 @@
 ---
 name: Solitario
 order: 21
+tooltip: Trabaja y vive aparte de los demás; independencia radical.
 ---
 
 # Solitario

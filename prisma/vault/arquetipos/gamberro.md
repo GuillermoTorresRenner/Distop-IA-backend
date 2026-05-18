@@ -1,6 +1,7 @@
 ---
 name: Gamberro
 order: 12
+tooltip: Disfruta haciendo el mal a otros; cruelty por diversión.
 ---
 
 # Gamberro

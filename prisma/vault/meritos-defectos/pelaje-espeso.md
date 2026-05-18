@@ -4,6 +4,7 @@ kind: MERIT
 value: 1
 category: Físico
 order: 2
+tooltip: "Resistencia natural al frío extremo."
 ---
 
 # Pelaje espeso

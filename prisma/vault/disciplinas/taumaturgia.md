@@ -1,6 +1,7 @@
 ---
 name: Taumaturgia
 order: 9
+tooltip: Magia de sangre, Senda de la Sangre; manipulación sobrenatural de vitae.
 powers:
   - level: 1
     name: Un puñado de polvo
@@ -9,6 +10,7 @@ powers:
     rollAttribute: intelligence
     rollAbility: Ocultismo
     rollDifficulty: 4
+    tooltip: "Sientes sangre en entorno; manipulas pequeñas cantidades propias."
   - level: 2
     name: Robo de vitae
     summary: Drena la sangre de un blanco a distancia.
@@ -16,6 +18,7 @@ powers:
     rollAttribute: intelligence
     rollAbility: Ocultismo
     rollDifficulty: 5
+    tooltip: "Drenas sangre de blanco a distancia; cada éxito transfiere punto de sangre."
   - level: 3
     name: Hervir la sangre
     summary: Hace hervir la sangre del enemigo desde dentro.
@@ -23,6 +26,7 @@ powers:
     rollAttribute: intelligence
     rollAbility: Ocultismo
     rollDifficulty: 6
+    tooltip: "Haces hervir sangre dentro de venas del enemigo; daño agravado."
   - level: 4
     name: Bautismo de sangre
     summary: Vincula sangre a un objetivo con un solo trago compartido.
@@ -30,6 +34,7 @@ powers:
     rollAttribute: intelligence
     rollAbility: Ocultismo
     rollDifficulty: 7
+    tooltip: "Un sorbo compartido vale ciclo completo vinculación; acelera control."
   - level: 5
     name: Cauterizar la herida
     summary: Comunión total con la vitae. Sana daño agravado a través de la sangre.
@@ -37,6 +42,7 @@ powers:
     rollAttribute: intelligence
     rollAbility: Ocultismo
     rollDifficulty: 8
+    tooltip: "Vitae sana daño agravado propio o ajeno; culminación de disciplina."
 ---
 
 # Taumaturgia

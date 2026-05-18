@@ -4,6 +4,7 @@ kind: FLAW
 value: -1
 category: Mental
 order: 10
+tooltip: "Sufrimiento nocturno recurrente; defecto mental."
 ---
 
 # Pesadillas

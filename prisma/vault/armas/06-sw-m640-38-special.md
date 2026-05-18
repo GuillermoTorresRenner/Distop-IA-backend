@@ -12,6 +12,7 @@ rate: 3
 magazine: 6
 concealment: B
 order: 6
+tooltip: "SW M640 (.38 special) weapon."
 ---
 
 # SW M640 (.38 special)

@@ -3,6 +3,7 @@ key: interpretacion
 name: Interpretación
 category: SKILL
 order: 15
+tooltip: Actuar, cantar, tocar, bailar; performance y expresión corporal en escena.
 ---
 
 # Interpretación

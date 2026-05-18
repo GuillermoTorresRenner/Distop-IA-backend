@@ -4,6 +4,7 @@ sect: Independiente
 disciplines: "Ofuscación, Presencia, Serpentis"
 weakness: Doble daño por luz solar; debilitamiento ante toda luz.
 order: 10
+tooltip: Corruptores serpenteantes de Set; sensibles a luz solar y luz.
 ---
 
 # Followers of Set

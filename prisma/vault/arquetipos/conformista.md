@@ -1,6 +1,7 @@
 ---
 name: Conformista
 order: 9
+tooltip: Sigue a los demás y mantiene statu quo; obediente.
 ---
 
 # Conformista

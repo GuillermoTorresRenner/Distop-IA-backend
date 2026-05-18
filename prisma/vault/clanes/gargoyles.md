@@ -4,6 +4,7 @@ sect: Linaje
 disciplines: "Fortaleza, Potencia, Visceratika"
 weakness: Piel pétrea visible; condicionamiento Tremere.
 order: 17
+tooltip: Sirvientes creados por Tremere; piel pétrea condicionada.
 ---
 
 # Gargoyles

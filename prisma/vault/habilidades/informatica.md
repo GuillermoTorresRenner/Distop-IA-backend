@@ -3,6 +3,7 @@ key: informatica
 name: Informática
 category: KNOWLEDGE
 order: 24
+tooltip: Computadoras y redes; software, hacking, forense digital, intrusión, exploits.
 ---
 
 # Informática

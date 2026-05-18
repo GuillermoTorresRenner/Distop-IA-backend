@@ -4,6 +4,7 @@ sect: Linaje
 disciplines: Tres disciplinas libres
 weakness: "Sin debilidad fija, pero socialmente despreciados."
 order: 13
+tooltip: Vampiros sin clan, huérfanos sociales pero sin debilidad fija.
 ---
 
 # Caitiff

@@ -1,6 +1,7 @@
 ---
 name: Jueza
 order: 13
+tooltip: Sopesa, decide y dicta veredictos; árbitro imparcial.
 ---
 
 # Jueza

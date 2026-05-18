@@ -1,6 +1,7 @@
 ---
 name: Arquitecto
 order: 0
+tooltip: Construye algo duradero que otros disfrutarán; legado perdurable.
 ---
 
 # Arquitecto

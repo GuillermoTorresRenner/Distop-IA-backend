@@ -3,6 +3,7 @@ key: criados
 name: Criados
 category: Social
 order: 2
+tooltip: "Sirvientes humanos bajo tu control permanente."
 ---
 
 # Criados

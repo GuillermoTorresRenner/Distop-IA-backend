@@ -1,6 +1,7 @@
 ---
 name: Fanático
 order: 11
+tooltip: Persigue causa por encima de todo; devoción extrema.
 ---
 
 # Fanático

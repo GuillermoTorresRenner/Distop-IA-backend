@@ -3,13 +3,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.HEALTH_KEYS = exports.ATTRIBUTE_KEYS = void 0;
+exports.VIRTUE_KEYS = exports.HEALTH_KEYS = exports.ATTRIBUTE_KEYS = void 0;
 exports.loadAttributes = loadAttributes;
 exports.loadAbilities = loadAbilities;
 exports.loadHealthLevels = loadHealthLevels;
 exports.loadArchetypes = loadArchetypes;
 exports.loadMeritsFlaws = loadMeritsFlaws;
+exports.loadBackgrounds = loadBackgrounds;
 exports.loadClans = loadClans;
+exports.loadVirtues = loadVirtues;
 exports.loadDisciplines = loadDisciplines;
 exports.loadWeaponCategories = loadWeaponCategories;
 exports.loadWeapons = loadWeapons;
@@ -88,6 +90,13 @@ exports.HEALTH_KEYS = [
     'crippled',
     'incapacitated',
 ];
+exports.VIRTUE_KEYS = [
+    'conscience',
+    'self-control',
+    'courage',
+    'conviction',
+    'instinct',
+];
 // ─── Helpers ──────────────────────────────────────────────────
 function readMd(relPath) {
     const abs = (0, path_1.join)(VAULT_ROOT, relPath);
@@ -122,6 +131,7 @@ const AttributeSchema = zod_1.z.object({
     key: zod_1.z.enum(exports.ATTRIBUTE_KEYS),
     name: zod_1.z.string().min(1),
     category: zod_1.z.enum(['PHYSICAL', 'SOCIAL', 'MENTAL']),
+    tooltip: zod_1.z.string().optional().nullable().default(null),
     order: zod_1.z.number().int().optional().default(0),
 });
 const AbilitySchema = zod_1.z.object({
@@ -131,16 +141,19 @@ const AbilitySchema = zod_1.z.object({
         .regex(/^[a-z0-9-]+$/, 'debe ser kebab-case (a-z 0-9 -)'),
     name: zod_1.z.string().min(1),
     category: zod_1.z.enum(['TALENT', 'SKILL', 'KNOWLEDGE']),
+    tooltip: zod_1.z.string().optional().nullable().default(null),
     order: zod_1.z.number().int().optional().default(0),
 });
 const HealthSchema = zod_1.z.object({
     key: zod_1.z.enum(exports.HEALTH_KEYS),
     name: zod_1.z.string().min(1),
     penalty: zod_1.z.number().int(),
+    tooltip: zod_1.z.string().optional().nullable().default(null),
     order: zod_1.z.number().int().optional().default(0),
 });
 const ArchetypeSchema = zod_1.z.object({
     name: zod_1.z.string().min(1),
+    tooltip: zod_1.z.string().optional().nullable().default(null),
     order: zod_1.z.number().int().optional().default(0),
 });
 const MeritFlawSchema = zod_1.z.object({
@@ -148,6 +161,14 @@ const MeritFlawSchema = zod_1.z.object({
     kind: zod_1.z.enum(['MERIT', 'FLAW']),
     value: zod_1.z.number().int(),
     category: zod_1.z.string().min(1),
+    tooltip: zod_1.z.string().optional().nullable().default(null),
+    order: zod_1.z.number().int().optional().default(0),
+});
+const BackgroundSchema = zod_1.z.object({
+    key: zod_1.z.string().min(1).regex(/^[a-z0-9-]+$/, 'usa kebab-case'),
+    name: zod_1.z.string().min(1),
+    category: zod_1.z.string().optional().nullable().default(null),
+    tooltip: zod_1.z.string().optional().nullable().default(null),
     order: zod_1.z.number().int().optional().default(0),
 });
 const ClanSchema = zod_1.z.object({
@@ -155,6 +176,7 @@ const ClanSchema = zod_1.z.object({
     sect: zod_1.z.string().min(1),
     disciplines: zod_1.z.string().min(1),
     weakness: zod_1.z.string().min(1),
+    tooltip: zod_1.z.string().optional().nullable().default(null),
     order: zod_1.z.number().int().optional().default(0),
 });
 const DisciplinePowerSchema = zod_1.z
@@ -162,6 +184,7 @@ const DisciplinePowerSchema = zod_1.z
     level: zod_1.z.number().int().min(1).max(5),
     name: zod_1.z.string().min(1),
     summary: zod_1.z.string().optional().nullable(),
+    tooltip: zod_1.z.string().optional().nullable(),
     bloodCost: zod_1.z.number().int().min(0).optional().default(0),
     rollAttribute: zod_1.z
         .enum(exports.ATTRIBUTE_KEYS)
@@ -180,6 +203,7 @@ const DisciplinePowerSchema = zod_1.z
 }));
 const DisciplineSchema = zod_1.z.object({
     name: zod_1.z.string().min(1),
+    tooltip: zod_1.z.string().optional().nullable().default(null),
     order: zod_1.z.number().int().optional().default(0),
     powers: zod_1.z.array(DisciplinePowerSchema).length(5, 'deben existir los 5 niveles (1..5)'),
 });
@@ -212,12 +236,21 @@ const WeaponSchema = zod_1.z.object({
         .default(null),
     magazine: zod_1.z.number().int().nullable().optional().default(null),
     concealment: zod_1.z.string().nullable().optional().default(null),
+    description: zod_1.z.string().optional().nullable().default(null),
+    tooltip: zod_1.z.string().optional().nullable().default(null),
     order: zod_1.z.number().int().optional().default(0),
 });
 const ArmorSchema = zod_1.z.object({
     name: zod_1.z.string().min(1),
     rating: zod_1.z.number().int().min(0),
     penalty: zod_1.z.number().int().min(0),
+    tooltip: zod_1.z.string().optional().nullable().default(null),
+    order: zod_1.z.number().int().optional().default(0),
+});
+const VirtueSchema = zod_1.z.object({
+    key: zod_1.z.enum(exports.VIRTUE_KEYS),
+    name: zod_1.z.string().min(1),
+    tooltip: zod_1.z.string().optional().nullable().default(null),
     order: zod_1.z.number().int().optional().default(0),
 });
 // ─── Loaders por entidad ──────────────────────────────────────
@@ -284,6 +317,26 @@ function loadMeritsFlaws() {
         return { ...parsed, description: body };
     });
 }
+function loadBackgrounds() {
+    const files = listMd('trasfondos');
+    const out = files.map((f) => {
+        const { frontmatter, body } = readMd(`trasfondos/${f}`);
+        const parsed = parseOrThrow(BackgroundSchema, frontmatter, `trasfondos/${f}`);
+        return { ...parsed, description: body };
+    });
+    // Sanity: keys y names únicos.
+    const seenKey = new Set();
+    const seenName = new Set();
+    for (const b of out) {
+        if (seenKey.has(b.key))
+            throw new Error(`vault/trasfondos → key duplicada: ${b.key}`);
+        if (seenName.has(b.name))
+            throw new Error(`vault/trasfondos → name duplicado: ${b.name}`);
+        seenKey.add(b.key);
+        seenName.add(b.name);
+    }
+    return out;
+}
 function loadClans() {
     const files = listMd('clanes');
     return files.map((f) => {
@@ -291,6 +344,26 @@ function loadClans() {
         const parsed = parseOrThrow(ClanSchema, frontmatter, `clanes/${f}`);
         return { ...parsed, description: body };
     });
+}
+function loadVirtues() {
+    const files = listMd('virtudes');
+    const out = files.map((f) => {
+        const { frontmatter, body } = readMd(`virtudes/${f}`);
+        const parsed = parseOrThrow(VirtueSchema, frontmatter, `virtudes/${f}`);
+        return { ...parsed, description: body };
+    });
+    // Sanity: keys y names únicos.
+    const seenKey = new Set();
+    const seenName = new Set();
+    for (const v of out) {
+        if (seenKey.has(v.key))
+            throw new Error(`vault/virtudes → key duplicada: ${v.key}`);
+        if (seenName.has(v.name))
+            throw new Error(`vault/virtudes → name duplicado: ${v.name}`);
+        seenKey.add(v.key);
+        seenName.add(v.name);
+    }
+    return out;
 }
 // Extrae los descripciones por poder del cuerpo. Convenio:
 //   ## 1 — Nombre   o   ## Poder 1: Nombre

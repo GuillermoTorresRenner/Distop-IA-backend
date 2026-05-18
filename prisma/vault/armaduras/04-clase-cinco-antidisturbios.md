@@ -3,6 +3,7 @@ name: Clase Cinco (antidisturbios)
 rating: 5
 penalty: 3
 order: 4
+tooltip: "Clase Cinco (antidisturbios) armor."
 ---
 
 # Clase Cinco (antidisturbios)

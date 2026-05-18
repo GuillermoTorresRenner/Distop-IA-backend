@@ -3,6 +3,7 @@ key: empatia
 name: Empatía
 category: TALENT
 order: 3
+tooltip: Leer emociones ajenas; detectar mentiras, ánimo de una sala, estado emocional.
 ---
 
 # Empatía

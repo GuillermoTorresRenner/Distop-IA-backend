@@ -1,6 +1,7 @@
 ---
 name: Pedagogo
 order: 17
+tooltip: Quiere enseñar y transmitir lo aprendido; educador.
 ---
 
 # Pedagogo

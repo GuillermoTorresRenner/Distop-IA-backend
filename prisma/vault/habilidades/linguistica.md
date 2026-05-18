@@ -3,6 +3,7 @@ key: linguistica
 name: Lingüística
 category: KNOWLEDGE
 order: 27
+tooltip: Idiomas; cada punto representa nuevas lenguas que dominas con fluidez.
 ---
 
 # Lingüística

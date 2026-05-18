@@ -1,6 +1,7 @@
 ---
 name: Trotamundos
 order: 23
+tooltip: Sigue su camino sin ataduras; nómada libre errante.
 ---
 
 # Trotamundos

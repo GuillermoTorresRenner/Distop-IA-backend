@@ -1,6 +1,7 @@
 ---
 name: Presencia
 order: 7
+tooltip: Atracción emocional sobrenatural; manipula ánimo sin forzar acciones específicas.
 powers:
   - level: 1
     name: Pavor
@@ -9,6 +10,7 @@ powers:
     rollAttribute: charisma
     rollAbility: Intimidación
     rollDifficulty: 7
+    tooltip: "Quien te mira siente terror genuino; débiles huyen sin pensar."
   - level: 2
     name: Atracción
     summary: Generas fascinación inmediata en quien te ve.
@@ -16,6 +18,7 @@ powers:
     rollAttribute: charisma
     rollAbility: Empatía
     rollDifficulty: 7
+    tooltip: "Desiertas fascinación instantánea; blancos quieren acercarse y estar contigo."
   - level: 3
     name: Llamada
     summary: Atrae a un sujeto conocido desde la distancia.
@@ -23,6 +26,7 @@ powers:
     rollAttribute: manipulation
     rollAbility: Empatía
     rollDifficulty: 7
+    tooltip: "Llamas mentalmente a quien conoces; deseo creciente de ir hacia ti."
   - level: 4
     name: Majestad
     summary: Impones respeto absoluto. Pocos osan atacarte o desafiarte.
@@ -30,6 +34,7 @@ powers:
     rollAttribute: charisma
     rollAbility: Intimidación
     rollDifficulty: 7
+    tooltip: "Presencia impone respeto absoluto; pocos se atreven a atacarte."
   - level: 5
     name: Espíritu de la multitud
     summary: Mueve a multitudes a la acción o las contiene.
@@ -37,6 +42,7 @@ powers:
     rollAttribute: charisma
     rollAbility: Liderazgo
     rollDifficulty: 7
+    tooltip: "Mueves multitudes con discurso o gesto; las reúnes o dispersas."
 ---
 
 # Presencia

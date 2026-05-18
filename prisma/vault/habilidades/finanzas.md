@@ -3,6 +3,7 @@ key: finanzas
 name: Finanzas
 category: KNOWLEDGE
 order: 23
+tooltip: Movimiento del dinero; mercados, inversiones, contabilidad, lavado de dinero.
 ---
 
 # Finanzas

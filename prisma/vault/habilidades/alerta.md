@@ -3,6 +3,7 @@ key: alerta
 name: Alerta
 category: TALENT
 order: 0
+tooltip: Detectar amenazas y detalles del entorno; percepción pasiva de lo que no encaja.
 ---
 
 # Alerta

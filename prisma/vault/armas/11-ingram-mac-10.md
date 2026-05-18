@@ -12,6 +12,7 @@ rate: 3
 magazine: 30
 concealment: J
 order: 11
+tooltip: "Subfusil automático compacto; ráfagas de daño."
 ---
 
 # Ingram Mac-10

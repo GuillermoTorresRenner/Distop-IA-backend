@@ -1,6 +1,7 @@
 ---
 name: Caudillo
 order: 6
+tooltip: Lidera por carisma natural; guía a otros con inspiración.
 ---
 
 # Caudillo

@@ -1,6 +1,7 @@
 ---
 name: Niño
 order: 16
+tooltip: Inocencia, dependencia, capricho; comportamiento infantil.
 ---
 
 # Niño

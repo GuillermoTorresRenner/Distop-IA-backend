@@ -3,6 +3,7 @@ name: Clase Tres (Kevlar)
 rating: 3
 penalty: 1
 order: 2
+tooltip: "Clase Tres (Kevlar) armor."
 ---
 
 # Clase Tres (Kevlar)

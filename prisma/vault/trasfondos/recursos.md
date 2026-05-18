@@ -3,6 +3,7 @@ key: recursos
 name: Recursos
 category: Material
 order: 9
+tooltip: "Riqueza y activos económicos disponibles."
 ---
 
 # Recursos

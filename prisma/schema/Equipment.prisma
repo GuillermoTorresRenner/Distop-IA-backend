@@ -54,6 +54,8 @@ model Weapon {
   /// Concealability code (B, P, J, G, N, V…) tal como aparece en el manual.
   concealment String?
 
+  description String?
+  tooltip     String?
   notes       String?
   order       Int        @default(0)
   system      Boolean    @default(false) // true para entradas seedeadas del manual
@@ -99,6 +101,7 @@ model Armor {
   rating      Int      // puntuación de absorción
   penalty     Int      // penalización a reservas Destreza
   description String?
+  tooltip     String?
   order       Int      @default(0)
   system      Boolean  @default(false)
   userId      String?

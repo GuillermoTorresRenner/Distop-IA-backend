@@ -3,6 +3,7 @@ key: medicina
 name: Medicina
 category: KNOWLEDGE
 order: 28
+tooltip: Anatomía y cirugía; diagnóstico, primeros auxilios, mantener vivos útiles.
 ---
 
 # Medicina

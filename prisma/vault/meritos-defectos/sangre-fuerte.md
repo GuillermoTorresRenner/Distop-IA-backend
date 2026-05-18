@@ -4,6 +4,7 @@ kind: MERIT
 value: 4
 category: Sobrenatural
 order: 7
+tooltip: "Sangre vampírica potenciada; mayor poder."
 ---
 
 # Sangre fuerte

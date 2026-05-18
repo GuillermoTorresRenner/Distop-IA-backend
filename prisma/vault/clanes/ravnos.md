@@ -4,6 +4,7 @@ sect: Independiente
 disciplines: "Animalismo, Fortaleza, Quimerismo"
 weakness: "Cada miembro tiene un vicio compulsivo (engaño, robo, etc.)."
 order: 12
+tooltip: Engañadores nómadas Rom; vicio compulsivo en cada miembro.
 ---
 
 # Ravnos

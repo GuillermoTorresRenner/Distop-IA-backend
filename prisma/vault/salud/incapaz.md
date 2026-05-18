@@ -3,6 +3,7 @@ key: incapacitated
 name: Incapaz
 penalty: 0
 order: 6
+tooltip: "Incapaz health level."
 ---
 
 # Incapaz

@@ -1,6 +1,7 @@
 ---
 name: Autócrata
 order: 1
+tooltip: Busca control y poder; quiere mandar a toda costa.
 ---
 
 # Autócrata

@@ -4,6 +4,7 @@ sect: Linaje
 disciplines: "Auspex, Fortaleza, Obeah o Valeren"
 weakness: Tercer ojo visible; perseguidos por Tremere y Sabbat.
 order: 15
+tooltip: Curanderos y guerreros tercer ojo; perseguidos, tercer ojo visible.
 ---
 
 # Salubri

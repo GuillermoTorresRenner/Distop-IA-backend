@@ -13,6 +13,7 @@ model AttributeInfo {
   name        String
   category    AttributeCategoryInfo
   description String?
+  tooltip     String?
   order       Int                   @default(0)
   createdAt   DateTime              @default(now())
   updatedAt   DateTime              @updatedAt
@@ -30,6 +31,7 @@ model AbilityInfo {
   name        String          @unique
   category    AbilityCategory
   description String?
+  tooltip     String?
   order       Int             @default(0)
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
@@ -46,6 +48,7 @@ model HealthLevelInfo {
   name        String   @unique
   penalty     Int      @default(0)
   description String?
+  tooltip     String?
   order       Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -58,6 +61,7 @@ model Archetype {
   id          String   @id @default(uuid())
   name        String   @unique
   description String?
+  tooltip     String?
   order       Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -73,6 +77,7 @@ model Discipline {
   id          String   @id @default(uuid())
   name        String   @unique
   description String?
+  tooltip     String?
   order       Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -104,6 +109,8 @@ model DisciplinePower {
 
   /// Resumen corto para el tooltip de la mesa (versión condensada).
   summary        String?
+  /// Tooltip adicional para catálogo (1-2 líneas, max ~140 chars).
+  tooltip        String?
   /// Puntos de sangre que cuesta activar. 0 = sin coste.
   bloodCost      Int        @default(0)
   /// Clave del atributo a usar en la tirada activa, en formato del modelo
@@ -132,6 +139,7 @@ model Clan {
   name        String   @unique
   sect        String?  // Camarilla / Sabbat / Anarchs / Linaje / Independiente
   description String?
+  tooltip     String?
   disciplines String?  // Disciplinas de clan separadas por coma (texto descriptivo)
   weakness    String?  // Debilidad de clan
   order       Int      @default(0)
@@ -159,6 +167,7 @@ model Background {
   /// Categoría opcional para agrupar en la UI (ej. "Social", "Material").
   category    String?
   description String?
+  tooltip     String?
   order       Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -175,6 +184,7 @@ model MeritFlaw {
   value       Int
   category    String?
   description String?
+  tooltip     String?
   order       Int           @default(0)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt

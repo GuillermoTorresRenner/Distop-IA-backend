@@ -1,6 +1,7 @@
 ---
 name: Capullo
 order: 5
+tooltip: Pretende ser otra cosa; engaño y falsedad de identidad.
 ---
 
 # Capullo

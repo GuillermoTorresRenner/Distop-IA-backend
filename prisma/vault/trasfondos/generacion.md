@@ -3,6 +3,7 @@ key: generacion
 name: Generación
 category: Sobrenatural
 order: 4
+tooltip: "Antigüedad en el clan; cuanto más baja, más potencia."
 ---
 
 # Generación

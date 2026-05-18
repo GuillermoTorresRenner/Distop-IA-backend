@@ -3,6 +3,7 @@ key: intelligence
 name: Inteligencia
 category: MENTAL
 order: 7
+tooltip: Razonamiento y análisis; deducción, planificación a largo plazo, resolución compleja.
 ---
 
 # Inteligencia

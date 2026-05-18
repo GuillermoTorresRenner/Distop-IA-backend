@@ -3,6 +3,7 @@ key: charisma
 name: Carisma
 category: SOCIAL
 order: 3
+tooltip: Magnetismo personal; facilidad para atraer, convencer y liderar. Presencia magnética.
 ---
 
 # Carisma

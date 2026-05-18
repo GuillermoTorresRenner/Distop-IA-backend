@@ -1,6 +1,7 @@
 ---
 name: Celebrante
 order: 7
+tooltip: Vive una causa o ideal con devoción fanática absoluta.
 ---
 
 # Celebrante

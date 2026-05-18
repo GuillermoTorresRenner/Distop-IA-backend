@@ -1,19 +1,23 @@
 ---
 name: Protean
 order: 8
+tooltip: Cambio de forma y comunión con tierra; acerca a Bestia y naturaleza.
 powers:
   - level: 1
     name: Ojos de la Bestia
     summary: Visión nocturna sobrenatural y mirada bestial intimidante.
     bloodCost: 0
+    tooltip: "Ojos brillan rojo; visión perfecta en oscuridad pero te delata."
   - level: 2
     name: Garras de Lobo
     summary: Crece garras letales que infligen daño agravado.
     bloodCost: 1
+    tooltip: "Garras curvas crecen; infligen daño agravado y se suman a Pelea."
   - level: 3
     name: Forma de la Tierra
     summary: Te fundes con suelo natural para descansar durante el día.
     bloodCost: 1
+    tooltip: "Te fundes con tierra natural; protege del sol durante el descanso."
   - level: 4
     name: Forma bestial
     summary: Te transformas en lobo o murciélago.
@@ -21,6 +25,7 @@ powers:
     rollAttribute: stamina
     rollAbility: Supervivencia
     rollDifficulty: 6
+    tooltip: "Te conviertes en lobo o murciélago con estadísticas propias; tarda varios turnos."
   - level: 5
     name: Forma de mente única
     summary: Forma de bruma capaz de cualquier acción mental.
@@ -28,6 +33,7 @@ powers:
     rollAttribute: stamina
     rollAbility: Ocultismo
     rollDifficulty: 6
+    tooltip: "Te disuelves en bruma casi indestructible; incapaz de acción física."
 ---
 
 # Protean

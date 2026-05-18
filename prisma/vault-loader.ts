@@ -78,6 +78,14 @@ export const HEALTH_KEYS = [
   'incapacitated',
 ] as const;
 
+export const VIRTUE_KEYS = [
+  'conscience',
+  'self-control',
+  'courage',
+  'conviction',
+  'instinct',
+] as const;
+
 // ─── Helpers ──────────────────────────────────────────────────
 
 function readMd(relPath: string): { frontmatter: unknown; body: string } {
@@ -121,6 +129,7 @@ const AttributeSchema = z.object({
   key: z.enum(ATTRIBUTE_KEYS),
   name: z.string().min(1),
   category: z.enum(['PHYSICAL', 'SOCIAL', 'MENTAL']),
+  tooltip: z.string().optional().nullable().default(null),
   order: z.number().int().optional().default(0),
 });
 
@@ -131,6 +140,7 @@ const AbilitySchema = z.object({
     .regex(/^[a-z0-9-]+$/, 'debe ser kebab-case (a-z 0-9 -)'),
   name: z.string().min(1),
   category: z.enum(['TALENT', 'SKILL', 'KNOWLEDGE']),
+  tooltip: z.string().optional().nullable().default(null),
   order: z.number().int().optional().default(0),
 });
 
@@ -138,11 +148,13 @@ const HealthSchema = z.object({
   key: z.enum(HEALTH_KEYS),
   name: z.string().min(1),
   penalty: z.number().int(),
+  tooltip: z.string().optional().nullable().default(null),
   order: z.number().int().optional().default(0),
 });
 
 const ArchetypeSchema = z.object({
   name: z.string().min(1),
+  tooltip: z.string().optional().nullable().default(null),
   order: z.number().int().optional().default(0),
 });
 
@@ -151,6 +163,7 @@ const MeritFlawSchema = z.object({
   kind: z.enum(['MERIT', 'FLAW']),
   value: z.number().int(),
   category: z.string().min(1),
+  tooltip: z.string().optional().nullable().default(null),
   order: z.number().int().optional().default(0),
 });
 
@@ -158,6 +171,7 @@ const BackgroundSchema = z.object({
   key: z.string().min(1).regex(/^[a-z0-9-]+$/, 'usa kebab-case'),
   name: z.string().min(1),
   category: z.string().optional().nullable().default(null),
+  tooltip: z.string().optional().nullable().default(null),
   order: z.number().int().optional().default(0),
 });
 
@@ -166,6 +180,7 @@ const ClanSchema = z.object({
   sect: z.string().min(1),
   disciplines: z.string().min(1),
   weakness: z.string().min(1),
+  tooltip: z.string().optional().nullable().default(null),
   order: z.number().int().optional().default(0),
 });
 
@@ -174,6 +189,7 @@ const DisciplinePowerSchema = z
     level: z.number().int().min(1).max(5),
     name: z.string().min(1),
     summary: z.string().optional().nullable(),
+    tooltip: z.string().optional().nullable(),
     bloodCost: z.number().int().min(0).optional().default(0),
     rollAttribute: z
       .enum(ATTRIBUTE_KEYS)
@@ -193,6 +209,7 @@ const DisciplinePowerSchema = z
 
 const DisciplineSchema = z.object({
   name: z.string().min(1),
+  tooltip: z.string().optional().nullable().default(null),
   order: z.number().int().optional().default(0),
   powers: z.array(DisciplinePowerSchema).length(5, 'deben existir los 5 niveles (1..5)'),
 });
@@ -229,6 +246,8 @@ const WeaponSchema = z.object({
     .default(null),
   magazine: z.number().int().nullable().optional().default(null),
   concealment: z.string().nullable().optional().default(null),
+  description: z.string().optional().nullable().default(null),
+  tooltip: z.string().optional().nullable().default(null),
   order: z.number().int().optional().default(0),
 });
 
@@ -236,6 +255,14 @@ const ArmorSchema = z.object({
   name: z.string().min(1),
   rating: z.number().int().min(0),
   penalty: z.number().int().min(0),
+  tooltip: z.string().optional().nullable().default(null),
+  order: z.number().int().optional().default(0),
+});
+
+const VirtueSchema = z.object({
+  key: z.enum(VIRTUE_KEYS),
+  name: z.string().min(1),
+  tooltip: z.string().optional().nullable().default(null),
   order: z.number().int().optional().default(0),
 });
 
@@ -264,14 +291,19 @@ export type ClanRecord = z.infer<typeof ClanSchema> & {
 };
 export type DisciplineRecord = z.infer<typeof DisciplineSchema> & {
   description: string;
+  tooltip?: string | null;
   /** description por poder, en orden de level (1..5). */
   powerDescriptions: Record<number, string>;
 };
 export type WeaponCategoryRecord = z.infer<typeof WeaponCategorySchema>;
 export type WeaponRecord = z.infer<typeof WeaponSchema> & {
+  description?: string | null;
   notes: string | null;
 };
 export type ArmorRecord = z.infer<typeof ArmorSchema> & {
+  description: string;
+};
+export type VirtueRecord = z.infer<typeof VirtueSchema> & {
   description: string;
 };
 
@@ -377,6 +409,27 @@ export function loadClans(): ClanRecord[] {
     const parsed = parseOrThrow(ClanSchema, frontmatter, `clanes/${f}`);
     return { ...parsed, description: body };
   });
+}
+
+export function loadVirtues(): VirtueRecord[] {
+  const files = listMd('virtudes');
+  const out: VirtueRecord[] = files.map((f) => {
+    const { frontmatter, body } = readMd(`virtudes/${f}`);
+    const parsed = parseOrThrow(VirtueSchema, frontmatter, `virtudes/${f}`);
+    return { ...parsed, description: body };
+  });
+  // Sanity: keys y names únicos.
+  const seenKey = new Set<string>();
+  const seenName = new Set<string>();
+  for (const v of out) {
+    if (seenKey.has(v.key))
+      throw new Error(`vault/virtudes → key duplicada: ${v.key}`);
+    if (seenName.has(v.name))
+      throw new Error(`vault/virtudes → name duplicado: ${v.name}`);
+    seenKey.add(v.key);
+    seenName.add(v.name);
+  }
+  return out;
 }
 
 // Extrae los descripciones por poder del cuerpo. Convenio:

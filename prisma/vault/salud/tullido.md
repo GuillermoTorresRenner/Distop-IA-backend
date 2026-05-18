@@ -3,6 +3,7 @@ key: mauled
 name: Tullido
 penalty: -2
 order: 4
+tooltip: "Tullido health level."
 ---
 
 # Tullido

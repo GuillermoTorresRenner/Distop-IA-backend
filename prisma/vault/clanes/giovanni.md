@@ -4,6 +4,7 @@ sect: Independiente
 disciplines: "Dominación, Necromancia, Potencia"
 weakness: "Su beso causa daño desgarrador, no éxtasis."
 order: 11
+tooltip: Necromantes banqueros; familia de muertos, beso causa daño.
 ---
 
 # Giovanni

@@ -4,6 +4,7 @@ sect: Camarilla
 disciplines: "Auspex, Dominación, Taumaturgia"
 weakness: Vinculados al consejo de Viena por sangre.
 order: 5
+tooltip: Hechiceros usurpadores clan brujo; vinculados consejo Viena.
 ---
 
 # Tremere

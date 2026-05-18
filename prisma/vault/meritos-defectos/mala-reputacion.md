@@ -4,6 +4,7 @@ kind: FLAW
 value: -2
 category: Social
 order: 13
+tooltip: "Estigma social entre pares y círculos."
 ---
 
 # Mala reputación

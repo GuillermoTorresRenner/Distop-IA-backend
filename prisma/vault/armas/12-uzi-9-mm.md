@@ -12,6 +12,7 @@ rate: 3
 magazine: 32
 concealment: J
 order: 12
+tooltip: "Uzi (9 mm) weapon."
 ---
 
 # Uzi (9 mm)

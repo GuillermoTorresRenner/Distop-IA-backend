@@ -3,6 +3,7 @@ key: intimidacion
 name: Intimidación
 category: TALENT
 order: 5
+tooltip: Imponer miedo; amenaza física, chantaje sutil, imposición de respeto silencioso.
 ---
 
 # Intimidación

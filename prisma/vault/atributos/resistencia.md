@@ -3,6 +3,7 @@ key: stamina
 name: Resistencia
 category: PHYSICAL
 order: 2
+tooltip: Durabilidad y recuperación corporal; absorción de daño, acciones prolongadas, resistencia.
 ---
 
 # Resistencia

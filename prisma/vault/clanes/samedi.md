@@ -4,6 +4,7 @@ sect: Linaje
 disciplines: "Fortaleza, Necromancia, Thanatosis"
 weakness: Su cuerpo siempre muestra signos de descomposición.
 order: 16
+tooltip: Vampiros putrefactos haitianos; cuerpo siempre muestra descomposición.
 ---
 
 # Samedi

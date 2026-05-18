@@ -12,6 +12,7 @@ rate: 1
 magazine: 1
 concealment: N
 order: 16
+tooltip: "Arma silenciosa; daño letal de proyectil."
 ---
 
 # Ballesta

@@ -1,6 +1,7 @@
 ---
 name: Director
 order: 10
+tooltip: Necesita orden y coordina a los demás; organizador nato.
 ---
 
 # Director

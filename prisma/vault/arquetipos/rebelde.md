@@ -1,6 +1,7 @@
 ---
 name: Rebelde
 order: 19
+tooltip: Se opone a autoridad y normas; cuestionador radical.
 ---
 
 # Rebelde

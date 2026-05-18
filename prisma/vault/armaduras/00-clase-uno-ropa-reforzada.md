@@ -3,6 +3,7 @@ name: Clase Uno (ropa reforzada)
 rating: 1
 penalty: 0
 order: 0
+tooltip: "Clase Uno (ropa reforzada) armor."
 ---
 
 # Clase Uno (ropa reforzada)

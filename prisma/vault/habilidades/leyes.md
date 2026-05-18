@@ -3,6 +3,7 @@ key: leyes
 name: Leyes
 category: KNOWLEDGE
 order: 26
+tooltip: Marco legal mortal y vampírico (Tradiciones); defensa, contratos, rendijas legales.
 ---
 
 # Leyes

@@ -3,6 +3,7 @@ key: aliados
 name: Aliados
 category: Social
 order: 0
+tooltip: "Mortales que confían en ti y te apoyan en secreto."
 ---
 
 # Aliados

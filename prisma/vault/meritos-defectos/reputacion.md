@@ -4,6 +4,7 @@ kind: MERIT
 value: 2
 category: Social
 order: 5
+tooltip: "Buen nombre que abre puertas y confianza."
 ---
 
 # Reputación

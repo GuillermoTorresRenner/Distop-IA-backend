@@ -4,6 +4,7 @@ sect: Camarilla
 disciplines: "Auspex, Dominación, Ofuscación"
 weakness: Toda la línea sufre una locura incurable.
 order: 2
+tooltip: Locos visionarios oráculos; malditos con locura incurable.
 ---
 
 # Malkavian

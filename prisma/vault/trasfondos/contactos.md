@@ -3,6 +3,7 @@ key: contactos
 name: Contactos
 category: Social
 order: 1
+tooltip: "Red de informantes y contactos en la ciudad."
 ---
 
 # Contactos

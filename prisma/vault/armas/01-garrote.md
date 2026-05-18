@@ -9,6 +9,7 @@ aggravated: false
 bluntPlus: true
 concealment: G
 order: 1
+tooltip: "Arma simple de madera; daño contundente."
 ---
 
 # Garrote

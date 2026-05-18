@@ -1,27 +1,33 @@
 ---
 name: Potencia
 order: 6
+tooltip: Fuerza sobrenatural; suma dados a Fuerza para daño, atletismo y proezas.
 powers:
   - level: 1
     name: Potencia I
     summary: +1 dado a Fuerza para daño y proezas físicas. Pasivo.
     bloodCost: 0
+    tooltip: "+1 dado a tiradas que usan Fuerza para daño, atletismo y rotura."
   - level: 2
     name: Potencia II
     summary: +2 dados a Fuerza. Pasivo.
     bloodCost: 0
+    tooltip: "+2 dados a tiradas que usan Fuerza para daño, atletismo y rotura."
   - level: 3
     name: Potencia III
     summary: +3 dados a Fuerza. Pasivo.
     bloodCost: 0
+    tooltip: "+3 dados a tiradas que usan Fuerza para daño, atletismo y rotura."
   - level: 4
     name: Potencia IV
     summary: +4 dados a Fuerza. Pasivo.
     bloodCost: 0
+    tooltip: "+4 dados a tiradas que usan Fuerza para daño, atletismo y rotura."
   - level: 5
     name: Potencia V
     summary: +5 dados a Fuerza. Pasivo.
     bloodCost: 0
+    tooltip: "+5 dados a Fuerza; arranca puertas blindadas y lanza autos."
 ---
 
 # Potencia

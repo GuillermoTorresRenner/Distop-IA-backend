@@ -9,6 +9,7 @@ aggravated: false
 bluntPlus: false
 concealment: C
 order: 2
+tooltip: "Arma blanca versátil; daño letal con filo."
 ---
 
 # Cuchillo

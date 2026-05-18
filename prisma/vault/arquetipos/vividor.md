@@ -1,6 +1,7 @@
 ---
 name: Vividor
 order: 24
+tooltip: Aprovecha a otros sin esfuerzo; parásito sin escrúpulos.
 ---
 
 # Vividor

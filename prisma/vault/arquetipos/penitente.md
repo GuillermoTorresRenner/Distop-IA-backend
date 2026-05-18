@@ -1,6 +1,7 @@
 ---
 name: Penitente
 order: 18
+tooltip: Carga culpa; vive para expiar sus crímenes.
 ---
 
 # Penitente

@@ -12,6 +12,7 @@ rate: 1
 magazine: 5
 concealment: N
 order: 14
+tooltip: "Escopeta de repetición; daño letal masivo."
 ---
 
 # Ithaca M-37

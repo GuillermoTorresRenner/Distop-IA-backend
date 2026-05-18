@@ -4,6 +4,7 @@ sect: Linaje
 disciplines: "Dominación, Mytherceria, Obtenebración"
 weakness: Vulnerables al hierro frío.
 order: 19
+tooltip: Estudiosos lóbregos conectados con fae; vulnerables a hierro frío.
 ---
 
 # Kiasyd

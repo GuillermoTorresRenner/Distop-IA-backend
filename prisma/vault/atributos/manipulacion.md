@@ -3,6 +3,7 @@ key: manipulation
 name: Manipulación
 category: SOCIAL
 order: 4
+tooltip: Doblar voluntad ajena; engaño, intimidación sutil, infiltración de ideas, regateo.
 ---
 
 # Manipulación

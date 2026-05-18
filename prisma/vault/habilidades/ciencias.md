@@ -3,6 +3,7 @@ key: ciencias
 name: Ciencias
 category: KNOWLEDGE
 order: 22
+tooltip: Conocimiento científico aplicado; física, química, biología, análisis técnico.
 ---
 
 # Ciencias

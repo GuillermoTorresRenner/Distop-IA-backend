@@ -9,6 +9,7 @@ aggravated: false
 bluntPlus: false
 concealment: G
 order: 3
+tooltip: "Arma medieval; daño letal significativo."
 ---
 
 # Espada

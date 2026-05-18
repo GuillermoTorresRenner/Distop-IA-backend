@@ -3,6 +3,7 @@ key: supervivencia
 name: Supervivencia
 category: SKILL
 order: 19
+tooltip: Vivir en la intemperie; rastrear, identificar plantas, encontrar agua y refugio.
 ---
 
 # Supervivencia

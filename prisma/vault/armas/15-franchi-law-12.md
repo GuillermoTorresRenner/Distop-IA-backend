@@ -12,6 +12,7 @@ rate: 3
 magazine: 8
 concealment: N
 order: 15
+tooltip: "Escopeta semiautomática táctica."
 ---
 
 # Franchi-Law (.12)

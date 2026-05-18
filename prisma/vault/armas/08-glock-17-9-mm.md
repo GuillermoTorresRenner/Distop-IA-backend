@@ -12,6 +12,7 @@ rate: 4
 magazine: 17
 concealment: P
 order: 8
+tooltip: "Glock 17 (9 mm) weapon."
 ---
 
 # Glock 17 (9 mm)

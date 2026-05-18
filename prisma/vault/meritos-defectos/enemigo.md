@@ -4,6 +4,7 @@ kind: FLAW
 value: -3
 category: Social
 order: 12
+tooltip: "Alguien poderoso quiere tu ruina y caída."
 ---
 
 # Enemigo

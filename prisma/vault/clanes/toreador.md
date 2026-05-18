@@ -4,6 +4,7 @@ sect: Camarilla
 disciplines: "Auspex, Celeridad, Presencia"
 weakness: Quedan absortos ante obras de gran belleza.
 order: 4
+tooltip: Artistas sibaritas esclavos belleza; absortos ante obras maestras.
 ---
 
 # Toreador

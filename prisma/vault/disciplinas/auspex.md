@@ -1,14 +1,16 @@
 ---
 name: Auspex
 order: 1
+tooltip: Sentidos sobrenaturales y percepción mística; lee auras, mentes, historia psíquica.
 powers:
   - level: 1
     name: Sentidos agudizados
     summary: Amplifica un sentido a niveles sobrehumanos por una escena.
     bloodCost: 0
     rollAttribute: perception
-    rollAbility: Conciencia
+    rollAbility: Alerta
     rollDifficulty: 6
+    tooltip: "Amplifica un sentido a niveles sobrehumanos durante una escena."
   - level: 2
     name: Percepción del aura
     summary: Lee el aura emocional y sobrenatural del sujeto observado.
@@ -16,6 +18,7 @@ powers:
     rollAttribute: perception
     rollAbility: Empatía
     rollDifficulty: 8
+    tooltip: "Lee el aura según emoción, humanidad y naturaleza sobrenatural del sujeto."
   - level: 3
     name: Tacto espiritual
     summary: Lee la historia psíquica de un objeto al tocarlo (psicometría).
@@ -23,6 +26,7 @@ powers:
     rollAttribute: perception
     rollAbility: Empatía
     rollDifficulty: 7
+    tooltip: "Al tocar un objeto captas impresiones de su portador o eventos cargados."
   - level: 4
     name: Telepatía
     summary: Lee y proyecta pensamientos del sujeto.
@@ -30,6 +34,7 @@ powers:
     rollAttribute: intelligence
     rollAbility: Subterfugio
     rollDifficulty: 7
+    tooltip: "Conexión mental con sujeto a la vista; lecturas profundas requieren tiradas extendidas."
   - level: 5
     name: Proyección psíquica
     summary: Separa la consciencia del cuerpo y viaja en forma astral.
@@ -37,6 +42,7 @@ powers:
     rollAttribute: perception
     rollAbility: Ocultismo
     rollDifficulty: 8
+    tooltip: "Mente viaja en forma astral; cuerpo duerme profundo y vulnerable."
 ---
 
 # Auspex
