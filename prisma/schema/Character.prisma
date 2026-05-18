@@ -145,13 +145,22 @@ model CharacterDiscipline {
   @@map("character_disciplines")
 }
 
-/// Mérito o Defecto seleccionado del catálogo.
+/// Mérito o Defecto del personaje. Puede venir del catálogo (`meritFlawId`
+/// set) o ser un custom inline del jugador (campos `customX` set). La UI y
+/// el service validan que exactamente uno de los dos modos esté activo.
 model CharacterMeritFlaw {
-  id          String    @id @default(uuid())
+  id          String     @id @default(uuid())
   characterId String
-  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
-  meritFlawId String
-  meritFlaw   MeritFlaw @relation(fields: [meritFlawId], references: [id], onDelete: Restrict)
+  character   Character  @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  meritFlawId String?
+  meritFlaw   MeritFlaw? @relation(fields: [meritFlawId], references: [id], onDelete: Restrict)
+
+  /// Campos para entradas customizadas (solo cuando `meritFlawId` es null).
+  customName     String?
+  customKind     MeritFlawKind?
+  customValue    Int?
+  customCategory String?
+
   notes       String?
 
   @@index([characterId])

@@ -77,7 +77,9 @@ export class CreateCharacterDto {
   @IsOptional() @IsInt() @Min(0) @Max(10) humanity?: number;
   @IsOptional() @IsInt() @Min(0) @Max(10) willpowerMax?: number;
   @IsOptional() @IsInt() @Min(0) @Max(10) willpowerCurrent?: number;
-  @IsOptional() @IsInt() @Min(0) @Max(20) bloodPool?: number;
+  // Rango hasta 50 para soportar las generaciones más bajas (4ª = 50,
+  // 5ª = 40, 6ª = 30, etc.). Ver `bloodPoolForGeneration` en el front.
+  @IsOptional() @IsInt() @Min(0) @Max(50) bloodPool?: number;
 
   // Salud: 0 = ileso, 1 = contundente (/), 2 = letal/agravado (X)
   @IsOptional() @IsInt() @Min(0) @Max(2) healthBruised?: number;

@@ -17,6 +17,7 @@ import {
   loadArchetypes,
   loadAttributes,
   loadAbilities,
+  loadBackgrounds,
   loadHealthLevels,
   loadDisciplines,
   loadMeritsFlaws,
@@ -138,6 +139,30 @@ async function seedMeritsFlaws() {
     });
   }
   console.log(`✓ ${items.length} méritos/defectos.`);
+}
+
+async function seedBackgrounds() {
+  const items = loadBackgrounds();
+  for (let i = 0; i < items.length; i++) {
+    const b = items[i];
+    await prisma.background.upsert({
+      where: { key: b.key },
+      create: {
+        key: b.key,
+        name: b.name,
+        category: b.category,
+        description: b.description,
+        order: b.order || i,
+      },
+      update: {
+        name: b.name,
+        category: b.category,
+        description: b.description,
+        order: b.order || i,
+      },
+    });
+  }
+  console.log(`✓ ${items.length} trasfondos.`);
 }
 
 async function seedClans() {
@@ -274,6 +299,7 @@ async function main() {
   await seedHealthLevels();
   await seedArchetypes();
   await seedMeritsFlaws();
+  await seedBackgrounds();
   await seedClans();
   await seedDisciplines(abilityNames);
   await seedWeapons();

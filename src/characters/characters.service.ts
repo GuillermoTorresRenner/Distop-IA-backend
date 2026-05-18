@@ -215,6 +215,10 @@ export class CharactersService {
           ? {
               create: source.meritsFlaws.map((m) => ({
                 meritFlawId: m.meritFlawId,
+                customName: m.customName,
+                customKind: m.customKind,
+                customValue: m.customValue,
+                customCategory: m.customCategory,
                 notes: m.notes,
               })),
             }
@@ -536,7 +540,11 @@ export class CharactersService {
           await tx.characterMeritFlaw.createMany({
             data: dto.meritsFlaws.map((m) => ({
               characterId: id,
-              meritFlawId: m.meritFlawId,
+              meritFlawId: m.meritFlawId ?? null,
+              customName: m.customName ?? null,
+              customKind: m.customKind ?? null,
+              customValue: m.customValue ?? null,
+              customCategory: m.customCategory ?? null,
               notes: m.notes ?? null,
             })),
           });
@@ -654,6 +662,10 @@ export class CharactersService {
         ? {
             create: meritsFlaws.map((m) => ({
               meritFlawId: m.meritFlawId,
+              customName: m.customName,
+              customKind: m.customKind,
+              customValue: m.customValue,
+              customCategory: m.customCategory,
               notes: m.notes,
             })),
           }
@@ -737,13 +749,51 @@ export class CharactersService {
       }
     }
     if (dto.meritsFlaws?.length) {
-      const ids = [...new Set(dto.meritsFlaws.map((m) => m.meritFlawId))];
-      const found = await this.prisma.meritFlaw.findMany({
-        where: { id: { in: ids } },
-        select: { id: true },
-      });
-      if (found.length !== ids.length) {
-        throw new BadRequestException('One or more meritFlawId are invalid');
+      // Cada entrada debe estar en modo catálogo XOR modo custom.
+      for (const m of dto.meritsFlaws) {
+        const isCatalog = !!m.meritFlawId;
+        const isCustom = !!m.customName || !!m.customKind || !!m.customValue;
+        if (isCatalog && isCustom) {
+          throw new BadRequestException(
+            'Un mérito/defecto no puede ser del catálogo y custom a la vez',
+          );
+        }
+        if (!isCatalog && !isCustom) {
+          throw new BadRequestException(
+            'Un mérito/defecto debe tener meritFlawId o ser custom (name+kind+value)',
+          );
+        }
+        if (isCustom) {
+          if (!m.customName || !m.customKind || typeof m.customValue !== 'number') {
+            throw new BadRequestException(
+              'Mérito/defecto custom requiere customName + customKind + customValue',
+            );
+          }
+          // El signo del value debe ser coherente con el kind.
+          if (m.customKind === 'MERIT' && m.customValue <= 0) {
+            throw new BadRequestException(
+              'customValue de un mérito debe ser positivo',
+            );
+          }
+          if (m.customKind === 'FLAW' && m.customValue >= 0) {
+            throw new BadRequestException(
+              'customValue de un defecto debe ser negativo',
+            );
+          }
+        }
+      }
+      const ids = dto.meritsFlaws
+        .map((m) => m.meritFlawId)
+        .filter((x): x is string => !!x);
+      if (ids.length) {
+        const unique = [...new Set(ids)];
+        const found = await this.prisma.meritFlaw.findMany({
+          where: { id: { in: unique } },
+          select: { id: true },
+        });
+        if (found.length !== unique.length) {
+          throw new BadRequestException('One or more meritFlawId are invalid');
+        }
       }
     }
     if (dto.weapons?.length) {

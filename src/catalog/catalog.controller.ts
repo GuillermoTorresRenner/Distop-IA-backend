@@ -60,6 +60,13 @@ export class CatalogController {
     return this.catalog.listMeritsFlaws();
   }
 
+  @Get('backgrounds')
+  @Auth()
+  @ApiOperation({ summary: 'Backgrounds catalog (Aliados, Contactos, ...)' })
+  backgrounds() {
+    return this.catalog.listBackgrounds();
+  }
+
   @Get('clans')
   @Auth()
   @ApiOperation({ summary: 'Clans and bloodlines' })

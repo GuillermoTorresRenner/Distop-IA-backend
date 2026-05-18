@@ -154,6 +154,13 @@ const MeritFlawSchema = z.object({
   order: z.number().int().optional().default(0),
 });
 
+const BackgroundSchema = z.object({
+  key: z.string().min(1).regex(/^[a-z0-9-]+$/, 'usa kebab-case'),
+  name: z.string().min(1),
+  category: z.string().optional().nullable().default(null),
+  order: z.number().int().optional().default(0),
+});
+
 const ClanSchema = z.object({
   name: z.string().min(1),
   sect: z.string().min(1),
@@ -249,6 +256,9 @@ export type ArchetypeRecord = z.infer<typeof ArchetypeSchema> & {
 export type MeritFlawRecord = z.infer<typeof MeritFlawSchema> & {
   description: string;
 };
+export type BackgroundRecord = z.infer<typeof BackgroundSchema> & {
+  description: string;
+};
 export type ClanRecord = z.infer<typeof ClanSchema> & {
   description: string;
 };
@@ -337,6 +347,27 @@ export function loadMeritsFlaws(): MeritFlawRecord[] {
     );
     return { ...parsed, description: body };
   });
+}
+
+export function loadBackgrounds(): BackgroundRecord[] {
+  const files = listMd('trasfondos');
+  const out: BackgroundRecord[] = files.map((f) => {
+    const { frontmatter, body } = readMd(`trasfondos/${f}`);
+    const parsed = parseOrThrow(BackgroundSchema, frontmatter, `trasfondos/${f}`);
+    return { ...parsed, description: body };
+  });
+  // Sanity: keys y names únicos.
+  const seenKey = new Set<string>();
+  const seenName = new Set<string>();
+  for (const b of out) {
+    if (seenKey.has(b.key))
+      throw new Error(`vault/trasfondos → key duplicada: ${b.key}`);
+    if (seenName.has(b.name))
+      throw new Error(`vault/trasfondos → name duplicado: ${b.name}`);
+    seenKey.add(b.key);
+    seenName.add(b.name);
+  }
+  return out;
 }
 
 export function loadClans(): ClanRecord[] {

@@ -143,6 +143,29 @@ model Clan {
   @@map("clans")
 }
 
+/// Catálogo de Trasfondos canónicos V20 (Aliados, Contactos, Fama, …).
+/// El nombre que se guarda en `CharacterBackground.name` puede coincidir
+/// con uno de estos (caso recomendado) o ser un texto libre customizado
+/// por el jugador (no hay FK; el front decide si renderiza como select
+/// cerrado o como input libre). Si la entrada está en este catálogo, el
+/// modal muestra su descripción narrativa.
+model Background {
+  id          String   @id @default(uuid())
+  /// Slug interno en kebab-case (ej. "aliados", "contactos").
+  key         String   @unique
+  /// Nombre canónico en español (ej. "Aliados"). Se usa como label visible
+  /// y como valor escrito en CharacterBackground.name al elegirlo.
+  name        String   @unique
+  /// Categoría opcional para agrupar en la UI (ej. "Social", "Material").
+  category    String?
+  description String?
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("backgrounds")
+}
+
 /// Catálogo de Méritos y Defectos.
 /// `value` positivo para méritos, negativo para defectos (valor canónico VtM).
 model MeritFlaw {

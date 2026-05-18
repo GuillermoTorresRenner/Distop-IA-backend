@@ -37,6 +37,7 @@ vault/
 ├── clanes/                   ← 1 por clan/linaje
 ├── arquetipos/               ← Naturalezas y Conductas (compartidos)
 ├── meritos-defectos/         ← Méritos y Defectos
+├── trasfondos/               ← Aliados, Contactos, Recursos, Generación, …
 ├── armas/                    ← Catálogo de armas system
 ├── armaduras/                ← Catálogo de armaduras system
 └── salud/                    ← Niveles de salud (Magullado, Lastimado, …)
@@ -191,12 +192,52 @@ Sin secciones especiales — el cuerpo entero es la descripción.
 name: Buen oído
 kind: MERIT            # MERIT | FLAW
 value: 1               # positivo para méritos, negativo para defectos
-category: Físico       # texto libre (Físico, Mental, Social, Sobrenatural)
+category: Físico       # Físico | Mental | Social | Sobrenatural
 order: 0
 ---
 
 Tienes un oído sobrenaturalmente agudo. +1 a tiradas de percepción auditiva.
 ```
+
+El select de la hoja agrupa estas entradas con **dos niveles**:
+
+1. **Categoría** (`category`): Físico, Mental, Social, Sobrenatural.
+2. **Tipo**: dentro de cada categoría se separan en *Méritos* y *Defectos*
+   (a partir del campo `kind`).
+
+Si necesitas una categoría nueva (ej. "Habilidades sobrenaturales"), basta
+con escribirla en `category`: el front la usa como label tal cual y la
+inserta como un nuevo grupo en el dropdown. Mantén nombres consistentes
+entre archivos para que no haya grupos duplicados por error tipográfico.
+
+El jugador puede igualmente crear un mérito/defecto **customizado** desde
+la hoja, indicando nombre, kind, value y categoría libre; ese custom
+queda inline en el personaje y no se persiste como entrada del catálogo.
+
+### `trasfondos/` — uno por trasfondo
+
+```yaml
+---
+key: aliados           # slug interno en kebab-case
+name: Aliados          # OBLIGATORIO. Nombre canónico V20.
+category: Social       # opcional, texto libre (Social, Sobrenatural, Material).
+order: 0               # orden en el dropdown.
+---
+
+# Aliados
+
+**Trasfondo · Social**
+
+Texto narrativo y descripción de los niveles (1..5).
+```
+
+Los Trasfondos del catálogo son la lista cerrada que ofrece el dropdown en
+la hoja del personaje. El jugador puede igualmente escribir un Trasfondo
+**customizado** (no presente en el catálogo); el valor se guarda como texto
+libre en `CharacterBackground.name` y no necesita estar acá.
+
+Para agregar un Trasfondo nuevo al catálogo, crea el archivo `.md`
+correspondiente y vuelve a correr el seeder.
 
 ### `armas/`
 

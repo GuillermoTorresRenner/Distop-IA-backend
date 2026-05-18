@@ -47,6 +47,12 @@ export class CatalogService {
     });
   }
 
+  listBackgrounds() {
+    return this.prisma.background.findMany({
+      orderBy: [{ order: 'asc' }, { name: 'asc' }],
+    });
+  }
+
   listClans() {
     return this.prisma.clan.findMany({ orderBy: { order: 'asc' } });
   }

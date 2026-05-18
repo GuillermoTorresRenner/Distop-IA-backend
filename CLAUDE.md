@@ -37,7 +37,12 @@ NestJS
  ├─ UsersModule       # CRUD básico + avatar
  ├─ UploaderModule    # subida y conversión a WebP (sharp)
  ├─ MailModule        # correos transaccionales (nodemailer + hbs)
+ ├─ CatalogModule     # catálogos: arquetipos, disciplinas, clanes, trasfondos, méritos/defectos, armas, armaduras
+ ├─ CharactersModule  # CRUD personajes (atributos, habilidades, ventajas, equipo)
  ├─ ChroniclesModule  # crónicas, miembros e invitaciones para el VTT
+ ├─ TableModule       # gateway WebSocket: tiradas de dados, combate, iniciativa
+ ├─ JournalModule     # bitácora de crónicas y personajes
+ ├─ SocialModule      # amistades
  └─ PrismaModule      # cliente Prisma compartido
    ↓
 PostgreSQL
@@ -47,18 +52,47 @@ No hay sistema de roles, ni RabbitMQ, ni microservicios. Si necesitas RBAC u otr
 
 ## Modelos Prisma
 
+Schemas modulares en [prisma/schema/](prisma/schema/):
+
+**Usuarios:**
 - `Users` - `id` (uuid), `email` (único), `password`, `isActive`, `avatar`, timestamps. Sin enum Role.
 - `PasswordResetToken` - token de recuperación con expiración y bandera `used`.
+
+**Crónicas:**
 - `Chronicle` - mesa de juego. Campos: `id`, `name`, `description?`, `setting?`, `narratorId` (FK Users), timestamps.
 - `ChronicleMember` - pivot user↔chronicle. Roles: `NARRATOR | PLAYER`. Unique `(chronicleId, userId)`.
-- `ChronicleInvitation` - invitación con `token`, `email`, `invitedById`, `invitedUserId?` (si el invitado ya existe), `status: PENDING|ACCEPTED|CANCELLED|EXPIRED`, `expiresAt` (7 días), `acceptedAt?`.
+- `ChronicleInvitation` - invitación con `token`, `email`, `invitedById`, `invitedUserId?`, `status: PENDING|ACCEPTED|CANCELLED|EXPIRED`, `expiresAt` (7 días), `acceptedAt?`.
 
-Schemas modulares en [prisma/schema/](prisma/schema/).
+**Catálogos:**
+- `Archetype` - Naturaleza y Conducta (V20).
+- `Discipline` + `DisciplinePower` - Disciplinas vampíricas.
+- `Clan` - Clanes del Camarilla y Sabbat.
+- `MeritFlaw` - Méritos y Defectos del catálogo.
+- `Background` - 10 trasfondos V20 (Aliados, Contactos, Criados, Fama, Generación, Influencia, Mentor, Posición, Rebaño, Recursos). Campos: `id`, `key` (unique), `name` (unique), `category?`, `description?`, `order`, timestamps.
+
+**Personajes:**
+- `Character` - atributos, habilidades, ventajas, equipo, humanidad, voluntad, sangre, experiencia, salud. Enum `CharacterKind: PC | NPC | ANTAGONIST`.
+- `CharacterAbility` - enlace a habilidades (talents/skills/knowledges).
+- `CharacterDiscipline` - enlace a disciplinas con `powerIds[]` seleccionados.
+- `CharacterVirtue` - virtudes (Conciencia, Autocontrol, Coraje).
+- `CharacterBackground` - trasfondo con `name` (texto libre, match contra catálogo en el front) y `level`.
+- `CharacterMeritFlaw` - entrada con `meritFlawId?` (FK) O `customName+customKind+customValue+customCategory` (modo custom). Mutuamente excluyentes.
+
+**Equipamiento:**
+- `WeaponCategory`, `Weapon`, `CharacterWeapon` - armas cuerpo a cuerpo y a distancia (system V20 + custom).
+- `Armor`, `CharacterArmor` - armaduras (system V20 + custom).
+
+**Mesa Virtual:**
+- `DiceRoll` - registro persistente de tiradas: `id`, `characterId`, `chronicleId`, `sourceKind` (enum: VTM, INITIATIVE, ...), `notation`, `rolls[]`, `total`, `metadata` (Json: para INITIATIVE contiene `{ d10, dexterity, wits, modifier, total }`), timestamps.
+- `CombatParticipant` - personaje inscrito en el tracker de combate: `id`, `chronicleId`, `characterId`, `initiative`, `currentRound`, `turnOrder`, timestamps.
+
+**Diario y Social:**
+- `JournalEntry` - bitácora de crónica o personaje.
+- `Friendship` - relaciones entre usuarios.
 
 ## Endpoints
 
-Auth ([src/auth/auth.controller.ts](src/auth/auth.controller.ts)):
-
+**Auth** ([src/auth/auth.controller.ts](src/auth/auth.controller.ts)):
 - `POST /api/auth/register` - registro público con email + password.
 - `POST /api/auth/login` - retorna user; setea cookies `accessToken` (15m) y `refreshToken` (7d).
 - `POST /api/auth/refresh` - rota tokens usando cookie `refreshToken`.
@@ -67,36 +101,48 @@ Auth ([src/auth/auth.controller.ts](src/auth/auth.controller.ts)):
 - `POST /api/auth/forgot-password` - envía correo con link de recuperación.
 - `POST /api/auth/reset-password` - cambia password con token.
 
-Users ([src/users/users.controller.ts](src/users/users.controller.ts)):
-
+**Users** ([src/users/users.controller.ts](src/users/users.controller.ts)):
 - `GET /api/users?page=&pageSize=&email=&isActive=` - listado paginado (auth).
 - `GET /api/users/:id` - detalle (auth).
 - `PUT /api/users/:id` - actualizar email/password (auth).
 - `POST /api/users/:id/avatar` - subir avatar (multipart, máx. 5 MB, jpg/png/webp/gif → WebP).
 - `DELETE /api/users/:id` - soft delete (`isActive: false`).
 
-Uploader ([src/uploader/uploader.controller.ts](src/uploader/uploader.controller.ts)):
-
+**Uploader** ([src/uploader/uploader.controller.ts](src/uploader/uploader.controller.ts)):
 - `POST /api/upload/user-avatar/:userId` - endpoint alternativo de subida.
 
-Chronicles ([src/chronicles/chronicles.controller.ts](src/chronicles/chronicles.controller.ts)):
+**Catalog** ([src/catalog/catalog.controller.ts](src/catalog/catalog.controller.ts)):
+- `GET /api/catalog/{archetypes,disciplines,merits-flaws,clans,backgrounds,weapon-categories,weapons,armors}` - listados de catálogos.
+- `POST/PATCH/DELETE /api/catalog/weapons[/:id]` - custom weapons (solo dueño).
+- `POST/PATCH/DELETE /api/catalog/armors[/:id]` - custom armors (solo dueño).
 
+**Characters** ([src/characters/characters.controller.ts](src/characters/characters.controller.ts)):
+- `GET/POST/PATCH/DELETE /api/characters[/:id]` - CRUD.
+- `POST /api/characters/:id/clone` - clonar personaje.
+
+**Chronicles** ([src/chronicles/chronicles.controller.ts](src/chronicles/chronicles.controller.ts)):
 - `POST /api/chronicles` - crear crónica (auth). Usuario actual queda como `NARRATOR` y `ChronicleMember` automáticamente.
 - `GET /api/chronicles` - lista crónicas donde el usuario es miembro, con `narrator`, `members[]` y `_count`.
 - `GET /api/chronicles/:id` - detalle (auth, debe ser miembro): `narrator`, `members[]`, `invitations[]` (sólo PENDING).
 - `PATCH /api/chronicles/:id` - actualizar `name|description|setting` (auth, sólo narrador).
 - `DELETE /api/chronicles/:id` - eliminar crónica (auth, sólo narrador). Cascade borra members + invitations.
+- `GET /api/chronicles/:id/characters` - personajes asociados a la crónica.
+- `GET /api/chronicles/:id/associable-characters` - candidatos a asociar (narrador ve todos los miembros, jugador solo los suyos).
+- `POST /api/chronicles/:id/characters` - crear-y-asociar personaje. Soporta `kind + targetUserId` para que narrador cree NPCs/Antagonistas.
+- `POST/DELETE /api/chronicles/:id/characters/:characterId` - asociar/desasociar personaje.
 - `POST /api/chronicles/:id/invitations` - invitar por email (auth, sólo narrador). Body `{ email }`. Crea `ChronicleInvitation` con token aleatorio (7 días). Si el email pertenece a un usuario registrado → envía correo con `${FRONTEND_URL}/invitations/<token>`. Si no → envía correo con `${FRONTEND_URL}/register?invite=<token>`. Errores: 400 si ya es miembro o ya hay invitación pendiente para ese email.
 - `DELETE /api/chronicles/:id/invitations/:invitationId` - cancela invitación pendiente (auth, narrador).
 - `DELETE /api/chronicles/:id/members/:userId` - expulsa miembro (auth, narrador). No permite remover al narrador.
 
-Invitations ([src/chronicles/invitations.controller.ts](src/chronicles/invitations.controller.ts)):
-
+**Invitations** ([src/chronicles/invitations.controller.ts](src/chronicles/invitations.controller.ts)):
 - `GET /api/invitations/token/:token` - **público**. Preview para páginas de aceptación/registro. Devuelve `{ chronicle, invitedBy, status, expiresAt }` (status pasa a `EXPIRED` si `expiresAt < now`).
 - `GET /api/invitations` - lista invitaciones pendientes dirigidas al usuario actual (auth). Match por `invitedUserId` o por `email`.
 - `POST /api/invitations/:token/accept` - acepta (auth). Valida que el email del invite coincide con el del usuario logueado. Si OK, crea `ChronicleMember` con rol `PLAYER` y marca invitación `ACCEPTED`.
 
-Mail templates (Distop-IA · La Mascarada VTT — paleta sangrienta) en [src/mail/templates/](src/mail/templates/):
+**Table (WebSocket)** ([src/table/table.gateway.ts](src/table/table.gateway.ts)):
+- `roll:initiative` - evento cliente→servidor. Body: `{ characterId, label?, isPublic?, modifier? }`. Valida permisos (PC: dueño o narrador; NPC/Antagonista: solo narrador). Tira `1d10` server-side + Destreza + Astucia + modificador circunstancial. Persiste en `DiceRoll` con `sourceKind='INITIATIVE'` y `metadata` con desglose. Emite `roll:result` (visibilidad según `isPublic`). Inscribe/actualiza personaje en tracker e emite `combat:state`.
+
+**Mail templates** (Distop-IA · La Mascarada VTT — paleta sangrienta) en [src/mail/templates/](src/mail/templates/):
 
 - `welcome.hbs` - tras registro. Variables: `name`, `email`, `platformUrl`, `year`.
 - `password-recovery.hbs` - tras forgot-password. Variables: `name`, `recoveryUrl`, `year`.
@@ -104,6 +150,10 @@ Mail templates (Distop-IA · La Mascarada VTT — paleta sangrienta) en [src/mai
 - `chronicle-invite-new.hbs` - invite a email no registrado. Variables: `email`, `inviterEmail`, `chronicleName`, `registerUrl`, `expiresAt`, `year`.
 
 `MailService` ([src/mail/mail.service.ts](src/mail/mail.service.ts)) expone `sendWelcome`, `sendPasswordRecovery`, `sendChronicleInviteExisting`, `sendChronicleInviteNew`. Subject prefix `Distop-IA · …`. Render helper centralizado (`this.render(template, data)`).
+
+**Migraciones recientes:**
+- `20260518020826_add_dice_roll_metadata` - agrega columna `metadata Json?` a `DiceRoll` para guardar desglose de tiradas (ej. iniciativa con d10, dexterity, wits, modifier).
+- `20260518025656_add_background_catalog` - nuevo modelo `Background` con catálogo de trasfondos V20.
 
 Swagger: `http://localhost:3000/docs`.
 
