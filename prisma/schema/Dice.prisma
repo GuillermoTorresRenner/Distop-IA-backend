@@ -79,10 +79,15 @@ model DiceRoll {
   /// De dónde se originó la tirada. Por ahora "DISCIPLINE" cuando el roller
   /// fue rellenado por activar un poder. Null para tiradas manuales o
   /// click-to-roll de atributo+habilidad.
+  /// "INITIATIVE": tirada de iniciativa (1d10 + Destreza + Astucia); ver `metadata`.
   sourceKind      String?
   /// Etiqueta legible asociada al `sourceKind`. Para DISCIPLINE es el nombre
   /// de la disciplina (ej. "Dominación"). Renderizado como badge en el chat.
   sourceName      String?
+
+  /// Datos adicionales libres dependientes de `sourceKind`.
+  /// Para INITIATIVE: `{ d10: number, dexterity: number, wits: number, total: number }`.
+  metadata        Json?
 
   createdAt       DateTime   @default(now())
 

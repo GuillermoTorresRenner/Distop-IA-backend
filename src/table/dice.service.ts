@@ -339,6 +339,82 @@ export class DiceService {
   }
 
   /**
+   * Tira iniciativa V20: 1d10 + Destreza + Astucia del personaje.
+   * Persiste la tirada con `sourceKind='INITIATIVE'` y guarda el desglose
+   * en `metadata` para que el cliente lo renderice. No aplica reglas V20
+   * (dificultad, éxitos, pifia, voluntad, especialidad).
+   */
+  async rollInitiative(input: {
+    chronicleId: string;
+    userId: string;
+    characterId: string;
+    label?: string | null;
+    isPublic?: boolean;
+    dexterity: number;
+    wits: number;
+    characterName: string;
+    /** Modificador circunstancial (positivo o negativo). 0 si no aplica. */
+    modifier?: number;
+  }) {
+    const d10 = randomInt(1, 11);
+    const dex = Math.max(0, Math.floor(input.dexterity));
+    const wits = Math.max(0, Math.floor(input.wits));
+    const rawModifier =
+      typeof input.modifier === 'number' && Number.isFinite(input.modifier)
+        ? Math.max(-20, Math.min(20, Math.floor(input.modifier)))
+        : 0;
+    const total = d10 + dex + wits + rawModifier;
+
+    const modifierLabel =
+      rawModifier === 0
+        ? ''
+        : rawModifier > 0
+          ? ` + ${rawModifier}`
+          : ` - ${Math.abs(rawModifier)}`;
+    const label =
+      input.label?.trim() ||
+      `Iniciativa · ${input.characterName} (Destreza ${dex} + Astucia ${wits}${modifierLabel})`;
+
+    const created = await this.prisma.diceRoll.create({
+      data: {
+        chronicleId: input.chronicleId,
+        userId: input.userId,
+        characterId: input.characterId,
+        label,
+        // Campos V20 inactivos: usamos pool=1, dificultad alta para que
+        // visualmente no aparezca como un éxito; el render del front detecta
+        // sourceKind=INITIATIVE y muestra layout especial.
+        pool: 1,
+        difficulty: 10,
+        specialty: false,
+        skillRating: null,
+        specialtyText: null,
+        willpowerSpent: false,
+        wpForSuccess: false,
+        wpForWound: false,
+        wpForReroll: false,
+        willpowerEffect: 'NONE',
+        woundPenalty: 0,
+        rolls: [d10],
+        specialtyRerolls: [],
+        willpowerRerolls: [],
+        successes: 0,
+        isBotch: false,
+        isPublic: input.isPublic ?? true,
+        sourceKind: 'INITIATIVE',
+        sourceName: 'Iniciativa',
+        metadata: { d10, dexterity: dex, wits, modifier: rawModifier, total },
+      },
+      include: {
+        user: { select: { id: true, email: true, nickname: true, avatar: true } },
+        character: { select: { id: true, name: true, kind: true } },
+      },
+    });
+
+    return { roll: created, d10, dexterity: dex, wits, modifier: rawModifier, total };
+  }
+
+  /**
    * Historial de tiradas filtrado por las mismas reglas que la emisión WS:
    *   - Públicas (isPublic=true) y de PC: todos las ven.
    *   - Secretas (isPublic=false): sólo el autor (`userId`).

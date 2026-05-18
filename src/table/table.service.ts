@@ -153,6 +153,48 @@ export class TableService {
     };
   }
 
+  /**
+   * Lee los atributos necesarios para tirar iniciativa (Destreza + Astucia)
+   * junto con el contexto del personaje (kind/ownerId/name) para que el
+   * gateway pueda validar permisos y construir la tirada.
+   */
+  async getInitiativeStats(
+    chronicleId: string,
+    characterId: string,
+  ): Promise<{
+    id: string;
+    name: string;
+    kind: 'PC' | 'NPC' | 'ANTAGONIST';
+    ownerId: string;
+    dexterity: number;
+    wits: number;
+  } | null> {
+    const link = await this.prisma.chronicleCharacter.findUnique({
+      where: { chronicleId_characterId: { chronicleId, characterId } },
+      include: {
+        character: {
+          select: {
+            id: true,
+            name: true,
+            kind: true,
+            userId: true,
+            dexterity: true,
+            wits: true,
+          },
+        },
+      },
+    });
+    if (!link?.character) return null;
+    return {
+      id: link.character.id,
+      name: link.character.name,
+      kind: link.character.kind,
+      ownerId: link.character.userId,
+      dexterity: link.character.dexterity,
+      wits: link.character.wits,
+    };
+  }
+
   async getCharacterContext(
     chronicleId: string,
     characterId: string,

@@ -125,6 +125,58 @@ export class CombatService {
   }
 
   /**
+   * Inscribe (o actualiza) un participante a partir de una tirada de
+   * iniciativa. Si el personaje ya está en el tracker, le actualiza la
+   * iniciativa con el nuevo total; si no, lo agrega al final del orden.
+   *
+   * A diferencia de `addParticipant`, este método no requiere narrador:
+   * cualquier dueño legítimo del personaje (validado por el caller) puede
+   * inscribirse a sí mismo o ser inscrito por el narrador.
+   */
+  async addOrUpdateForInitiative(
+    chronicleId: string,
+    characterId: string,
+    initiative: number,
+  ): Promise<CombatStateView> {
+    const tracker = await this.ensureTracker(chronicleId);
+
+    const link = await this.prisma.chronicleCharacter.findUnique({
+      where: { chronicleId_characterId: { chronicleId, characterId } },
+      include: { character: { select: { id: true, name: true } } },
+    });
+    if (!link?.character) {
+      throw new BadRequestException(
+        'El personaje no está asociado a esta crónica',
+      );
+    }
+
+    const existing = await this.prisma.combatParticipant.findFirst({
+      where: { trackerId: tracker.id, characterId },
+    });
+
+    if (existing) {
+      await this.prisma.combatParticipant.update({
+        where: { id: existing.id },
+        data: { initiative },
+      });
+    } else {
+      const nextOrder = tracker.participants.length;
+      await this.prisma.combatParticipant.create({
+        data: {
+          trackerId: tracker.id,
+          characterId,
+          displayName: null,
+          initiative,
+          order: nextOrder,
+        },
+      });
+    }
+
+    const fresh = await this.ensureTracker(chronicleId);
+    return this.toView(fresh, 'NARRATOR');
+  }
+
+  /**
    * Actualiza un participante (iniciativa o displayName). Solo narrador.
    */
   async updateParticipant(

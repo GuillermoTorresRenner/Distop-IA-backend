@@ -19,6 +19,7 @@ import { TableService } from './table.service';
 import { DiceService } from './dice.service';
 import { BoardShareDto, BoardUpdateDto } from './dto/board-update.dto';
 import { ChatMessageDto } from './dto/chat-message.dto';
+import { RollInitiativeDto } from './dto/roll-initiative.dto';
 import { RollVtmDto } from './dto/roll-vtm.dto';
 import { SheetUpdateAnnounceDto } from './dto/sheet-update-announce.dto';
 import { BoardService } from './board.service';
@@ -389,6 +390,99 @@ export class TableGateway
         }
       }
     }
+
+    return { ok: true, id: roll.id };
+  }
+
+  /**
+   * Tirada de iniciativa (V20): 1d10 + Destreza + Astucia del personaje.
+   *
+   * Reglas:
+   *  - El personaje debe estar asociado a la crónica.
+   *  - Si es PC: solo el dueño o el narrador pueden tirar.
+   *  - Si es NPC/ANTAGONIST: solo el narrador puede tirar.
+   *
+   * Efectos:
+   *  - Persiste la tirada con sourceKind='INITIATIVE' y metadata desglosada.
+   *  - Emite `roll:result` siguiendo las mismas reglas de visibilidad que
+   *    las tiradas V20 (PC públicas: a toda la sala; NPC/Antag o secretas:
+   *    autor + narrador; secretas-jugador: solo autor).
+   *  - Inscribe o actualiza al personaje en el tracker de turnos con el
+   *    total como iniciativa y emite `combat:state` a toda la sala.
+   */
+  @SubscribeMessage('roll:initiative')
+  async onRollInitiative(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() body: RollInitiativeDto,
+  ) {
+    const { userId, chronicleId } = (client.data ?? {}) as AuthenticatedSocketData;
+    if (!userId || !chronicleId) throw new WsException('Not in a table');
+
+    const ctx = await this.tableService.getInitiativeStats(
+      chronicleId,
+      body.characterId,
+    );
+    if (!ctx) throw new WsException('Personaje no asociado a esta crónica');
+
+    const narratorId = await this.tableService.getNarratorId(chronicleId);
+    const isNarrator = narratorId === userId;
+    const isOwner = ctx.ownerId === userId;
+
+    if (ctx.kind === 'PC') {
+      if (!isOwner && !isNarrator) {
+        throw new WsException(
+          'Solo el dueño del personaje o el narrador pueden tirar su iniciativa',
+        );
+      }
+    } else {
+      if (!isNarrator) {
+        throw new WsException(
+          'Solo el narrador puede tirar la iniciativa de PNJs o antagonistas',
+        );
+      }
+    }
+
+    const { roll } = await this.diceService.rollInitiative({
+      chronicleId,
+      userId,
+      characterId: ctx.id,
+      label: body.label ?? null,
+      isPublic: body.isPublic ?? true,
+      dexterity: ctx.dexterity,
+      wits: ctx.wits,
+      characterName: ctx.name,
+      modifier: body.modifier,
+    });
+
+    const room = this.roomName(chronicleId);
+    const isSecretByKind = ctx.kind === 'NPC' || ctx.kind === 'ANTAGONIST';
+    const isSecret = !roll.isPublic;
+    const goesPublic = roll.isPublic && !isSecretByKind;
+
+    if (goesPublic) {
+      this.server.to(room).emit('roll:result', roll);
+    } else {
+      const sockets = await this.server.in(room).fetchSockets();
+      for (const s of sockets) {
+        const sUid = (s.data as AuthenticatedSocketData)?.userId;
+        const isAuthor = sUid === userId;
+        const isViewerNarrator = !!narratorId && sUid === narratorId;
+        const allowed = isSecret
+          ? isAuthor
+          : isAuthor || isViewerNarrator;
+        if (allowed) s.emit('roll:result', roll);
+      }
+    }
+
+    // Inscribe/actualiza al personaje en el tracker con el total.
+    const metadata = roll.metadata as { total: number } | null;
+    const total = metadata?.total ?? ctx.dexterity + ctx.wits;
+    const combatState = await this.combatService.addOrUpdateForInitiative(
+      chronicleId,
+      ctx.id,
+      total,
+    );
+    await this.broadcastCombat(chronicleId, combatState);
 
     return { ok: true, id: roll.id };
   }
