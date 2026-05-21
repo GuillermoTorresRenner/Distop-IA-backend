@@ -1,64 +1,62 @@
 ---
 name: Celeridad
 order: 2
-tooltip: Velocidad sobrenatural; acciones reflexivas extra mediante gasto de sangre.
+tooltip: Velocidad sobrenatural. Cada punto de sangre concede acciones físicas extra iguales a tu nivel en la Disciplina.
 powers:
   - level: 1
-    name: Celeridad I
-    summary: "1 sangre → +1 acción reflexiva este turno."
+    name: Celeridad 1
+    summary: Gasta 1 punto de sangre y obtén 1 acción física adicional el turno siguiente.
     bloodCost: 1
-    tooltip: "Gastar 1 sangre desbloquea 1 acción reflexiva extra en el turno."
+    rollAttribute: null
+    rollAbility: null
+    rollDifficulty: null
+    tooltip: "Las acciones extra ocurren al final del turno y son únicamente físicas — no permiten Disciplinas mentales como Dominación."
   - level: 2
-    name: Celeridad II
-    summary: "1 sangre → +2 acciones reflexivas este turno."
+    name: Celeridad 2
+    summary: Gasta 1 punto de sangre y obtén 2 acciones físicas adicionales el turno siguiente.
     bloodCost: 1
-    tooltip: "Gastar 1 sangre desbloquea 2 acciones reflexivas extra en el turno."
+    rollAttribute: null
+    rollAbility: null
+    rollDifficulty: null
+    tooltip: "Reserva de dados completa por cada acción separada; no se aplican penalizadores por acciones múltiples."
   - level: 3
-    name: Celeridad III
-    summary: "1 sangre → +3 acciones reflexivas este turno."
+    name: Celeridad 3
+    summary: Gasta 1 punto de sangre y obtén 3 acciones físicas adicionales el turno siguiente.
     bloodCost: 1
-    tooltip: "Gastar 1 sangre desbloquea 3 acciones reflexivas extra en el turno."
+    rollAttribute: null
+    rollAbility: null
+    rollDifficulty: null
+    tooltip: "Acción extra no divisible en acciones múltiples; cada una con pool completo."
   - level: 4
-    name: Celeridad IV
-    summary: "1 sangre → +4 acciones reflexivas este turno."
+    name: Celeridad 4
+    summary: Gasta 1 punto de sangre y obtén 4 acciones físicas adicionales el turno siguiente.
     bloodCost: 1
-    tooltip: "Gastar 1 sangre desbloquea 4 acciones reflexivas extra en el turno."
+    rollAttribute: null
+    rollAbility: null
+    rollDifficulty: null
+    tooltip: "El total resulta en 5 acciones físicas el turno siguiente (1 normal + 4 extra)."
   - level: 5
-    name: Celeridad V
-    summary: "1 sangre → +5 acciones reflexivas este turno."
+    name: Celeridad 5
+    summary: Gasta 1 punto de sangre y obtén 5 acciones físicas adicionales el turno siguiente.
     bloodCost: 1
-    tooltip: "Gastar 1 sangre desbloquea 5 acciones reflexivas; eres un borrón en el espacio."
+    rollAttribute: null
+    rollAbility: null
+    rollDifficulty: null
+    tooltip: "Máximo de creación. Una explosión devastadora de movimiento; orden normal de iniciativa para todas."
 ---
 
 # Celeridad
 
-Velocidad sobrenatural. Cada gasto de sangre durante un turno desbloquea
-acciones extra hasta el límite de tu nivel en la disciplina. Es la
-disciplina que separa a los Brujah, Toreador y Assamita del resto en
-combate cuerpo a cuerpo.
+Velocidad sobrenatural. El Abrazo concede a algunos vampiros reflejos y velocidad increíbles; en momentos de tensión, una explosión de movimiento devastador. Los mortales (e incluso los vampiros sin esta Disciplina) se moverán a cámara lenta comparados.
 
-> **Mecánica V20:** gastar 1 sangre añade un número de acciones extra
-> iguales a tu nivel en Celeridad. Cada acción se realiza con la reserva
-> dividida o como ataque reflexivo separado, según interpretación de la
-> mesa.
+**Maestros del clan**: Brujah, Toreador, Assamita. Los Brujah la emplean para derrotar enemigos antes de que reaccionen; los Toreador para gracia preternatural en la actuación; los Assamita para borrar el rastro del crimen.
 
-## 1 — Celeridad I
+**Sistema**: el jugador gasta **1 punto de sangre** y al turno siguiente gana un número de acciones físicas adicionales igual a su puntuación en Celeridad. Las acciones extra deben ser **físicas** (sin Disciplinas mentales como Dominación) y se producen al final del turno (la acción normal va en orden de iniciativa habitual).
 
-Una acción extra al gastar 1 sangre.
+Reglas clave:
 
-## 2 — Celeridad II
+- Sin Celeridad, un personaje aplica penalizaciones a sus reservas de dados si desea realizar varias acciones en un mismo turno. **Con Celeridad las acciones extra usan reserva de dados completa, sin penalización**, por cada acción separada.
+- Las acciones de Celeridad **no pueden dividirse** a su vez en acciones múltiples.
+- Un Celeridad 4 que gaste 1 punto de sangre podrá realizar **5 acciones físicas** el turno siguiente (1 normal + 4 extra).
 
-Dos acciones extras al gastar 1 sangre.
-
-## 3 — Celeridad III
-
-Tres acciones extras al gastar 1 sangre.
-
-## 4 — Celeridad IV
-
-Cuatro acciones extras al gastar 1 sangre.
-
-## 5 — Celeridad V
-
-Cinco acciones extras al gastar 1 sangre. Eres prácticamente un
-borrón en el espacio.
+Esta es la regla canon V20 y cubre todos los niveles: la única diferencia entre Celeridad 1 y Celeridad 5 es la cantidad de acciones extra que se obtienen por el mismo gasto de 1 punto de sangre.

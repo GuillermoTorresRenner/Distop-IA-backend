@@ -2,153 +2,153 @@
 kind: paths
 name: Nigromancia
 order: 10
-tooltip: Magia de los muertos. Tres sendas (Sepulcro, Osario, Cenizas) + rituales.
+tooltip: Magia de los muertos. Tres sendas (Sepulcro primaria, Osario, Cenizas) + rituales. Mecánica como Taumaturgia.
 paths:
   - key: senda_sepulcro
     name: Senda del Sepulcro
     order: 1
-    tooltip: Senda primaria. Invoca, interroga y vincula fantasmas del Inframundo.
+    tooltip: Senda primaria de todo nigromante. Invoca, interroga, ata y golpea fantasmas.
     powers:
       - level: 1
         name: Penetración
-        summary: Lees los últimos minutos de vida en los ojos de un cadáver.
-        bloodCost: 0
+        summary: Mira los ojos de un cadáver para ver lo último que contempló antes de morir.
+        bloodCost: 1
         rollAttribute: perception
         rollAbility: Ocultismo
         rollDifficulty: 8
-        tooltip: "Visión final del muerto; dif 10 para no-vivos (zombis) y 8 para criaturas que vivieron."
+        tooltip: "Cuesta 1 PS. Tirada FV dif 4. Posteriormente Percepción + Ocultismo (dif 8 si tuvo vida, 10 si no la tuvo, 9 si es vampiro). Tabla 1-5 éxitos: sensación / imagen clara / con sonido minutos previos / media hora / hora completa. Fracaso: ve la propia Muerte Definitiva (Rötschreck)."
       - level: 2
-        name: Invocar espíritu
-        summary: Llamas a un fantasma específico del Inframundo para conversar.
-        bloodCost: 0
+        name: Invocar Espíritu
+        summary: Llama a un fantasma específico del Inframundo a tu presencia.
+        bloodCost: 1
         rollAttribute: perception
         rollAbility: Ocultismo
         rollDifficulty: 7
-        tooltip: "Invocas un fantasma específico; -2 dificultad si tienes un objeto que tocó en vida."
+        tooltip: "Cuesta 1 PS. Tirada FV dif 5. Posterior Percepción + Ocultismo dif 7 (o FV del fantasma). Objeto que tocó en vida: -2 dificultad. No invoca fantasmas destruidos, diabolizados o perdidos en la Tormenta. Fracaso: invoca espectro hostil."
       - level: 3
-        name: Ordenar a espíritu
-        summary: Fuerzas al espíritu a obedecer una orden.
-        bloodCost: 0
+        name: Ordenar a Espíritu
+        summary: Obliga a un espíritu invocado a obedecer órdenes.
+        bloodCost: 1
         rollAttribute: manipulation
         rollAbility: Ocultismo
         rollDifficulty: 7
-        tooltip: "Cada éxito sube el grado de obediencia: 1=quedarse cerca, 5=cumple sin objetar."
+        tooltip: "Cuesta 1 PS. Tirada FV dif 6. Posterior Manipulación + Ocultismo (dif = FV del objetivo). Tabla: 1=quedarse cerca / 2=responder preguntas / 3=verdad sin omisión / 4=servicio por la letra / 5=esclavitud diligente. 1h por éxito o 1 noche por 1 FV temporal o 1 año+1 día por 1 FV permanente."
       - level: 4
         name: Embrujar
-        summary: Atas al fantasma a un lugar u objeto durante una noche.
-        bloodCost: 0
+        summary: Ata al fantasma invocado a un lugar u objeto.
+        bloodCost: 1
         rollAttribute: manipulation
         rollAbility: Ocultismo
         rollDifficulty: 7
-        tooltip: "Ata fantasma al lugar; resistir requiere FV dif 10 + 2 éxitos o sufrir agravado."
+        tooltip: "Cuesta 1 PS. Tirada FV dif 7. Manipulación + Ocultismo (dif = FV del objetivo si se resiste, 4 si no). Cada éxito ata 1 noche; 1 FV temporal = semana; 1 FV permanente = año. Si el fantasma fuerza salida: FV dif 10 con 2 éxitos o nivel agravado."
       - level: 5
         name: Atormentar
-        summary: Golpeas a un espíritu como si estuvieras en las tierras de los muertos.
-        bloodCost: 0
+        summary: Golpeas a un fantasma como si estuvieras en el Inframundo causándole daño ectoplásmico.
+        bloodCost: 1
         rollAttribute: stamina
         rollAbility: Empatía
         rollDifficulty: 7
-        tooltip: "Cada éxito = 1 nivel de daño letal al espíritu; al perder todos los niveles, destruido."
+        tooltip: "Cuesta 1 PS. Tirada FV dif 8. Resistencia + Empatía (dif = FV del objetivo). Cada éxito 1 nivel letal al espíritu. Si pierde todos los niveles, arrojado al Inframundo; no puede volver al mundo real durante un mes."
 
   - key: senda_osario
     name: Senda del Osario
     order: 2
-    tooltip: Domina los cadáveres. Animarlos, manipularlos, hablar a través de ellos.
+    tooltip: Trabajo con cadáveres. Animarlos, gobernarlos, robar y reinsertar almas en cuerpos muertos.
     powers:
       - level: 1
         name: Tremens
-        summary: Animas la carne de un cadáver durante una acción sencilla.
+        summary: Anima la carne de un cadáver durante una acción sencilla.
         bloodCost: 1
         rollAttribute: dexterity
         rollAbility: Ocultismo
         rollDifficulty: 6
-        tooltip: "Animas cadáver durante una acción; útil para asustar o transmitir mensajes."
+        tooltip: "Cuesta 1 PS. Tirada FV dif 4. Posterior Destreza + Ocultismo dif 6. Cuantos más éxitos, acción más compleja: 1 espasmo súbito; 5 condiciones específicas (\"abre los ojos la próxima vez que alguien entre\"). El cadáver no atacará ni causará daño."
       - level: 2
-        name: Las escobas del aprendiz
-        summary: Un cuerpo muerto realiza una función sencilla por horas.
+        name: Las Escobas del Aprendiz
+        summary: Un cuerpo muerto realiza una función sencilla durante horas.
         bloodCost: 1
         rollAttribute: wits
         rollAbility: Ocultismo
         rollDifficulty: 7
-        tooltip: "Cadáveres realizan tareas simples (cargar, cavar); no defienden ni atacan."
+        tooltip: "Cuesta 1 PS de sangre + 1 PS de FV. Tirada FV dif 5. Posterior Astucia + Ocultismo dif 7. Éxitos = número de muertos animados. El cadáver realizará tareas simples; no atacará ni se defenderá. Sirve hasta ser destruido."
       - level: 3
-        name: Hordas tambaleantes
-        summary: Animas zombis combatientes que obedecen tu última orden.
+        name: Hordas Tambaleantes
+        summary: Anima zombis combatientes que obedecen la última orden.
         bloodCost: 1
         rollAttribute: wits
         rollAbility: Ocultismo
         rollDifficulty: 8
-        tooltip: "Cada éxito = 1 zombi animado (Fuerza 3, Dex 2, Res 4, Pelea 2). 1 FV por sesión."
+        tooltip: "Cuesta 1 PS de FV + 1 PS de sangre por cadáver animado. Tirada FV dif 6. Astucia + Ocultismo dif 8. Cada éxito permite animar otro cadáver. Zombi: Fuerza 3, Destreza 2, Resistencia 4, Pelea 2, FV 0. Siempre actúan al final del turno."
       - level: 4
-        name: Robar alma
-        summary: Conviertes a un viviente en un fantasma vinculado a su cuerpo vacío.
-        bloodCost: 0
+        name: Robar Alma
+        summary: Arranca el alma de un cuerpo viviente convirtiéndolo en fantasma vinculado.
+        bloodCost: 1
         rollAttribute: manipulation
         rollAbility: Ocultismo
         rollDifficulty: 6
-        tooltip: "Tirada enfrentada de Manipulación + Ocultismo (dif 6); cada éxito = 1 hora fuera del cuerpo."
+        tooltip: "Cuesta 1 PS de sangre + 1 PS de FV. Tirada FV dif 7 + tirada enfrentada de Manipulación + Ocultismo vs Resistencia del objetivo (dif 6 ambas). Éxitos = horas que el alma permanece fuera del cuerpo (cuerpo catatónico)."
       - level: 5
-        name: Posesión demoníaca
-        summary: Introduces un alma en un cadáver reciente para que lo habite.
-        bloodCost: 0
+        name: Posesión Demoníaca
+        summary: Introduce un alma en un cadáver recientemente muerto para que lo habite.
+        bloodCost: 1
         rollAttribute: manipulation
         rollAbility: Ocultismo
         rollDifficulty: 8
-        tooltip: "Cadáver con < 30 min de muerto; alma usa físicas del nuevo cuerpo, mentales propias."
+        tooltip: "Cuesta 1 PS. Tirada FV dif 8. Cadáver con < 30 min de muerto, alma dispuesta. Cuerpo se descompone en una semana. Alma usa Físicas del nuevo cuerpo, Mentales propias. Forzar a Vástago vivo a salir de su cuerpo: 3 éxitos FV vs FV original."
 
   - key: senda_cenizas
     name: Senda de las Cenizas
     order: 3
-    tooltip: Observa, atraviesa y manipula el Inframundo y su Manto.
+    tooltip: Observa y atraviesa el Manto entre vivos y muertos. La más peligrosa de las tres sendas.
     powers:
       - level: 1
-        name: Visión del manto
-        summary: Ves a través del Manto y contemplas el paisaje de las Tierras de las Sombras.
-        bloodCost: 0
+        name: Visión del Manto
+        summary: Ves a través del Manto al Inframundo y sus moradores.
+        bloodCost: 1
         rollAttribute: perception
         rollAbility: Alerta
         rollDifficulty: 7
-        tooltip: "Ves el Inframundo y sus moradores durante una escena; los espíritus también te ven."
+        tooltip: "Cuesta 1 PS. Tirada FV dif 4. Posterior Percepción + Alerta dif 7. Efectos duran una escena. Los espíritus que detecten al vampiro pueden traer consecuencias desagradables."
       - level: 2
-        name: Lenguas sin vida
+        name: Lenguas sin Vida
         summary: Conversas con fantasmas sin esfuerzo y sin gastar sangre.
-        bloodCost: 0
+        bloodCost: 1
         rollAttribute: perception
         rollAbility: Ocultismo
         rollDifficulty: 6
-        tooltip: "Hablas con cualquier fantasma cercano; incluye Visión del Manto automáticamente."
+        tooltip: "Cuesta 1 PS + 1 FV. Tirada Percepción + Ocultismo dif 6. Hablas con cualquier fantasma cercano. Incluye Visión del Manto automáticamente."
       - level: 3
-        name: Mano muerta
+        name: Mano Muerta
         summary: Atraviesas el Manto y afectas objetos ectoplásmicos como si fueran físicos.
-        bloodCost: 0
+        bloodCost: 1
         rollAttribute: wits
         rollAbility: Ocultismo
         rollDifficulty: 7
-        tooltip: "Coges objetos del Inframundo; vampiro sólido para fantasmas (y sus armas)."
+        tooltip: "Cuesta 1 PS + 1 FV. Tirada FV dif 6. Posterior Astucia + Ocultismo dif 7. Por cada escena en que el vampiro desee permanecer en contacto se gasta 1 PS adicional. El vampiro es sólido para fantasmas (y sus armas)."
       - level: 4
-        name: Ex nihilo
-        summary: Entras físicamente en el Inframundo y caminas por las tierras de los muertos.
+        name: Ex Nihilo
+        summary: Entras físicamente en el Inframundo.
         bloodCost: 2
         rollAttribute: stamina
         rollAbility: Ocultismo
         rollDifficulty: 8
-        tooltip: "Atraviesas el Manto en cuerpo; solo daños agravados a fantasmas pueden herirte allí."
+        tooltip: "Dibujar el umbral con tiza/sangre + 2 PS de FV + 2 PS sangre. Tirada Resistencia + Ocultismo dif 8. Atraviesas. Solo afectable por daños agravados a fantasmas. Para regresar: otro PS de FV + Resistencia + Ocultismo dif 6. Fracaso = atrapado para siempre."
       - level: 5
-        name: Dominio del manto
-        summary: Manipulas el velo entre vivos y muertos. Refuerzas o debilitas el Manto.
+        name: Dominio del Manto
+        summary: Manipulas el velo entre vivos y muertos.
         bloodCost: 0
         rollAttribute: intelligence
         rollAbility: Ocultismo
         rollDifficulty: 9
-        tooltip: "Cada éxito modifica dificultades de acciones de los fantasmas hasta 10 o mínimo 3."
+        tooltip: "Cuesta 2 FV. Tirada FV dif 9. Cada éxito rebaja o aumenta la dificultad de acciones de fantasmas en 1 (máx 10, mín 3). El Manto recupera consistencia a 1 punto por hora."
 
 rituals:
   - key: llamada_muertos_hambrientos
     name: La Llamada de los Muertos Hambrientos
     level: 1
     order: 1
-    tooltip: Oyes retazos de conversaciones del otro lado del Manto.
-    ingredients: Un cabello de la cabeza del objetivo, quemado en una vela negra.
+    tooltip: La víctima oye retazos de conversaciones del otro lado del Manto.
+    ingredients: Cabello del objetivo quemado en una vela negra.
     castingTime: 10 minutos
     rollAttribute: intelligence
     rollAbility: Ocultismo
@@ -158,8 +158,8 @@ rituals:
     name: Ojos de la Tumba
     level: 2
     order: 2
-    tooltip: La víctima experimenta visiones intermitentes de su propia muerte.
-    ingredients: Un poco de tierra de un sepulcro reciente.
+    tooltip: La víctima sufre visiones intermitentes de su muerte durante una semana.
+    ingredients: Tierra de un sepulcro reciente.
     castingTime: Dos horas
     rollAttribute: intelligence
     rollAbility: Ocultismo
@@ -169,8 +169,8 @@ rituals:
     name: Ritual del Grillete Desenterrado
     level: 3
     order: 3
-    tooltip: Una falange permite usar los poderes del Sepulcro con mayor facilidad.
-    ingredients: Una falange del esqueleto del fantasma y una esquirla de lápida.
+    tooltip: Una falange permite usar la Senda del Sepulcro con mayor facilidad y seguir al objetivo.
+    ingredients: Falange del esqueleto del fantasma + esquirla de lápida.
     castingTime: Tres horas
     rollAttribute: intelligence
     rollAbility: Ocultismo
@@ -180,8 +180,8 @@ rituals:
     name: Toque Cadavérico
     level: 4
     order: 4
-    tooltip: Conviertes a un mortal en una réplica cadavérica de sí mismo.
-    ingredients: Una muñeca de cera con la forma del objetivo.
+    tooltip: Convierte a un mortal en una réplica cadavérica de sí mismo (+2 dif Sociales).
+    ingredients: Muñeca de cera con la forma del objetivo.
     castingTime: Tres horas cantando
     rollAttribute: intelligence
     rollAbility: Ocultismo
@@ -191,8 +191,8 @@ rituals:
     name: Aferrar lo Fantasmal
     level: 5
     order: 5
-    tooltip: Traes un objeto del Inframundo al mundo físico.
-    ingredients: Seis horas de cánticos y un objeto de masa equivalente para reemplazar.
+    tooltip: Trae un objeto del Inframundo al mundo real. Reemplazo de masa equivalente requerido.
+    ingredients: Seis horas de cánticos + objeto material de masa equivalente para reemplazar.
     castingTime: Seis horas
     rollAttribute: intelligence
     rollAbility: Ocultismo
@@ -201,186 +201,28 @@ rituals:
 
 # Nigromancia
 
-La **Nigromancia** es a la vez una Disciplina y una escuela de
-aprendizaje mágico dedicada al **control de las almas de los muertos**.
-Se parece a la Taumaturgia en que, en vez de ser una progresión lineal
-de poderes, consiste en distintas **sendas** con sus correspondientes
-**rituales**. Los nigromantes vampíricos más poderosos pueden invocar a
-los muertos, expulsar o aprisionar almas, e incluso reinsertar a los
-fantasmas en cuerpos vivos (o no-muertos).
+Disciplina-escuela dedicada al **control de las almas de los muertos**. Como Taumaturgia, en vez de ser una progresión lineal, consiste en **sendas** con sus correspondientes **rituales**. Los nigromantes vampíricos más poderosos invocan, expulsan, aprisionan o reinsertan almas en cuerpos vivos o muertos.
 
-A lo largo de los siglos las diferentes escuelas se han diversificado,
-dejando tres sendas de magia abiertas a los Cainitas. Todos los
-nigromantes aprenden primero la **Senda del Sepulcro**, extendiendo sus
-estudios después, cuando el tiempo y la oportunidad lo permiten, a la
-**Senda del Osario** o a la **Senda de las Cenizas**. La Senda del
-Sepulcro se considera primaria del personaje y aumenta automáticamente
-cuando sube su puntuación general en Nigromancia. Las Sendas del
-Osario y de las Cenizas se adquieren por separado.
+Su estudio no está muy extendido entre los Vástagos; los Giovanni son los maestros canónicos. Los nigromantes son rehuidos e ignorados siempre que se puede.
 
-Un nigromante Cainita debe aprender al menos tres niveles en la Senda
-del Sepulcro antes de aprender el primero en una de las otras dos.
-Luego debe alcanzar la maestría en la Senda Primaria (cinco niveles)
-antes de adquirir el primer nivel en la tercera Senda.
+## Sendas conocidas
 
-## Senda — Senda del Sepulcro {#senda_sepulcro}
+A lo largo de los siglos las escuelas se han diversificado, dejando tres sendas abiertas a los Cainitas:
 
-Senda primaria. Trabajo con fantasmas: ver lo que vio el muerto antes
-de morir, invocar espíritus, ordenarles, atarlos a lugares, y golpear
-sus formas ectoplásmicas.
+- **Senda del Sepulcro** (primaria por convención): trabajo con fantasmas. Aumenta automáticamente al subir el nivel general de Nigromancia.
+- **Senda del Osario**: trabajo con cadáveres. Animar, gobernar y robar almas.
+- **Senda de las Cenizas**: observación y manipulación del Manto. La más peligrosa porque incrementa la vulnerabilidad del vampiro a los fantasmas.
 
-### Poder 1 — Penetración
+Un nigromante Cainita debe aprender al menos **tres niveles** en la Senda del Sepulcro antes de aprender el primero en una de las otras dos. Luego debe alcanzar la maestría en la Senda Primaria (cinco niveles) antes de adquirir el primer nivel en la **tercera** Senda.
 
-Mira los ojos de un cadáver y ve reflejado lo último que el muerto
-contempló antes de morir. Una imagen visible sólo en las retinas del
-nigromante; dificultad 8 para criaturas que estuvieron vivas, 10 para
-no-vivos (incluidos vampiros).
+Como con la Taumaturgia, el avance en la senda primaria cuesta la experiencia normal mientras que el estudio de las secundarias es más oneroso.
 
-### Poder 2 — Invocar espíritu
+## Sistema (regla universal de las sendas)
 
-Llama a un fantasma específico del Inframundo. El nigromante debe
-conocer el nombre del fantasma; un objeto del fantasma cercano otorga
-**-2 a la dificultad**. Los fantasmas invocados serán visibles y
-audibles para todos. No se puede invocar a fantasmas destruidos o
-perdidos en la Tormenta del Inframundo.
+Como con Taumaturgia, cada poder de senda requiere típicamente **1 PS** + tirada de **Fuerza de Voluntad** vs **nivel del poder + 3**. Algunos poderes requieren tiradas adicionales (Manipulación + Ocultismo enfrentada vs Fuerza de Voluntad del fantasma, etc.) descritas en cada caso.
 
-### Poder 3 — Ordenar a espíritu
+## Rituales
 
-Una vez invocado, el vampiro fuerza al fantasma a obedecer. Cada éxito
-asciende el grado de control: 1 éxito = el fantasma debe quedarse
-cerca; 5 éxitos = el fantasma está atrapado y obedece. Atadura por una
-hora por éxito; un punto temporal de Fuerza de Voluntad lo extiende a
-una noche.
+Los tiempos de invocación varían (consulta cada descripción). El jugador tira `Inteligencia + Ocultismo` con dificultad **3 + nivel del ritual** (máximo 9). Un éxito indica que el ritual se desarrolló correctamente; un fallo no produce efecto y un fracaso puede activar el ritual en perjuicio del invocador.
 
-### Poder 4 — Embrujar
-
-Ata al fantasma a un lugar o un objeto. Si intenta abandonarlo deberá
-hacer una tirada de FV (dif 10) o sufrir un nivel de daño agravado. Si
-pierde todos los niveles de salud es arrojado al Inframundo donde se
-enfrentará a su destrucción.
-
-### Poder 5 — Atormentar
-
-El nigromante golpea al espíritu como si estuviera en las tierras de
-los muertos. Cada éxito en una tirada de Resistencia + Empatía causa
-un nivel de daño letal a la forma ectoplásmica.
-
-## Senda — Senda del Osario {#senda_osario}
-
-Se ocupa principalmente de los **cadáveres** y los métodos por los que
-las almas muertas pueden regresar al mundo de los vivos, temporal o
-permanentemente.
-
-### Poder 1 — Tremens
-
-Anima durante una acción sencilla la carne de un cadáver. Un brazo se
-extiende, los ojos se abren, el cadáver se sienta. Provoca grandes
-reacciones en quienes no lo esperan.
-
-### Poder 2 — Las escobas del aprendiz
-
-Un cuerpo muerto realiza una función sencilla por horas. Cargar
-objetos, cavar, arrastrar de un lugar a otro. Los cuerpos no atacarán
-ni se defenderán, sólo seguirán intentando cumplir sus órdenes hasta
-ser incapacitados.
-
-### Poder 3 — Hordas tambaleantes
-
-Cuerpos reanimados capaces de atacar de forma torpe y lenta. Una vez
-levantados, esperan (años, si es necesario) hasta cumplir sus órdenes.
-Estadísticas zombi: Fuerza 3, Destreza 2, Resistencia 4, Pelea 2;
-siempre actúan los últimos en un turno.
-
-### Poder 4 — Robar alma
-
-Arranca el alma de un cuerpo vivo (o vampírico) y la convierte en una
-especie de fantasma vinculado a su cuerpo vacío. Los éxitos indican el
-número de horas que el alma queda fuera; el cuerpo queda catatónico
-durante ese tiempo.
-
-### Poder 5 — Posesión demoníaca
-
-Introduce un alma en un cuerpo recientemente muerto (menos de 30
-minutos). El nuevo inquilino debe estar dispuesto (no es posible
-obligar a un alma o forma astral a entrar en una cáscara). El cuerpo
-en cuestión se descompone en una semana.
-
-## Senda — Senda de las Cenizas {#senda_cenizas}
-
-Observa las tierras de los muertos e incluso afecta a los objetos y
-criaturas que las habitan. De las tres Sendas de la Nigromancia, ésta
-es la más peligrosa, ya que muchos poderes aumentan la vulnerabilidad
-del vampiro a los fantasmas.
-
-### Poder 1 — Visión del manto
-
-Ver a través del Manto, la barrera mística que separa el mundo de los
-vivos del Inframundo. El vampiro contempla edificios fantasmales, el
-paisaje de las Tierras de las Sombras y a los propios muertos.
-Cualquier espíritu cercano detecta que un vampiro lo observa, lo que
-puede traer consecuencias desagradables.
-
-### Poder 2 — Lenguas sin vida
-
-Mientras Visión del Manto sólo dejaba ver fantasmas, este poder
-permite **conversar** con ellos sin esfuerzo. No se necesita gasto de
-sangre ni obligar a los fantasmas a realizar esfuerzos. Incluye el
-efecto de Visión del Manto automáticamente.
-
-### Poder 3 — Mano muerta
-
-Atraviesa el Manto y afecta los objetos ectoplásmicos como si fueran
-físicos. Los fantasmas serán sólidos para el nigromante. Además, puede
-relacionarse con los edificios espirituales (dando la sensación de que
-camina por el aire). A cambio, el vampiro es **totalmente sólido para
-los residentes del Inframundo** y sus armas.
-
-### Poder 4 — Ex Nihilo
-
-El vampiro entra **físicamente** en el Inframundo. Mantendrá su número
-normal de niveles de salud, pero sólo podrá ser afectado por aquello
-que cause daño agravado a los fantasmas. Está sometido a todos los
-peligros del Inframundo, incluyendo la destrucción definitiva.
-
-### Poder 5 — Dominio del manto
-
-Manipula el velo entre vivos y muertos para servir al nigromante o
-hacer imposible que los espíritus contacten el mundo material. Cada
-éxito rebaja o aumenta la dificultad de las acciones de los fantasmas
-en uno, hasta un máximo de 10 y un mínimo de 3.
-
-## Ritual — La Llamada de los Muertos Hambrientos {#llamada_muertos_hambrientos}
-
-Solo 10 minutos, pero requiere de un cabello de la cabeza del objetivo.
-El rito termina con la quema del cabello en una vela negra; tras lo
-cual la víctima oye retazos de conversaciones del otro lado del Manto.
-
-## Ritual — Ojos de la Tumba {#ojos_tumba}
-
-Tras dos horas de invocación, el objetivo experimenta visiones
-intermitentes de su muerte durante una semana. Las imágenes pueden
-durar hasta un minuto; cada vez que aparecen el objetivo debe tirar
-Coraje (dificultad 7) o aterrorizarse.
-
-## Ritual — Ritual del Grillete Desenterrado {#ritual_grillete_desenterrado}
-
-Una falange del esqueleto del fantasma se convierte en "brújula
-nigromántica" tras tres horas de invocación. Permite usar los poderes
-de la Senda del Sepulcro con mayor facilidad y seguir al objeto en
-cuestión. Necesita esquirla de lápida (no del propio dueño) para
-funcionar.
-
-## Ritual — Toque Cadavérico {#toque_cadaverico}
-
-Cantando durante tres horas y fundiendo una muñeca de cera con la
-forma del objetivo, el nigromante convierte a un mortal en una réplica
-cadavérica de sí mismo: piel pálida, pulso débil. +2 dificultad a
-todas las tiradas Sociales. Reversible: derretir más cera deshace el
-efecto.
-
-## Ritual — Aferrar lo Fantasmal {#aferrar_fantasmal}
-
-Tras seis horas de cánticos, el nigromante trae un objeto del
-Inframundo al mundo real. Un objeto material de masa equivalente debe
-ser reemplazado en el lugar del objeto traído. Los objetos así
-adquiridos tienden a disiparse después de un año aproximadamente.
+Los rituales nigrománticos son **muy variados**. Algunos tienen relación directa con las sendas y otros parecen enseñados por los propios fantasmas. Todos los nigromantes comienzan con un ritual de nivel 1; los demás se aprenden a lo largo de la crónica como en Taumaturgia, aunque son **totalmente incompatibles** con ella (un Tremere no puede aprender rituales nigrománticos y viceversa).

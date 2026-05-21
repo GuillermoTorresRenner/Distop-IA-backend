@@ -1,62 +1,58 @@
 ---
 name: Fortaleza
 order: 4
-tooltip: Resistencia física sobrenatural; suma dados de absorción incluso contra agravado.
+tooltip: Resistencia preternatural. Suma dados de absorción incluso contra daño agravado.
 powers:
   - level: 1
-    name: Fortaleza I
-    summary: +1 dado de absorción (también contra agravado). Pasivo.
+    name: Fortaleza 1
+    summary: +1 dado de absorción contra daño contundente y letal. Tirada de absorción contra agravado solo con dados de Fortaleza.
     bloodCost: 0
-    tooltip: "+1 dado a todas las tiradas de absorción, incluso contra daño agravado."
+    rollAttribute: null
+    rollAbility: null
+    rollDifficulty: null
+    tooltip: "La puntuación de Fortaleza se suma a Resistencia al absorber daño contundente y letal. Contra agravado solo cuentan los dados de Fortaleza."
   - level: 2
-    name: Fortaleza II
-    summary: +2 dados de absorción. Pasivo.
+    name: Fortaleza 2
+    summary: +2 dados de absorción contra contundente/letal; 2 dados para absorber agravado.
     bloodCost: 0
-    tooltip: "+2 dados a todas las tiradas de absorción, incluso contra daño agravado."
+    rollAttribute: null
+    rollAbility: null
+    rollDifficulty: null
+    tooltip: "Permite ignorar puñetazos normales y reducir significativamente daño de armas blancas."
   - level: 3
-    name: Fortaleza III
-    summary: +3 dados de absorción. Pasivo.
+    name: Fortaleza 3
+    summary: +3 dados de absorción contra contundente/letal; 3 dados para absorber agravado.
     bloodCost: 0
-    tooltip: "+3 dados a todas las tiradas de absorción, incluso contra daño agravado."
+    rollAttribute: null
+    rollAbility: null
+    rollDifficulty: null
+    tooltip: "Empieza a permitir sobrevivir al fuego, garras de licántropo y luz solar (con suerte)."
   - level: 4
-    name: Fortaleza IV
-    summary: +4 dados de absorción. Pasivo.
+    name: Fortaleza 4
+    summary: +4 dados de absorción contra contundente/letal; 4 dados para absorber agravado.
     bloodCost: 0
-    tooltip: "+4 dados a todas las tiradas de absorción, incluso contra daño agravado."
+    rollAttribute: null
+    rollAbility: null
+    rollDifficulty: null
+    tooltip: "Resistencia digna de un antiguo. El vampiro encaja golpes que matarían a la mayoría."
   - level: 5
-    name: Fortaleza V
-    summary: +5 dados de absorción. Pasivo.
+    name: Fortaleza 5
+    summary: +5 dados de absorción contra contundente/letal; 5 dados para absorber agravado.
     bloodCost: 0
-    tooltip: "+5 dados a todas las tiradas de absorción; resistencia casi inhumana."
+    rollAttribute: null
+    rollAbility: null
+    rollDifficulty: null
+    tooltip: "Tope V20 en creación. Resistencia comparable a la de un Matusalén."
 ---
 
 # Fortaleza
 
-Resistencia física sobrenatural. Cada nivel **suma dados a la reserva
-de absorción**, incluso contra daño **agravado** (fuego, luz solar,
-colmillos y garras sobrenaturales).
+Resistencia preternatural. Todos los vampiros poseen una constitución que vuelve el daño normal inconsecuente, pero los Vástagos con esta Disciplina ignoran golpes contundentes, encajan disparos y sobreviven al fuego, la luz solar y caídas a velocidad terminal.
 
-A diferencia de la Resistencia base de un vampiro (que solo absorbe
-contundente y letal), la Fortaleza es la única disciplina que permite
-sumar dados contra daño agravado de forma sostenida.
+**Maestros del clan**: Gangrel, Ravnos, Ventrue. Los primeros disfrutan de los beneficios evidentes; los Ventrue se deleitan en los efectos psicológicos (recibir un golpe "fatal" y levantarse sonriendo).
 
-## 1 — Fortaleza I
+**Sistema**: la puntuación de Fortaleza se **suma a la Resistencia** al absorber daño contundente y letal. Además, permite **absorber daño agravado** (lo que normalmente los vampiros no pueden) tirando únicamente los dados de Fortaleza.
 
-+1 dado a todas las tiradas de absorción.
+Ejemplo: un Vástago con Fortaleza 3 tira **3 dados** para absorber daño agravado (fuego, luz solar, garras de licántropo, mordiscos de vampiro, efectos mágicos).
 
-## 2 — Fortaleza II
-
-+2 dados.
-
-## 3 — Fortaleza III
-
-+3 dados.
-
-## 4 — Fortaleza IV
-
-+4 dados.
-
-## 5 — Fortaleza V
-
-+5 dados. Algunos Gangrel y Salubri llegan aquí; resisten cargas de
-escopeta como si fueran golpes.
+Consulta las reglas de absorción y daño en el capítulo de combate del manual V20.
