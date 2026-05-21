@@ -165,4 +165,13 @@ export class CreateCharacterDto {
   @IsString()
   @MaxLength(8000)
   notes?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Pertenencias narrativas del personaje en markdown plano (equipo, objetos, recuerdos). Complementa la tabla de armas/armaduras.',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(8000)
+  equipmentNotes?: string;
 }

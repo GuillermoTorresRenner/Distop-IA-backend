@@ -82,6 +82,10 @@ model Character {
   /// Notas libres del jugador (markdown plano, sin parser por ahora).
   notes      String?
 
+  /// Pertenencias narrativas (markdown plano): equipo, posesiones, objetos
+  /// significativos. Complementa la tabla de armas/armaduras estructurada.
+  equipmentNotes String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
