@@ -21,8 +21,26 @@ export class CharactersService {
       abilities: { orderBy: [{ category: 'asc' as const }, { name: 'asc' as const }] },
       backgrounds: { orderBy: { order: 'asc' as const } },
       disciplines: {
-        include: { discipline: { include: { powers: { orderBy: { level: 'asc' as const } } } } },
+        include: {
+          discipline: {
+            include: {
+              powers: { orderBy: { level: 'asc' as const } },
+              paths: {
+                orderBy: { order: 'asc' as const },
+                include: { powers: { orderBy: { level: 'asc' as const } } },
+              },
+              rituals: {
+                orderBy: [
+                  { level: 'asc' as const },
+                  { order: 'asc' as const },
+                ],
+              },
+            },
+          },
+          paths: { include: { path: true } },
+        },
       },
+      disciplineRituals: { include: { ritual: true } },
       meritsFlaws: { include: { meritFlaw: true } },
       weapons: {
         orderBy: { order: 'asc' as const },
@@ -208,6 +226,23 @@ export class CharactersService {
               create: source.disciplines.map((d) => ({
                 disciplineId: d.disciplineId,
                 level: d.level,
+                paths: d.paths?.length
+                  ? {
+                      create: d.paths.map((p) => ({
+                        pathId: p.pathId,
+                        level: p.level,
+                        isPrimary: p.isPrimary,
+                      })),
+                    }
+                  : undefined,
+              })),
+            }
+          : undefined,
+        disciplineRituals: source.disciplineRituals.length
+          ? {
+              create: source.disciplineRituals.map((r) => ({
+                ritualId: r.ritualId,
+                disciplineId: r.disciplineId,
               })),
             }
           : undefined,
@@ -597,15 +632,40 @@ export class CharactersService {
       }
 
       if (dto.disciplines) {
+        // CharacterDisciplinePath está en cascade desde CharacterDiscipline,
+        // así que un deleteMany de disciplines limpia también sus paths.
         await tx.characterDiscipline.deleteMany({ where: { characterId: id } });
-        if (dto.disciplines.length) {
-          await tx.characterDiscipline.createMany({
-            data: dto.disciplines.map((d) => ({
+        // Los rituales aprendidos se manejan aparte porque no caen en cascade
+        // desde CharacterDiscipline (la FK está en Character).
+        await tx.characterDisciplineRitual.deleteMany({
+          where: { characterId: id },
+        });
+        for (const d of dto.disciplines) {
+          await tx.characterDiscipline.create({
+            data: {
               characterId: id,
               disciplineId: d.disciplineId,
               level: d.level,
-            })),
+              paths: d.paths?.length
+                ? {
+                    create: d.paths.map((p) => ({
+                      pathId: p.pathId,
+                      level: p.level,
+                      isPrimary: p.isPrimary ?? false,
+                    })),
+                  }
+                : undefined,
+            },
           });
+          if (d.learnedRitualIds?.length) {
+            await tx.characterDisciplineRitual.createMany({
+              data: d.learnedRitualIds.map((ritualId) => ({
+                characterId: id,
+                ritualId,
+                disciplineId: d.disciplineId,
+              })),
+            });
+          }
         }
       }
 
@@ -730,7 +790,26 @@ export class CharactersService {
             create: disciplines.map((d) => ({
               disciplineId: d.disciplineId,
               level: d.level,
+              paths: d.paths?.length
+                ? {
+                    create: d.paths.map((p) => ({
+                      pathId: p.pathId,
+                      level: p.level,
+                      isPrimary: p.isPrimary ?? false,
+                    })),
+                  }
+                : undefined,
             })),
+          }
+        : undefined,
+      disciplineRituals: disciplines?.length
+        ? {
+            create: disciplines.flatMap((d) =>
+              (d.learnedRitualIds ?? []).map((ritualId) => ({
+                ritualId,
+                disciplineId: d.disciplineId,
+              })),
+            ),
           }
         : undefined,
       meritsFlaws: meritsFlaws?.length
@@ -817,10 +896,84 @@ export class CharactersService {
       const ids = [...new Set(dto.disciplines.map((d) => d.disciplineId))];
       const found = await this.prisma.discipline.findMany({
         where: { id: { in: ids } },
-        select: { id: true },
+        select: { id: true, hasPaths: true, paths: { select: { id: true } } },
       });
       if (found.length !== ids.length) {
         throw new BadRequestException('One or more disciplineId are invalid');
+      }
+      const byId = new Map(found.map((d) => [d.id, d]));
+
+      // Coherencia paths ↔ hasPaths y reglas V20.
+      const allRitualIds = new Set<string>();
+      for (const entry of dto.disciplines) {
+        const catalog = byId.get(entry.disciplineId)!;
+        const paths = entry.paths ?? [];
+        if (catalog.hasPaths) {
+          if (paths.length === 0) {
+            throw new BadRequestException(
+              `Discipline ${entry.disciplineId} requires at least one path with isPrimary=true`,
+            );
+          }
+          // Cada pathId debe pertenecer a la disciplina.
+          const validPathIds = new Set(catalog.paths.map((p) => p.id));
+          for (const p of paths) {
+            if (!validPathIds.has(p.pathId)) {
+              throw new BadRequestException(
+                `pathId ${p.pathId} does not belong to discipline ${entry.disciplineId}`,
+              );
+            }
+          }
+          // Exactamente una primaria.
+          const primaries = paths.filter((p) => p.isPrimary === true);
+          if (primaries.length !== 1) {
+            throw new BadRequestException(
+              `Discipline ${entry.disciplineId} must have exactly one primary path`,
+            );
+          }
+          // Secundarias ≤ primaria.
+          const primaryLevel = primaries[0].level;
+          for (const p of paths) {
+            if (!p.isPrimary && p.level > primaryLevel) {
+              throw new BadRequestException(
+                `Secondary path level (${p.level}) cannot exceed primary path level (${primaryLevel})`,
+              );
+            }
+          }
+        } else if (paths.length > 0) {
+          throw new BadRequestException(
+            `Discipline ${entry.disciplineId} does not support paths`,
+          );
+        }
+
+        for (const r of entry.learnedRitualIds ?? []) {
+          if (allRitualIds.has(r)) {
+            throw new BadRequestException(`Duplicate ritualId: ${r}`);
+          }
+          allRitualIds.add(r);
+        }
+      }
+
+      // Los rituales declarados deben pertenecer a alguna disciplina del DTO.
+      if (allRitualIds.size > 0) {
+        const rituals = await this.prisma.disciplineRitual.findMany({
+          where: { id: { in: [...allRitualIds] } },
+          select: { id: true, disciplineId: true },
+        });
+        if (rituals.length !== allRitualIds.size) {
+          throw new BadRequestException(
+            'One or more learnedRitualIds are invalid',
+          );
+        }
+        const dtoDisciplineIds = new Set(
+          dto.disciplines.map((d) => d.disciplineId),
+        );
+        for (const r of rituals) {
+          if (!dtoDisciplineIds.has(r.disciplineId)) {
+            throw new BadRequestException(
+              `Ritual ${r.id} does not belong to a discipline owned by the character`,
+            );
+          }
+        }
       }
     }
     if (dto.meritsFlaws?.length) {

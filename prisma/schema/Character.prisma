@@ -99,6 +99,7 @@ model Character {
   diceRolls    DiceRoll[]
   journalEntries CharacterJournalEntry[]
   combatParticipations CombatParticipant[]
+  disciplineRituals CharacterDisciplineRitual[]
 
   @@index([userId])
   @@map("characters")
@@ -136,6 +137,11 @@ model CharacterBackground {
 
 /// Disciplina poseída por el personaje hasta cierto nivel.
 /// Cada nivel comprado corresponde al poder anidado en DisciplinePower de ese nivel.
+///
+/// Para disciplinas monolíticas (`discipline.hasPaths=false`), `level` es la
+/// puntuación efectiva. Para ramificadas (Taumaturgia/Nigromancia), el nivel
+/// real vive en `paths: CharacterDisciplinePath[]`; `level` queda como el
+/// máximo de las sendas y se mantiene por compatibilidad histórica.
 model CharacterDiscipline {
   id           String     @id @default(uuid())
   characterId  String
@@ -144,9 +150,30 @@ model CharacterDiscipline {
   discipline   Discipline @relation(fields: [disciplineId], references: [id], onDelete: Restrict)
   level        Int        @default(1)
 
+  paths        CharacterDisciplinePath[]
+
   @@unique([characterId, disciplineId])
   @@index([characterId])
   @@map("character_disciplines")
+}
+
+/// Nivel en una senda específica de una disciplina ramificada. Una entrada
+/// por senda que el PJ conoce. `isPrimary` marca la senda principal: en V20
+/// la primaria sube con el nivel general de la disciplina, las secundarias
+/// se compran por separado y nunca pueden superar a la primaria.
+model CharacterDisciplinePath {
+  id                    String              @id @default(uuid())
+  characterDisciplineId String
+  characterDiscipline   CharacterDiscipline @relation(fields: [characterDisciplineId], references: [id], onDelete: Cascade)
+  pathId                String
+  path                  DisciplinePath      @relation(fields: [pathId], references: [id], onDelete: Restrict)
+  level                 Int                 @default(1)
+  isPrimary             Boolean             @default(false)
+
+  @@unique([characterDisciplineId, pathId])
+  @@index([characterDisciplineId])
+  @@index([pathId])
+  @@map("character_discipline_paths")
 }
 
 /// Mérito o Defecto del personaje. Puede venir del catálogo (`meritFlawId`

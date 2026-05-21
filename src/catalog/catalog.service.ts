@@ -37,7 +37,17 @@ export class CatalogService {
   listDisciplines() {
     return this.prisma.discipline.findMany({
       orderBy: { order: 'asc' },
-      include: { powers: { orderBy: { level: 'asc' } } },
+      include: {
+        // Poderes directos (solo presentes en disciplinas monolíticas).
+        powers: { orderBy: { level: 'asc' } },
+        // Sendas con sus poderes (Taumaturgia, Nigromancia).
+        paths: {
+          orderBy: { order: 'asc' },
+          include: { powers: { orderBy: { level: 'asc' } } },
+        },
+        // Rituales (solo presentes en disciplinas con sendas).
+        rituals: { orderBy: [{ level: 'asc' }, { order: 'asc' }] },
+      },
     });
   }
 

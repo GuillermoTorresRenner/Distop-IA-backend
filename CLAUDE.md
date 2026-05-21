@@ -65,7 +65,7 @@ Schemas modulares en [prisma/schema/](prisma/schema/):
 
 **Catálogos:**
 - `Archetype` - Naturaleza y Conducta (V20). Campos: `id`, `name` (unique), `description?`, `tooltip?`, `order`, timestamps.
-- `Discipline` + `DisciplinePower` - Disciplinas vampíricas. `Discipline`: `id`, `name` (unique), `description?`, `tooltip?`, `order`, timestamps. `DisciplinePower`: `id`, `disciplineId`, `level`, `name`, `summary`, `rollAttribute?`, `rollAbility?`, `rollDifficulty?`, `bloodCost`, `description?`, `tooltip?`, timestamps.
+- `Discipline` + `DisciplinePower` + `DisciplinePath` + `DisciplineRitual` - Disciplinas vampíricas. `Discipline`: `id`, `name` (unique), `description?`, `tooltip?`, `order`, `hasPaths` (Boolean, true para Taumaturgia/Nigromancia), timestamps. `DisciplinePower`: `id`, `disciplineId?` (set en monolíticas) | `pathId?` (set en ramificadas) — exactamente uno, `level`, `name`, `summary`, `rollAttribute?`, `rollAbility?`, `rollDifficulty?`, `bloodCost`, `description?`, `tooltip?`, timestamps. `DisciplinePath` (solo Taumaturgia/Nigromancia): `id`, `disciplineId`, `key` (unique por disciplina, snake_case), `name`, `description?`, `tooltip?`, `order` + `powers: DisciplinePower[]`. `DisciplineRitual`: `id`, `disciplineId`, `key`, `level` (1..5), `name`, `description?`, `tooltip?`, `ingredients?`, `castingTime?`, `rollAttribute?`, `rollAbility?`, `rollDifficulty?`, `order`, timestamps.
 - `Clan` - Clanes del Camarilla y Sabbat. Campos: `id`, `name` (unique), `sect?`, `disciplines?`, `weakness?`, `description?`, `tooltip?`, `order`, timestamps.
 - `MeritFlaw` - Méritos y Defectos del catálogo. Campos: `id`, `name` (unique), `kind` (MERIT | FLAW), `value`, `category?`, `description?`, `tooltip?`, `order`, timestamps.
 - `Background` - 10 trasfondos V20 (Aliados, Contactos, Criados, Fama, Generación, Influencia, Mentor, Posición, Rebaño, Recursos). Campos: `id`, `key` (unique), `name` (unique), `category?`, `description?`, `tooltip?`, `order`, timestamps.
@@ -74,7 +74,7 @@ Schemas modulares en [prisma/schema/](prisma/schema/):
 **Personajes:**
 - `Character` - atributos, habilidades, ventajas, equipo, humanidad, voluntad, sangre, experiencia, salud. Enum `CharacterKind: PC | NPC | ANTAGONIST`.
 - `CharacterAbility` - enlace a habilidades (talents/skills/knowledges).
-- `CharacterDiscipline` - enlace a disciplinas con `powerIds[]` seleccionados.
+- `CharacterDiscipline` + `CharacterDisciplinePath` + `CharacterDisciplineRitual` - disciplina aprendida por el personaje. `CharacterDiscipline`: `characterId`, `disciplineId`, `level` (para monolíticas; en ramificadas se deriva del max de paths). `CharacterDisciplinePath`: `characterDisciplineId`, `pathId`, `level` (1..5), `isPrimary` (Boolean) — entrada por senda conocida; reglas V20 (exactamente una primaria, secundarias ≤ primaria) las valida el service. `CharacterDisciplineRitual`: `characterId`, `ritualId`, `disciplineId`, `learnedAt` — los rituales se aprenden uno por uno, no escalan con el nivel.
 - `CharacterVirtue` - virtudes (Conciencia, Autocontrol, Coraje).
 - `CharacterBackground` - trasfondo con `name` (texto libre, match contra catálogo en el front) y `level`.
 - `CharacterMeritFlaw` - entrada con `meritFlawId?` (FK) O `customName+customKind+customValue+customCategory` (modo custom). Mutuamente excluyentes.
@@ -153,10 +153,32 @@ Schemas modulares en [prisma/schema/](prisma/schema/):
 
 `MailService` ([src/mail/mail.service.ts](src/mail/mail.service.ts)) expone `sendWelcome`, `sendPasswordRecovery`, `sendChronicleInviteExisting`, `sendChronicleInviteNew`. Subject prefix `Distop-IA · …`. Render helper centralizado (`this.render(template, data)`).
 
+**Vault de disciplinas (`prisma/vault/disciplinas/`):**
+
+Cada disciplina es un archivo `.md` con frontmatter YAML + cuerpo Markdown.
+Hay dos formatos según el flag `kind`:
+
+- `kind: monolithic` (default si se omite) — disciplina clásica con un único array
+  `powers: [×5]`. Ejemplo: `auspex.md`, `dominacion.md`, etc.
+- `kind: paths` — disciplina ramificada (Taumaturgia, Nigromancia). En lugar de
+  `powers` declara `paths: [{ key, name, order, tooltip, powers: [×5] }, ...]`
+  + opcional `rituals: [{ key, level, name, tooltip, ingredients, castingTime,
+  rollAttribute, rollAbility, rollDifficulty }, ...]`. El cuerpo del .md usa
+  encabezados `## Senda — {nombre} {#key}` y `### Poder N — {nombre}` (subseccion
+  dentro de la senda) para que el loader pueda capturar la descripción larga
+  de cada poder. Los rituales usan `## Ritual — {nombre} {#ritualKey}`. Las
+  `key`s deben ir en `snake_case` y matchear las del frontmatter exactamente.
+
+El loader (`prisma/vault-loader.ts`) valida ambos formatos via `z.discriminatedUnion('kind', ...)`
+y verifica que cada `rollAbility` exista en `prisma/vault/habilidades/` (o sea el
+nombre de la propia disciplina). Para añadir una nueva senda o ritual, edita
+solo el `.md` y vuelve a correr `npx prisma db seed` — el seed es idempotente.
+
 **Migraciones recientes:**
 - `20260518020826_add_dice_roll_metadata` - agrega columna `metadata Json?` a `DiceRoll` para guardar desglose de tiradas (ej. iniciativa con d10, dexterity, wits, modifier).
 - `20260518025656_add_background_catalog` - nuevo modelo `Background` con catálogo de trasfondos V20.
 - `20260518055413_add_catalog_tooltips_and_virtues` - agrega columna `tooltip String?` a todos los modelos de catálogo (AttributeInfo, AbilityInfo, MeritFlaw, Clan, Discipline, DisciplinePower, Background, HealthLevelInfo, Archetype, Armor, Weapon); nuevo modelo `VirtueInfo` para virtudes canónicas V20.
+- `20260521040330_discipline_paths_and_rituals` - agrega flag `hasPaths` a `Discipline`; nullable `disciplineId` y nuevo `pathId?` en `DisciplinePower` (mutuamente excluyentes); nuevos modelos `DisciplinePath`, `DisciplineRitual`, `CharacterDisciplinePath` y `CharacterDisciplineRitual` para soportar Taumaturgia y Nigromancia con sus sendas y rituales.
 
 Swagger: `http://localhost:3000/docs`.
 

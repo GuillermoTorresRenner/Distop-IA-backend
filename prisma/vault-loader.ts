@@ -207,12 +207,88 @@ const DisciplinePowerSchema = z
     rollDifficulty: p.rollDifficulty ?? null,
   }));
 
-const DisciplineSchema = z.object({
+/// Ritual taumatúrgico/nigromántico. Cada ritual tiene su propio nivel
+/// canon (1..5) y se aprende uno por uno. La `key` es estable (snake_case
+/// sin acentos) y única dentro de la disciplina.
+const RitualSchema = z
+  .object({
+    key: z
+      .string()
+      .min(1)
+      .regex(
+        /^[a-z0-9_]+$/,
+        'la key debe ser snake_case en minúsculas (a-z, 0-9, _)',
+      ),
+    level: z.number().int().min(1).max(5),
+    name: z.string().min(1),
+    tooltip: z.string().optional().nullable(),
+    ingredients: z.string().optional().nullable(),
+    castingTime: z.string().optional().nullable(),
+    rollAttribute: z.enum(ATTRIBUTE_KEYS).nullable().optional().default(null),
+    rollAbility: z.string().nullable().optional().default(null),
+    rollDifficulty: z.number().int().nullable().optional().default(null),
+    order: z.number().int().optional().default(0),
+  })
+  .transform((r) => ({
+    ...r,
+    tooltip: r.tooltip ?? null,
+    ingredients: r.ingredients ?? null,
+    castingTime: r.castingTime ?? null,
+    rollAttribute: r.rollAttribute ?? null,
+    rollAbility: r.rollAbility ?? null,
+    rollDifficulty: r.rollDifficulty ?? null,
+  }));
+
+/// Senda dentro de una disciplina ramificada (Taumaturgia, Nigromancia).
+/// Cada senda tiene exactamente 5 niveles propios de poderes.
+const PathSchema = z.object({
+  key: z
+    .string()
+    .min(1)
+    .regex(
+      /^[a-z0-9_]+$/,
+      'la key debe ser snake_case en minúsculas (a-z, 0-9, _)',
+    ),
+  name: z.string().min(1),
+  order: z.number().int().optional().default(0),
+  tooltip: z.string().optional().nullable().default(null),
+  powers: z
+    .array(DisciplinePowerSchema)
+    .length(5, 'cada senda debe tener exactamente los 5 niveles (1..5)'),
+});
+
+const MonolithicDisciplineSchema = z.object({
+  kind: z.literal('monolithic'),
   name: z.string().min(1),
   tooltip: z.string().optional().nullable().default(null),
   order: z.number().int().optional().default(0),
-  powers: z.array(DisciplinePowerSchema).length(5, 'deben existir los 5 niveles (1..5)'),
+  powers: z
+    .array(DisciplinePowerSchema)
+    .length(5, 'deben existir los 5 niveles (1..5)'),
 });
+
+const PathsDisciplineSchema = z.object({
+  kind: z.literal('paths'),
+  name: z.string().min(1),
+  tooltip: z.string().optional().nullable().default(null),
+  order: z.number().int().optional().default(0),
+  paths: z.array(PathSchema).min(1, 'la disciplina con sendas debe tener al menos una senda'),
+  rituals: z.array(RitualSchema).optional().default([]),
+});
+
+/// Discriminated union por `kind`: si el frontmatter omite `kind`, lo
+/// completamos como 'monolithic' antes de parsear. Las disciplinas con
+/// kind='paths' (Taumaturgia, Nigromancia) usan `paths` y opcionalmente
+/// `rituals`; el resto sigue con `powers` lineales.
+const DisciplineSchema = z.preprocess(
+  (raw) => {
+    if (typeof raw === 'object' && raw !== null && !('kind' in raw)) {
+      return { ...raw, kind: 'monolithic' as const };
+    }
+    return raw;
+  },
+  z.discriminatedUnion('kind', [MonolithicDisciplineSchema, PathsDisciplineSchema]),
+);
 
 const WeaponKindSchema = z.enum(['MELEE', 'RANGED']);
 const WeaponDamageSchema = z.enum(['STRENGTH', 'FLAT']);
@@ -289,12 +365,29 @@ export type BackgroundRecord = z.infer<typeof BackgroundSchema> & {
 export type ClanRecord = z.infer<typeof ClanSchema> & {
   description: string;
 };
-export type DisciplineRecord = z.infer<typeof DisciplineSchema> & {
+/// Record público de una disciplina ya cargada del vault. Discriminada
+/// por `kind` para que el seed sepa cuáles ramas crear.
+export type MonolithicDisciplineRecord = z.infer<
+  typeof MonolithicDisciplineSchema
+> & {
+  kind: 'monolithic';
   description: string;
-  tooltip?: string | null;
   /** description por poder, en orden de level (1..5). */
   powerDescriptions: Record<number, string>;
 };
+
+export type PathsDisciplineRecord = z.infer<typeof PathsDisciplineSchema> & {
+  kind: 'paths';
+  description: string;
+  /** description por senda → level → markdown del cuerpo. */
+  pathPowerDescriptions: Record<string, Record<number, string>>;
+  /** description por ritual key → markdown del cuerpo. */
+  ritualDescriptions: Record<string, string>;
+  /** description por senda key (cabecera bajo "## Senda — {nombre}"). */
+  pathDescriptions: Record<string, string>;
+};
+
+export type DisciplineRecord = MonolithicDisciplineRecord | PathsDisciplineRecord;
 export type WeaponCategoryRecord = z.infer<typeof WeaponCategorySchema>;
 export type WeaponRecord = z.infer<typeof WeaponSchema> & {
   description?: string | null;
@@ -470,45 +563,231 @@ export function loadDisciplines(
       frontmatter,
       `disciplinas/${f}`,
     );
-    // Validación cruzada: rollAbility debe referenciar una habilidad existente
-    // o el propio name de la disciplina.
-    for (const p of parsed.powers) {
+
+    if (parsed.kind === 'paths') {
+      return parsePathsDiscipline(f, parsed, body, knownAbilityNames);
+    }
+    return parseMonolithicDiscipline(f, parsed, body, knownAbilityNames);
+  });
+  return out;
+}
+
+function parseMonolithicDiscipline(
+  filename: string,
+  parsed: z.infer<typeof MonolithicDisciplineSchema>,
+  body: string,
+  knownAbilityNames: Set<string>,
+): MonolithicDisciplineRecord {
+  // Validación cruzada: rollAbility debe referenciar una habilidad existente
+  // o el propio name de la disciplina.
+  for (const p of parsed.powers) {
+    if (p.rollAbility) {
+      const ok =
+        knownAbilityNames.has(p.rollAbility) || p.rollAbility === parsed.name;
+      if (!ok) {
+        throw new Error(
+          `vault/disciplinas/${filename} → powers[${p.level - 1}].rollAbility: "${p.rollAbility}" no existe en habilidades/ (ni coincide con el nombre de la disciplina)`,
+        );
+      }
+    }
+  }
+  // Sanity: niveles 1..5 sin duplicados.
+  const levels = new Set<number>();
+  for (const p of parsed.powers) {
+    if (levels.has(p.level)) {
+      throw new Error(
+        `vault/disciplinas/${filename} → nivel duplicado: ${p.level}`,
+      );
+    }
+    levels.add(p.level);
+  }
+  for (let l = 1; l <= 5; l++) {
+    if (!levels.has(l)) {
+      throw new Error(`vault/disciplinas/${filename} → falta nivel ${l}`);
+    }
+  }
+  const powerDescriptions = extractPowerDescriptions(body);
+  // Cuerpo "principal" = todo lo antes del primer h2 numerado.
+  const splitIdx = body.search(/^##\s+(?:Poder\s+)?\d/m);
+  const headerBody = splitIdx === -1 ? body : body.slice(0, splitIdx).trim();
+  return {
+    ...parsed,
+    kind: 'monolithic',
+    description: headerBody,
+    powerDescriptions,
+  };
+}
+
+function parsePathsDiscipline(
+  filename: string,
+  parsed: z.infer<typeof PathsDisciplineSchema>,
+  body: string,
+  knownAbilityNames: Set<string>,
+): PathsDisciplineRecord {
+  // Keys únicas en las sendas y los rituales.
+  const pathKeys = new Set<string>();
+  for (const p of parsed.paths) {
+    if (pathKeys.has(p.key)) {
+      throw new Error(
+        `vault/disciplinas/${filename} → path key duplicada: ${p.key}`,
+      );
+    }
+    pathKeys.add(p.key);
+  }
+  const ritualKeys = new Set<string>();
+  for (const r of parsed.rituals) {
+    if (ritualKeys.has(r.key)) {
+      throw new Error(
+        `vault/disciplinas/${filename} → ritual key duplicada: ${r.key}`,
+      );
+    }
+    ritualKeys.add(r.key);
+  }
+
+  // Cada senda debe tener niveles 1..5 sin huecos.
+  for (const path of parsed.paths) {
+    const levels = new Set<number>();
+    for (const p of path.powers) {
+      if (levels.has(p.level)) {
+        throw new Error(
+          `vault/disciplinas/${filename} → senda "${path.key}" nivel duplicado: ${p.level}`,
+        );
+      }
+      levels.add(p.level);
       if (p.rollAbility) {
         const ok =
-          knownAbilityNames.has(p.rollAbility) || p.rollAbility === parsed.name;
+          knownAbilityNames.has(p.rollAbility) ||
+          p.rollAbility === parsed.name;
         if (!ok) {
           throw new Error(
-            `vault/disciplinas/${f} → powers[${p.level - 1}].rollAbility: "${p.rollAbility}" no existe en habilidades/ (ni coincide con el nombre de la disciplina)`,
+            `vault/disciplinas/${filename} → senda "${path.key}" powers[${p.level - 1}].rollAbility: "${p.rollAbility}" no existe en habilidades/`,
           );
         }
       }
     }
-    // Sanity: niveles 1..5 sin duplicados.
-    const levels = new Set<number>();
-    for (const p of parsed.powers) {
-      if (levels.has(p.level)) {
-        throw new Error(
-          `vault/disciplinas/${f} → nivel duplicado: ${p.level}`,
-        );
-      }
-      levels.add(p.level);
-    }
     for (let l = 1; l <= 5; l++) {
       if (!levels.has(l)) {
-        throw new Error(`vault/disciplinas/${f} → falta nivel ${l}`);
+        throw new Error(
+          `vault/disciplinas/${filename} → senda "${path.key}" falta nivel ${l}`,
+        );
       }
     }
-    const powerDescriptions = extractPowerDescriptions(body);
-    // Cuerpo "principal" = todo lo antes del primer h2 numerado.
-    const splitIdx = body.search(/^##\s+(?:Poder\s+)?\d/m);
-    const headerBody = splitIdx === -1 ? body : body.slice(0, splitIdx).trim();
-    return {
-      ...parsed,
-      description: headerBody,
-      powerDescriptions,
-    };
-  });
-  return out;
+  }
+
+  // Validación de habilidades en rituales.
+  for (const r of parsed.rituals) {
+    if (r.rollAbility) {
+      const ok =
+        knownAbilityNames.has(r.rollAbility) ||
+        r.rollAbility === parsed.name;
+      if (!ok) {
+        throw new Error(
+          `vault/disciplinas/${filename} → ritual "${r.key}".rollAbility: "${r.rollAbility}" no existe en habilidades/`,
+        );
+      }
+    }
+  }
+
+  // Parseo del body: secciones por "## Senda — {nombre}" o "## Ritual — {nombre}"
+  // y luego "### Poder N" dentro de cada senda. La cabecera previa al primer
+  // ## es la `description` general de la disciplina.
+  const sections = splitBodySections(body);
+  return {
+    ...parsed,
+    kind: 'paths',
+    description: sections.header,
+    pathDescriptions: sections.paths,
+    pathPowerDescriptions: sections.pathPowers,
+    ritualDescriptions: sections.rituals,
+  };
+}
+
+/**
+ * Divide el cuerpo de un .md de disciplina con sendas en secciones:
+ * - `header`: todo lo anterior al primer "## Senda" / "## Ritual".
+ * - `paths[pathKey]`: texto bajo "## Senda — {nombre} {#key}" hasta el
+ *   primer "### Poder" o el siguiente "## ".
+ * - `pathPowers[pathKey][level]`: texto bajo "### Poder N" dentro de
+ *   esa senda.
+ * - `rituals[ritualKey]`: texto bajo "## Ritual — {nombre} {#key}".
+ *
+ * Reconocemos la key con el sufijo opcional `{#snake_case}` al final del
+ * heading. Si no hay sufijo, intenta slugificar el nombre, pero el seed
+ * fallará si no matchea con el frontmatter.
+ */
+function splitBodySections(body: string): {
+  header: string;
+  paths: Record<string, string>;
+  pathPowers: Record<string, Record<number, string>>;
+  rituals: Record<string, string>;
+} {
+  const result = {
+    header: '',
+    paths: {} as Record<string, string>,
+    pathPowers: {} as Record<string, Record<number, string>>,
+    rituals: {} as Record<string, string>,
+  };
+  const lines = body.split('\n');
+  type Mode =
+    | { kind: 'header' }
+    | { kind: 'path'; key: string }
+    | { kind: 'path-power'; pathKey: string; level: number }
+    | { kind: 'ritual'; key: string };
+  let mode: Mode = { kind: 'header' };
+  let buffer: string[] = [];
+
+  const flush = () => {
+    const text = buffer.join('\n').trim();
+    buffer = [];
+    if (!text) return;
+    if (mode.kind === 'header') result.header = text;
+    else if (mode.kind === 'path') result.paths[mode.key] = text;
+    else if (mode.kind === 'path-power') {
+      (result.pathPowers[mode.pathKey] ??= {})[mode.level] = text;
+    } else if (mode.kind === 'ritual') result.rituals[mode.key] = text;
+  };
+
+  const readKey = (heading: string): string | null => {
+    const m = /\{#([a-z0-9_]+)\}\s*$/.exec(heading);
+    return m ? m[1] : null;
+  };
+
+  for (const line of lines) {
+    const sendaMatch = /^##\s+Senda\b[^{\n]*?\{#([a-z0-9_]+)\}/i.exec(line);
+    const ritualMatch = /^##\s+Ritual\b[^{\n]*?\{#([a-z0-9_]+)\}/i.exec(line);
+    const powerMatch = /^###\s+(?:Poder\s+)?(\d)\b/i.exec(line);
+    if (sendaMatch) {
+      flush();
+      mode = { kind: 'path', key: sendaMatch[1] };
+      continue;
+    }
+    if (ritualMatch) {
+      flush();
+      mode = { kind: 'ritual', key: ritualMatch[1] };
+      continue;
+    }
+    if (powerMatch && (mode.kind === 'path' || mode.kind === 'path-power')) {
+      const pathKey = mode.kind === 'path' ? mode.key : mode.pathKey;
+      flush();
+      mode = { kind: 'path-power', pathKey, level: Number(powerMatch[1]) };
+      continue;
+    }
+    // h2 desconocido: cierra cualquier sección abierta y vuelve a header
+    // (efectivamente lo ignora) para no contaminar las descripciones.
+    if (/^##\s+/.test(line) && !sendaMatch && !ritualMatch) {
+      flush();
+      mode = { kind: 'header' };
+      // No se descarta la línea — un h2 no reconocido entra al buffer
+      // del header siguiente, pero como ya se vació el buffer, se ignora.
+      continue;
+    }
+    buffer.push(line);
+  }
+  flush();
+  // Silencia "unused" del helper readKey: se exporta como utilidad
+  // para futuros parsers que extraigan keys sueltas.
+  void readKey;
+  return result;
 }
 
 export function loadWeaponCategories(): WeaponCategoryRecord[] {

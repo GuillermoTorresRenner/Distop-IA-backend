@@ -20,6 +20,7 @@ import { DiceService } from './dice.service';
 import { BoardShareDto, BoardUpdateDto } from './dto/board-update.dto';
 import { ChatMessageDto } from './dto/chat-message.dto';
 import { RollInitiativeDto } from './dto/roll-initiative.dto';
+import { RollPowerDto } from './dto/roll-power.dto';
 import { RollVtmDto } from './dto/roll-vtm.dto';
 import { SheetUpdateAnnounceDto } from './dto/sheet-update-announce.dto';
 import { BoardService } from './board.service';
@@ -483,6 +484,91 @@ export class TableGateway
       total,
     );
     await this.broadcastCombat(chronicleId, combatState);
+
+    return { ok: true, id: roll.id };
+  }
+
+  /**
+   * Tirada activa de un poder o ritual. El servidor:
+   *  - Resuelve el poder/ritual desde el catálogo.
+   *  - Valida que el personaje lo conoce al nivel necesario (o que tiene
+   *    el ritual aprendido si es un ritual).
+   *  - Construye el pool = atributo + habilidad + modificador.
+   *  - Tira con la dificultad declarada en el catálogo (V20: éxitos,
+   *    pifia, etc.) y persiste con `sourceKind='POWER'`.
+   *  - Emite `roll:result` con visibilidad según el tipo de personaje.
+   *
+   * Si el poder no tiene tirada activa (rollAttribute null) se rechaza
+   * el evento — la UI debería bloquear el botón en ese caso, esto es
+   * defensa de servidor.
+   */
+  @SubscribeMessage('roll:power')
+  async onRollPower(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() body: RollPowerDto,
+  ) {
+    const { userId, chronicleId } = (client.data ?? {}) as AuthenticatedSocketData;
+    if (!userId || !chronicleId) throw new WsException('Not in a table');
+
+    const prepared = await this.tableService.prepareRollPower({
+      chronicleId,
+      characterId: body.characterId,
+      callerId: userId,
+      powerId: body.powerId,
+      ritualId: body.ritualId,
+      modifier: body.modifier,
+    });
+    if (!prepared) {
+      throw new WsException(
+        'Este poder o ritual no tiene tirada activa configurada',
+      );
+    }
+
+    const narratorId = await this.tableService.getNarratorId(chronicleId);
+    const isNarrator = narratorId === userId;
+    const isOwner = prepared.character.ownerId === userId;
+    if (prepared.character.kind === 'PC') {
+      if (!isOwner && !isNarrator) {
+        throw new WsException(
+          'Solo el dueño del personaje o el narrador pueden tirar sus poderes',
+        );
+      }
+    } else if (!isNarrator) {
+      throw new WsException(
+        'Solo el narrador puede tirar poderes de PNJs o antagonistas',
+      );
+    }
+
+    const { roll } = await this.diceService.rollPower({
+      chronicleId,
+      userId,
+      characterId: prepared.character.id,
+      label: body.label ?? null,
+      isPublic: body.isPublic ?? true,
+      pool: prepared.pool,
+      difficulty: prepared.difficulty,
+      sourceName: prepared.sourceName,
+      metadata: prepared.metadata,
+    });
+
+    const room = this.roomName(chronicleId);
+    const isSecretByKind =
+      prepared.character.kind === 'NPC' || prepared.character.kind === 'ANTAGONIST';
+    const isSecret = !roll.isPublic;
+    const goesPublic = roll.isPublic && !isSecretByKind;
+
+    if (goesPublic) {
+      this.server.to(room).emit('roll:result', roll);
+    } else {
+      const sockets = await this.server.in(room).fetchSockets();
+      for (const s of sockets) {
+        const sUid = (s.data as AuthenticatedSocketData)?.userId;
+        const isAuthor = sUid === userId;
+        const isViewerNarrator = !!narratorId && sUid === narratorId;
+        const allowed = isSecret ? isAuthor : isAuthor || isViewerNarrator;
+        if (allowed) s.emit('roll:result', roll);
+      }
+    }
 
     return { ok: true, id: roll.id };
   }

@@ -415,6 +415,72 @@ export class DiceService {
   }
 
   /**
+   * Tira un poder de disciplina o un ritual con su pool canon
+   * (atributo + habilidad + modificador) y la dificultad declarada en el
+   * catálogo. Reutiliza el motor de `rollVtm` para que el resultado sea
+   * consistente (éxitos netos, pifia, etc.). Persiste con
+   * `sourceKind='POWER'` y guarda en `metadata` el desglose para que el
+   * historial muestre origen (poder o ritual).
+   *
+   * El caller (gateway) ya validó permisos y descontó sangre si aplica.
+   * Aquí solo se hace la tirada y se persiste.
+   */
+  async rollPower(input: {
+    chronicleId: string;
+    userId: string;
+    characterId: string;
+    label?: string | null;
+    isPublic?: boolean;
+    pool: number;
+    difficulty: number;
+    /** Para la metadata: nombre del poder/ritual, nivel y procedencia. */
+    sourceName: string;
+    metadata?: Record<string, unknown>;
+  }) {
+    const safePool = Math.max(1, Math.min(30, Math.floor(input.pool)));
+    const safeDifficulty = Math.max(2, Math.min(10, Math.floor(input.difficulty)));
+    const result = this.rollVtm({
+      pool: safePool,
+      difficulty: safeDifficulty,
+    });
+
+    const created = await this.prisma.diceRoll.create({
+      data: {
+        chronicleId: input.chronicleId,
+        userId: input.userId,
+        characterId: input.characterId,
+        label: input.label ?? input.sourceName,
+        pool: safePool,
+        difficulty: safeDifficulty,
+        specialty: false,
+        skillRating: null,
+        specialtyText: null,
+        willpowerSpent: false,
+        wpForSuccess: false,
+        wpForWound: false,
+        wpForReroll: false,
+        willpowerEffect: 'NONE',
+        woundPenalty: 0,
+        rolls: result.rolls,
+        specialtyRerolls: result.specialtyRerolls,
+        willpowerRerolls: result.willpowerRerolls,
+        successes: result.successes,
+        isBotch: result.isBotch,
+        isPublic: input.isPublic ?? true,
+        sourceKind: 'POWER',
+        sourceName: input.sourceName,
+        metadata: (input.metadata ?? {}) as Prisma.InputJsonValue,
+      },
+      include: {
+        user: { select: { id: true, email: true, nickname: true, avatar: true } },
+        character: { select: { id: true, name: true, kind: true } },
+      },
+    });
+
+    return { roll: created, ...result };
+  }
+
+  /**
    * Historial de tiradas filtrado por las mismas reglas que la emisión WS:
    *   - Públicas (isPublic=true) y de PC: todos las ven.
    *   - Secretas (isPublic=false): sólo el autor (`userId`).

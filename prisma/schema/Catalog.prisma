@@ -73,19 +73,54 @@ model Archetype {
 }
 
 /// Disciplinas base (Auspex, Celeridad, Dominación, etc.)
+///
+/// Disciplinas "monolíticas" tienen 5 poderes lineales (nivel 1..5) bajo
+/// `powers`. Algunas (Taumaturgia, Nigromancia) marcan `hasPaths=true` y
+/// sus poderes viven dentro de `paths: DisciplinePath[]`. En ese caso
+/// `powers` queda vacío y la UI debe agrupar por senda. Además pueden
+/// tener `rituals` (Taumaturgia/Nigromancia) que se aprenden uno por uno.
 model Discipline {
   id          String   @id @default(uuid())
   name        String   @unique
   description String?
   tooltip     String?
   order       Int      @default(0)
+  hasPaths    Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   powers              DisciplinePower[]
+  paths               DisciplinePath[]
+  rituals             DisciplineRitual[]
   characterDisciplines CharacterDiscipline[]
+  characterRituals     CharacterDisciplineRitual[]
 
   @@map("disciplines")
+}
+
+/// Senda de una disciplina ramificada (solo Taumaturgia y Nigromancia
+/// hoy). Una senda agrupa 5 niveles propios de poderes y se compra de
+/// forma independiente al nivel general de la disciplina.
+model DisciplinePath {
+  id           String     @id @default(uuid())
+  disciplineId String
+  discipline   Discipline @relation(fields: [disciplineId], references: [id], onDelete: Cascade)
+  /// Clave estable interna (snake_case sin acentos) para localizar la
+  /// senda desde el vault y el frontend. Único dentro de la disciplina.
+  key          String
+  name         String
+  description  String?
+  tooltip      String?
+  order        Int        @default(0)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  powers         DisciplinePower[]
+  characterPaths CharacterDisciplinePath[]
+
+  @@unique([disciplineId, key])
+  @@index([disciplineId])
+  @@map("discipline_paths")
 }
 
 /// Poderes anidados bajo una Disciplina; un poder por nivel (1..5).
@@ -101,8 +136,14 @@ model Discipline {
 ///     sigue siendo el texto largo del manual.
 model DisciplinePower {
   id             String     @id @default(uuid())
-  disciplineId   String
-  discipline     Discipline @relation(fields: [disciplineId], references: [id], onDelete: Cascade)
+  /// Exactamente uno de `disciplineId` o `pathId` está set. Si la disciplina
+  /// es monolítica, vive directo bajo Discipline. Si pertenece a una senda
+  /// (Taumaturgia/Nigromancia), vive bajo el `DisciplinePath`. El service y
+  /// el loader validan la exclusividad.
+  disciplineId   String?
+  discipline     Discipline? @relation(fields: [disciplineId], references: [id], onDelete: Cascade)
+  pathId         String?
+  path           DisciplinePath? @relation(fields: [pathId], references: [id], onDelete: Cascade)
   level          Int
   name           String
   description    String?
@@ -124,8 +165,67 @@ model DisciplinePower {
   rollDifficulty Int?
 
   @@unique([disciplineId, level])
+  @@unique([pathId, level])
   @@index([disciplineId])
+  @@index([pathId])
   @@map("discipline_powers")
+}
+
+/// Ritual nigromántico/taumatúrgico. A diferencia de los poderes, los
+/// rituales no escalan con el nivel de la disciplina: se aprenden uno
+/// por uno y cada uno tiene su propio nivel canon (1..5). El nivel del
+/// ritual representa cuán avanzada debe ser la disciplina para invocarlo.
+model DisciplineRitual {
+  id             String     @id @default(uuid())
+  disciplineId   String
+  discipline     Discipline @relation(fields: [disciplineId], references: [id], onDelete: Cascade)
+  /// Clave estable interna (snake_case sin acentos). Único dentro de la
+  /// disciplina; usado por el vault y el frontend para identificar el ritual.
+  key            String
+  /// Nivel canon V20 del ritual (1..5). La disciplina debe estar al menos
+  /// a este nivel para invocarlo.
+  level          Int
+  name           String
+  description    String?
+  tooltip        String?
+  /// Ingredientes / componentes mágicos (texto libre, multi-línea).
+  ingredients    String?
+  /// Tiempo de invocación canon (ej. "5 minutos por nivel"). Texto libre.
+  castingTime    String?
+  /// Si el ritual requiere tirada activa, mismas convenciones que los
+  /// poderes: attribute key, ability name y dificultad por defecto.
+  rollAttribute  String?
+  rollAbility    String?
+  rollDifficulty Int?
+  order          Int        @default(0)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  characterRituals CharacterDisciplineRitual[]
+
+  @@unique([disciplineId, key])
+  @@index([disciplineId])
+  @@map("discipline_rituals")
+}
+
+/// Rituales aprendidos por un personaje. Existe una fila por ritual
+/// que el PJ conoce. La asociación es por personaje porque un PJ
+/// podría dejar de tener la disciplina pero seguir asociado a la mesa;
+/// preferimos tracking explícito a derivado.
+model CharacterDisciplineRitual {
+  id           String           @id @default(uuid())
+  characterId  String
+  character    Character        @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  ritualId     String
+  ritual       DisciplineRitual @relation(fields: [ritualId], references: [id], onDelete: Cascade)
+  disciplineId String
+  discipline   Discipline       @relation(fields: [disciplineId], references: [id], onDelete: Cascade)
+  learnedAt    DateTime         @default(now())
+
+  @@unique([characterId, ritualId])
+  @@index([characterId])
+  @@index([disciplineId])
+  @@map("character_discipline_rituals")
 }
 
 enum MeritFlawKind {

@@ -237,6 +237,7 @@ async function seedDisciplines(abilityNames: Set<string>) {
   const items = loadDisciplines(abilityNames);
   for (let i = 0; i < items.length; i++) {
     const d = items[i];
+    const hasPaths = d.kind === 'paths';
     const discipline = await prisma.discipline.upsert({
       where: { name: d.name },
       create: {
@@ -244,39 +245,177 @@ async function seedDisciplines(abilityNames: Set<string>) {
         description: d.description,
         tooltip: d.tooltip,
         order: d.order || i,
+        hasPaths,
       },
-      update: { description: d.description, tooltip: d.tooltip, order: d.order || i },
+      update: {
+        description: d.description,
+        tooltip: d.tooltip,
+        order: d.order || i,
+        hasPaths,
+      },
     });
-    for (const p of d.powers) {
-      const description = d.powerDescriptions[p.level] ?? null;
-      const mechanics = {
-        summary: p.summary ?? null,
-        tooltip: p.tooltip ?? null,
-        bloodCost: p.bloodCost,
-        rollAttribute: p.rollAttribute,
-        rollAbility: p.rollAbility,
-        rollDifficulty: p.rollDifficulty,
-      };
-      await prisma.disciplinePower.upsert({
+
+    if (d.kind === 'monolithic') {
+      // Disciplina clásica: 5 poderes directos bajo la disciplina.
+      for (const p of d.powers) {
+        const description = d.powerDescriptions[p.level] ?? null;
+        const mechanics = {
+          summary: p.summary ?? null,
+          tooltip: p.tooltip ?? null,
+          bloodCost: p.bloodCost,
+          rollAttribute: p.rollAttribute,
+          rollAbility: p.rollAbility,
+          rollDifficulty: p.rollDifficulty,
+        };
+        await prisma.disciplinePower.upsert({
+          where: {
+            disciplineId_level: {
+              disciplineId: discipline.id,
+              level: p.level,
+            },
+          },
+          create: {
+            disciplineId: discipline.id,
+            pathId: null,
+            level: p.level,
+            name: p.name,
+            description,
+            ...mechanics,
+          },
+          update: {
+            name: p.name,
+            description,
+            ...mechanics,
+          },
+        });
+      }
+      continue;
+    }
+
+    // Disciplina ramificada: cada senda con sus 5 poderes + rituales.
+    // Limpiamos primero los poderes "legacy" que apuntaban directo a esta
+    // disciplina (caso típico: la disciplina era monolítica y ahora pasa
+    // a tener sendas). Solo eliminamos los que tienen `disciplineId` set
+    // y `pathId` null — los poderes nuevos viven bajo path.
+    await prisma.disciplinePower.deleteMany({
+      where: { disciplineId: discipline.id, pathId: null },
+    });
+
+    // Después limpiamos sendas/rituales que ya no estén en el vault — el
+    // upsert posterior recrea lo vigente.
+    const vaultPathKeys = new Set(d.paths.map((p) => p.key));
+    const vaultRitualKeys = new Set(d.rituals.map((r) => r.key));
+    const dbPaths = await prisma.disciplinePath.findMany({
+      where: { disciplineId: discipline.id },
+      select: { id: true, key: true },
+    });
+    for (const dbPath of dbPaths) {
+      if (!vaultPathKeys.has(dbPath.key)) {
+        await prisma.disciplinePath.delete({ where: { id: dbPath.id } });
+      }
+    }
+    const dbRituals = await prisma.disciplineRitual.findMany({
+      where: { disciplineId: discipline.id },
+      select: { id: true, key: true },
+    });
+    for (const dbRitual of dbRituals) {
+      if (!vaultRitualKeys.has(dbRitual.key)) {
+        await prisma.disciplineRitual.delete({ where: { id: dbRitual.id } });
+      }
+    }
+
+    for (let pIdx = 0; pIdx < d.paths.length; pIdx++) {
+      const path = d.paths[pIdx];
+      const pathDescription = d.pathDescriptions[path.key] ?? null;
+      const dbPath = await prisma.disciplinePath.upsert({
         where: {
-          disciplineId_level: { disciplineId: discipline.id, level: p.level },
+          disciplineId_key: { disciplineId: discipline.id, key: path.key },
         },
         create: {
           disciplineId: discipline.id,
-          level: p.level,
-          name: p.name,
-          description,
-          ...mechanics,
+          key: path.key,
+          name: path.name,
+          description: pathDescription,
+          tooltip: path.tooltip,
+          order: path.order || pIdx,
         },
         update: {
-          name: p.name,
+          name: path.name,
+          description: pathDescription,
+          tooltip: path.tooltip,
+          order: path.order || pIdx,
+        },
+      });
+      for (const power of path.powers) {
+        const pathPowerDescriptions =
+          d.pathPowerDescriptions[path.key] ?? {};
+        const description = pathPowerDescriptions[power.level] ?? null;
+        const mechanics = {
+          summary: power.summary ?? null,
+          tooltip: power.tooltip ?? null,
+          bloodCost: power.bloodCost,
+          rollAttribute: power.rollAttribute,
+          rollAbility: power.rollAbility,
+          rollDifficulty: power.rollDifficulty,
+        };
+        await prisma.disciplinePower.upsert({
+          where: {
+            pathId_level: { pathId: dbPath.id, level: power.level },
+          },
+          create: {
+            disciplineId: null,
+            pathId: dbPath.id,
+            level: power.level,
+            name: power.name,
+            description,
+            ...mechanics,
+          },
+          update: {
+            name: power.name,
+            description,
+            ...mechanics,
+          },
+        });
+      }
+    }
+
+    for (let rIdx = 0; rIdx < d.rituals.length; rIdx++) {
+      const ritual = d.rituals[rIdx];
+      const description = d.ritualDescriptions[ritual.key] ?? null;
+      await prisma.disciplineRitual.upsert({
+        where: {
+          disciplineId_key: { disciplineId: discipline.id, key: ritual.key },
+        },
+        create: {
+          disciplineId: discipline.id,
+          key: ritual.key,
+          level: ritual.level,
+          name: ritual.name,
           description,
-          ...mechanics,
+          tooltip: ritual.tooltip,
+          ingredients: ritual.ingredients,
+          castingTime: ritual.castingTime,
+          rollAttribute: ritual.rollAttribute,
+          rollAbility: ritual.rollAbility,
+          rollDifficulty: ritual.rollDifficulty,
+          order: ritual.order || rIdx,
+        },
+        update: {
+          level: ritual.level,
+          name: ritual.name,
+          description,
+          tooltip: ritual.tooltip,
+          ingredients: ritual.ingredients,
+          castingTime: ritual.castingTime,
+          rollAttribute: ritual.rollAttribute,
+          rollAbility: ritual.rollAbility,
+          rollDifficulty: ritual.rollDifficulty,
+          order: ritual.order || rIdx,
         },
       });
     }
   }
-  console.log(`✓ ${items.length} disciplinas con poderes.`);
+  console.log(`✓ ${items.length} disciplinas con poderes${items.some((d) => d.kind === 'paths') ? ' / sendas / rituales' : ''}.`);
 }
 
 async function seedWeapons() {
