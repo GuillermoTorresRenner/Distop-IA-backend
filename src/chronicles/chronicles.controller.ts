@@ -35,7 +35,7 @@ import {
   InviteUserDto,
   UpdateChronicleDto,
 } from './dto';
-import { UpdateCharacterDto } from '../characters/dto';
+import { TransferCharacterDto, UpdateCharacterDto } from '../characters/dto';
 
 const ALLOWED_IMAGE_MIMES = [
   'image/jpeg',
@@ -283,6 +283,26 @@ export class ChroniclesController {
     @GetUser('id') userId: string,
   ) {
     return this.characters.unlinkFromChronicle(id, characterId, userId);
+  }
+
+  @Post(':id/characters/:characterId/transfer')
+  @Auth()
+  @ApiOperation({
+    summary:
+      'Transfer ownership of a PC associated with this chronicle to another member. Narrator only.',
+  })
+  transferCharacter(
+    @Param('id') id: string,
+    @Param('characterId') characterId: string,
+    @GetUser('id') userId: string,
+    @Body() dto: TransferCharacterDto,
+  ) {
+    return this.characters.transferOwnership(
+      id,
+      characterId,
+      userId,
+      dto.targetUserId,
+    );
   }
 
   @Delete(':id/members/:userId')

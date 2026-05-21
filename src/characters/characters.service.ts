@@ -325,6 +325,81 @@ export class CharactersService {
   }
 
   /**
+   * Transfiere la propiedad de un personaje a otro miembro de la crónica.
+   *
+   * Solo el narrador puede ejecutar la transferencia. Las reglas:
+   * - El personaje debe estar asociado a la crónica.
+   * - Solo se permite transferir PCs (NPC/Antagonista siempre son del narrador).
+   * - El usuario destino debe ser miembro de la crónica y distinto del actual.
+   *
+   * No se elimina la asociación a la crónica: solo cambia el `userId`. Si el
+   * narrador transfiere uno propio (porque lo creó por nombre del jugador antes
+   * del flujo de invitaciones), el nuevo dueño puede editarlo de inmediato.
+   */
+  async transferOwnership(
+    chronicleId: string,
+    characterId: string,
+    callerId: string,
+    targetUserId: string,
+  ) {
+    const chronicle = await this.prisma.chronicle.findUnique({
+      where: { id: chronicleId },
+      select: {
+        id: true,
+        narratorId: true,
+        members: { select: { userId: true } },
+      },
+    });
+    if (!chronicle) throw new NotFoundException('Chronicle not found');
+
+    if (chronicle.narratorId !== callerId) {
+      throw new ForbiddenException(
+        'Only the narrator can transfer a character',
+      );
+    }
+
+    const targetIsMember = chronicle.members.some(
+      (m) => m.userId === targetUserId,
+    );
+    if (!targetIsMember) {
+      throw new BadRequestException(
+        'Target user is not a member of this chronicle',
+      );
+    }
+
+    const link = await this.prisma.chronicleCharacter.findFirst({
+      where: { chronicleId, characterId },
+      select: {
+        character: { select: { id: true, userId: true, kind: true } },
+      },
+    });
+    if (!link) {
+      throw new NotFoundException(
+        'Character is not associated with this chronicle',
+      );
+    }
+    const character = link.character;
+
+    if (character.kind !== 'PC') {
+      throw new BadRequestException(
+        'NPCs and antagonists belong to the narrator and cannot be transferred',
+      );
+    }
+
+    if (character.userId === targetUserId) {
+      throw new BadRequestException(
+        'Character already belongs to this user',
+      );
+    }
+
+    await this.prisma.character.update({
+      where: { id: characterId },
+      data: { userId: targetUserId },
+    });
+    return { ok: true };
+  }
+
+  /**
    * Lista personajes que pueden asociarse a la crónica.
    * - Narrador: ve los de TODOS los miembros (no asociados aún).
    * - Jugador: ve solo los suyos (no asociados aún).
