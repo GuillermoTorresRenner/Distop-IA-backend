@@ -432,10 +432,16 @@ async function seedWeapons() {
   }
 
   const weapons = loadWeapons(new Set(categories.map((c) => c.name)));
-  await prisma.weapon.deleteMany({ where: { system: true } });
-  await prisma.weapon.createMany({
-    data: weapons.map((w, idx) => ({
-      name: w.name,
+  // findFirst + create/update por nombre+system (en lugar de delete+create) para
+  // no romper FKs con `character_weapons` cuando hay personajes que ya tienen
+  // armas system asociadas en la BD. Weapon.name no es @unique, así que no se
+  // puede usar `upsert`.
+  for (let idx = 0; idx < weapons.length; idx++) {
+    const w = weapons[idx];
+    const existing = await prisma.weapon.findFirst({
+      where: { name: w.name, system: true },
+    });
+    const data = {
       kind: w.kind,
       categoryId: categoryByName.get(w.category)!,
       damageBase: w.damageBase,
@@ -452,9 +458,13 @@ async function seedWeapons() {
       notes: w.notes,
       order: w.order || idx,
       system: true,
-      userId: null,
-    })),
-  });
+    };
+    if (existing) {
+      await prisma.weapon.update({ where: { id: existing.id }, data });
+    } else {
+      await prisma.weapon.create({ data: { name: w.name, userId: null, ...data } });
+    }
+  }
   console.log(
     `✓ ${categories.length} categorías de armas y ${weapons.length} armas (system).`,
   );
@@ -462,19 +472,28 @@ async function seedWeapons() {
 
 async function seedArmors() {
   const items = loadArmors();
-  await prisma.armor.deleteMany({ where: { system: true } });
-  await prisma.armor.createMany({
-    data: items.map((a, idx) => ({
-      name: a.name,
+  // findFirst + create/update por nombre+system para no romper FKs con
+  // `character_armors` cuando hay personajes con armaduras system ya
+  // asociadas. Armor.name no es @unique.
+  for (let idx = 0; idx < items.length; idx++) {
+    const a = items[idx];
+    const existing = await prisma.armor.findFirst({
+      where: { name: a.name, system: true },
+    });
+    const data = {
       rating: a.rating,
       penalty: a.penalty,
       description: a.description,
       tooltip: a.tooltip,
       order: a.order || idx,
       system: true,
-      userId: null,
-    })),
-  });
+    };
+    if (existing) {
+      await prisma.armor.update({ where: { id: existing.id }, data });
+    } else {
+      await prisma.armor.create({ data: { name: a.name, userId: null, ...data } });
+    }
+  }
   console.log(`✓ ${items.length} armaduras (system).`);
 }
 

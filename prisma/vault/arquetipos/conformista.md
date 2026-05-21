@@ -1,11 +1,15 @@
 ---
 name: Conformista
 order: 9
-tooltip: Sigue a los demás y mantiene statu quo; obediente.
+tooltip: Seguidor leal; se acopla a la personalidad fuerte del grupo y aporta apoyo más que iniciativa.
 ---
 
 # Conformista
 
-Sigue a los demás y al statu quo.
+No le interesa mandar y prefiere seguir. Se identifica con quien
+percibe como el liderazgo natural del grupo y aporta estabilidad y
+constancia. Grupies, votantes de toda la vida y miembros estables de
+cualquier colectivo encajan aquí.
 
-> *Cuando actúas en consonancia con este arquetipo, el Narrador puede otorgarte regeneración de Fuerza de Voluntad.*
+**Recuperación de Fuerza de Voluntad.** Cuando el grupo al que apoya
+logra un éxito en el que su contribución ha sido relevante.

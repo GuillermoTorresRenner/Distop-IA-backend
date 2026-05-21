@@ -8,7 +8,7 @@ powers:
     summary: Comunicarse con un animal cruzando la mirada; requiere contacto visual continuo.
     bloodCost: 0
     rollAttribute: manipulation
-    rollAbility: Trato con animales
+    rollAbility: Trato con Animales
     rollDifficulty: 6
     tooltip: "Establece comunicación cruzando la mirada con el animal; dificultad varía según la criatura."
   - level: 2
@@ -32,7 +32,7 @@ powers:
     summary: Proyecta tu conciencia al cuerpo de un animal; tu cascarón queda en letargo.
     bloodCost: 0
     rollAttribute: manipulation
-    rollAbility: Trato con animales
+    rollAbility: Trato con Animales
     rollDifficulty: 8
     tooltip: "Solo animales con visión y mirando al vampiro. Éxitos determinan cuántas Disciplinas puedes usar dentro del animal."
   - level: 5

@@ -439,14 +439,48 @@ Información crítica para clientes (frontend):
 
 ## Catálogo V20
 
-El seed popula **automáticamente**:
+El catálogo vive en `prisma/vault/` como archivos Markdown con frontmatter
+YAML — pensado para que un narrador edite sin tocar SQL ni TypeScript. El
+seed lo lee, valida con Zod y aplica a la base de datos.
 
-- 20 arquetipos (Naturaleza/Conducta).
-- Todos los clanes: Brujah, Gangrel, Malkavian, Nosferatu, Toreador, Tremere, Ventrue, Assamita, Giovanni, Lasombra, Ravnos, Seguidor de Set, Tzimisce (con disciplinas, debilidades, sect).
-- 15+ disciplinas (Animalismo, Ofuscación, Celeridad, Potencia, Presencia, Trasmutación, Demoníaca, Negromanc, Dominación, Embaucamiento, Robustez, Videncia).
-- 70+ méritos/defectos del manual.
-- 100+ armas (sistema V20: armas cuerpo a cuerpo, distancia, explosivos, con stats: daño, rango, velocidad).
-- 30+ armaduras (cuero, kevlar, malla, etc. con protección/penalidad).
+El seed popula automáticamente:
+
+- 9 atributos (Físicos, Sociales, Mentales) con tooltips y descripciones.
+- 31 habilidades (Talentos, Técnicas, Conocimientos) con tooltip,
+  especialidades sugeridas, escala de pericia y perfiles típicos.
+- 5 virtudes V20 (Conciencia, Autocontrol, Coraje, Convicción, Instintos).
+- 30 arquetipos (Naturaleza y Conducta), cubriendo los principales del manual V20: Arquitecto, Autócrata, Bellaco, Bizarro, Bravucón, Bufón, Celebrante, Competidor, Confabulador, Conformista, Fanático, Hosco, Juez, Maquinador, Mártir, Monstruo, Niño, Pedagogo, Penitente, Perfeccionista, Pervertido, Protector, Rebelde, Solitario, Superviviente, Tradicionalista, Visionario, Vividor, Masoquista, Ansioso de Emociones. Cada arquetipo incluye descripción narrativa y la condición de recuperación de Fuerza de Voluntad.
+- 51 méritos y defectos de las cuatro categorías canónicas (Físico, Mental, Social, Sobrenatural) con valores de 1 a 7 puntos. El catálogo cubre los más usados del manual (Ambidiestro, Sentido agudo, Color saludable, Voz encantadora, Calma, Voluntad de hierro, Afortunado, Médium, Invinculable, Amor verdadero, Cojera, Fobia, Adicción, Sangre diluida, Sensible a la luz, Perseguido, etc.).
+- 14 clanes (Brujah, Gangrel, Malkavian, Nosferatu, Toreador, Tremere,
+  Ventrue, Lasombra, Tzimisce, Assamita, Followers of Set, Giovanni,
+  Ravnos, Caitiff), con apodo, secta, disciplinas in-clan, debilidad
+  mecánica y resumen narrativo.
+- 12 disciplinas con sus poderes:
+  - 10 disciplinas monolíticas (Animalismo, Auspex, Celeridad, Dominación,
+    Fortaleza, Ofuscación, Potencia, Presencia, Protean, Quietus,
+    Obtenebración, Vicisitud, Serpentis, Quimerismo).
+  - 2 disciplinas ramificadas: **Taumaturgia** (5 sendas) y **Nigromancia**
+    (3 sendas), cada una con sus 5 niveles de poderes por senda y los
+    rituales asociados.
+- 10 trasfondos V20 (Aliados, Contactos, Criados, Fama, Generación,
+  Influencia, Mentor, Posición, Rebaño, Recursos).
+- 15 categorías de armas, 17 armas system y 5 armaduras system del manual.
+- 7 niveles de salud (Magullado → Incapacitado).
+
+**Edición del vault.** Cada `.md` tiene frontmatter con datos mecánicos
+(disciplinas, debilidad, especialidades, escala de pericia) y cuerpo
+Markdown con la descripción larga. **Importante**: cualquier valor escalar
+del frontmatter que contenga `:` seguido de espacio debe ir entre comillas
+dobles, o el parser YAML aborta. Consulta `prisma/vault/INSTRUCCIONES.md`
+para el detalle completo del formato por carpeta.
+
+**Persistencia idempotente.** El seed nunca borra registros relacionados
+con personajes existentes. Armas, armaduras, virtudes y atributos usan
+`upsert` o `findFirst + create/update` por nombre/key para no romper las
+FKs con `character_weapons`, `character_armors`, etc. Las disciplinas con
+sendas eliminan poderes monolíticos huérfanos antes de regenerar las
+sendas, para mantener el esquema limpio cuando una disciplina cambia de
+monolítica a ramificada.
 
 Los usuarios pueden crear armas y armaduras custom que solo ellos ven.
 

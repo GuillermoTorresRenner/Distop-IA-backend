@@ -1,11 +1,16 @@
 ---
 name: Rebelde
 order: 19
-tooltip: Se opone a autoridad y normas; cuestionador radical.
+tooltip: Descontento crónico que detesta toda autoridad; trabaja activamente para socavar lo establecido.
 ---
 
 # Rebelde
 
-Se opone a la autoridad y a las normas.
+Nunca está conforme con el orden vigente y dedica energía a
+debilitarlo. Puede mover ideales sinceros o un resentimiento personal
+antiguo. Adolescentes, insurrectos y descontentos crónicos encajan
+aquí.
 
-> *Cuando actúas en consonancia con este arquetipo, el Narrador puede otorgarte regeneración de Fuerza de Voluntad.*
+**Recuperación de Fuerza de Voluntad.** Cuando sus acciones afectan
+negativamente a la autoridad u oposición que ha elegido (gobierno,
+Iglesia, Príncipe, etc.).

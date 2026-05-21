@@ -1,12 +1,17 @@
 ---
 name: Vividor
-order: 24
-tooltip: Aprovecha a otros sin esfuerzo; parásito sin escrúpulos.
+order: 2
+tooltip: "Hedonista: sabe que la (no-)vida no tiene sentido y se dedica a exprimir cada placer disponible."
 ---
 
 # Vividor
 
-Aprovecha a otros sin esfuerzo propio.
+Asume que la existencia no tiene un propósito mayor y, en consecuencia,
+decide disfrutarla al máximo. No es necesariamente irresponsable —
+muchos cumplen con sus deberes — pero siempre están dispuestos al
+placer y al exceso. Sibaritas, diletantes y juerguistas habituales
+encajan aquí.
 
-> *Cuando actúas en consonancia con este arquetipo, el Narrador puede otorgarte regeneración de Fuerza de Voluntad.*
-
+**Recuperación de Fuerza de Voluntad.** Cuando disfruta plenamente de
+una experiencia y lo expresa. Una celebración especialmente memorable
+puede otorgar puntos adicionales a criterio del Narrador.

@@ -1,11 +1,15 @@
 ---
 name: Maquinador
 order: 15
-tooltip: Manipula desde las sombras; titiritero invisible.
+tooltip: Estratega de sombras; mueve los hilos para que otros consigan sus propios objetivos sin sospechar la mano.
 ---
 
 # Maquinador
 
-Manipula desde las sombras.
+Prefiere mover piezas a empuñar la espada. Planifica varios pasos por
+delante y rara vez se expone en primera línea. Para él la mejor
+victoria es la que nadie le atribuye. Asesores invisibles, jefes en
+la sombra y conspiradores natos encajan aquí.
 
-> *Cuando actúas en consonancia con este arquetipo, el Narrador puede otorgarte regeneración de Fuerza de Voluntad.*
+**Recuperación de Fuerza de Voluntad.** Cuando un plan suyo da el
+resultado esperado sin que su autoría salga a la luz.

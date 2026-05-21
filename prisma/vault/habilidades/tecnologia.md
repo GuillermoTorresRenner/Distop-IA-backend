@@ -2,16 +2,26 @@
 key: tecnologia
 name: Tecnología
 category: KNOWLEDGE
-order: 31
-tooltip: Hardware moderno; motores, comunicaciones, electrónica, sensores y reparación.
+order: 30
+tooltip: "Hardware moderno y reparación: motores, comunicaciones, electrónica, sensores."
 ---
 
 # Tecnología
 
-Cómo funciona la maquinaria moderna: motores, comunicaciones,
-electrónica de consumo, sensores. Diferente de Pericias (que construye
-y repara con las manos) e Informática (que es software): aquí entiendes
-el hardware.
+Conocimiento del funcionamiento de la maquinaria moderna: motores,
+sistemas de comunicación, electrónica de consumo, sensores. Se
+diferencia de Pericias (construcción manual con materiales) y de
+Informática (software): aquí el foco está en entender el hardware,
+diagnosticarlo y repararlo.
 
-**Uso típico:** Inteligencia + Tecnología para reparar o entender.
-Destreza + Tecnología para improvisar un parche bajo presión.
+Nota: la lista oficial de V20 español no incluye Tecnología como
+habilidad separada — quien busque algo parecido suele usar
+**Informática** o **Pericias**. Este archivo se mantiene por
+compatibilidad con personajes existentes y mesas que la usen como
+opción de Conocimiento adicional.
+
+**Uso típico.** Inteligencia + Tecnología para reparar o entender un
+aparato. Destreza + Tecnología para improvisar un parche bajo presión.
+
+**Especialidades sugeridas:** electrónica, comunicaciones, motores,
+robótica, sensores.

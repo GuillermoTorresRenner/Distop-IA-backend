@@ -180,6 +180,12 @@ solo el `.md` y vuelve a correr `npx prisma db seed` — el seed es idempotente.
 - `20260518055413_add_catalog_tooltips_and_virtues` - agrega columna `tooltip String?` a todos los modelos de catálogo (AttributeInfo, AbilityInfo, MeritFlaw, Clan, Discipline, DisciplinePower, Background, HealthLevelInfo, Archetype, Armor, Weapon); nuevo modelo `VirtueInfo` para virtudes canónicas V20.
 - `20260521040330_discipline_paths_and_rituals` - agrega flag `hasPaths` a `Discipline`; nullable `disciplineId` y nuevo `pathId?` en `DisciplinePower` (mutuamente excluyentes); nuevos modelos `DisciplinePath`, `DisciplineRitual`, `CharacterDisciplinePath` y `CharacterDisciplineRitual` para soportar Taumaturgia y Nigromancia con sus sendas y rituales.
 
+**Notas sobre el seeder (`prisma/seed.ts`):**
+- Armas (`Weapon`) y armaduras (`Armor`) se persisten con un patrón **findFirst + create/update** por `(name, system=true)`, NO con `deleteMany + createMany`. Razón: `CharacterWeapon` y `CharacterArmor` mantienen FKs `Restrict` hacia esos catálogos; borrar masivamente rompe la integridad referencial cuando ya existen personajes con equipo asociado.
+- Disciplinas con `hasPaths` (Taumaturgia, Nigromancia): el seed elimina los poderes monolíticos huérfanos (`disciplineId = X AND pathId IS NULL`) antes de recrear los `DisciplinePath` y sus poderes ramificados. Esto evita acumular registros viejos cuando una disciplina cambia de monolítica a ramificada.
+- Vault frontmatter (YAML) que contenga `: ` (dos puntos + espacio) en un valor escalar (`tooltip`, `weakness`, `nickname`, `sect`, etc.) debe ir entre comillas dobles. El loader Zod aborta con un error legible si encuentra YAML inválido. Hay un helper `/tmp/fix_yaml.py` que automatiza el encomillado si haces edición masiva.
+- Limpieza de huérfanos: si renombras o eliminas archivos del vault, los registros antiguos quedan en BD (el seed solo hace upsert, no delete). Para limpiar: `DELETE FROM archetypes WHERE name IN (...) AND NOT EXISTS (SELECT 1 FROM characters WHERE "natureId" = archetypes.id OR "demeanorId" = archetypes.id)` y análogo para `merits_flaws` referenciando `character_merits_flaws`.
+
 Swagger: `http://localhost:3000/docs`.
 
 ### Contrato del flujo de auth (consumido por `front/`)

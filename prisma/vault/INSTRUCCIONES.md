@@ -179,17 +179,27 @@ Reglas para los poderes:
 ```yaml
 ---
 name: Brujah
-sect: Camarilla        # texto libre
+nickname: Chusma                              # apodo del clan (opcional)
+sect: Camarilla                                # texto libre
 disciplines: Celeridad, Potencia, Presencia
-weakness: La Bestia siempre cerca: penalización para resistir el frenesí.
+weakness: "Resúmen mecánico de la maldición del clan. Si el texto contiene dos puntos, encomilla todo el valor para no romper el YAML."
 tooltip: Tooltip corto (opcional)
 order: 0
 ---
 
 # Brujah
 
-Texto narrativo del clan.
+Texto narrativo del clan, redactado con vuestras palabras a partir del manual
+oficial. Bloques recomendados: apariencia, refugios, trasfondo común,
+creación de personaje, organización y debilidad (esta última en lenguaje
+mecánico, repitiendo lo del frontmatter).
 ```
+
+**Cuidado con YAML.** Cualquier valor que contenga `: ` (dos puntos + espacio)
+debe ir entre comillas (`"`). Es lo más fácil de romper en este vault: si el
+seed aborta con un error del tipo `incomplete explicit mapping pair`, busca
+el campo culpable y enciérralo entre comillas. Pasa con tooltips,
+debilidades y descripciones largas en frontmatter.
 
 ### `arquetipos/`
 
@@ -204,6 +214,18 @@ Construye algo duradero que otros disfrutarán.
 ```
 
 Sin secciones especiales — el cuerpo entero es la descripción.
+
+**Convención para arquetipos V20**: el cuerpo Markdown suele incluir una
+sección final con el formato `**Recuperación de Fuerza de Voluntad.** ...`
+que describe la condición mecánica para recuperar un punto de Voluntad
+cuando el personaje usa el arquetipo como Naturaleza.
+
+**Listado canónico actual (30 arquetipos)**: Arquitecto, Autócrata,
+Bellaco, Bizarro, Bravucón, Bufón, Celebrante, Competidor, Confabulador,
+Conformista, Fanático, Hosco, Juez, Maquinador, Mártir, Monstruo, Niño,
+Pedagogo, Penitente, Perfeccionista, Pervertido, Protector, Rebelde,
+Solitario, Superviviente, Tradicionalista, Visionario, Vividor,
+Masoquista, Ansioso de Emociones.
 
 ### `meritos-defectos/`
 
@@ -234,6 +256,28 @@ entre archivos para que no haya grupos duplicados por error tipográfico.
 El jugador puede igualmente crear un mérito/defecto **customizado** desde
 la hoja, indicando nombre, kind, value y categoría libre; ese custom
 queda inline en el personaje y no se persiste como entrada del catálogo.
+
+**Convención de redacción**: el cuerpo Markdown abre con la línea
+`**Mérito · {categoría} · {N} punto(s)**` o `**Defecto · {categoría} ·
+{N} punto(s)**` y un par de párrafos que describen el efecto mecánico
+con sus propias palabras (sin reproducir el manual literalmente).
+
+**Catálogo actual (51 entradas)**: cubre todas las categorías del
+manual V20. Algunos ejemplos por categoría:
+
+- **Físico**: Ambidiestro, Sentido agudo, Color saludable, Voz
+  encantadora, Equilibrio felino, Corpulento, Arrojado, Digestión
+  eficaz, Cicatrices, Cojera, Duro de oído, Defecto visual,
+  Desfigurado, Tuerto, Adicción, Herida permanente, Monstruoso, Hedor
+  de la tumba.
+- **Mental**: Concentración, Sentido común, Sentido temporal, Código
+  de honor, Lingüista natural, Memoria eidética, Calma, Voluntad de
+  hierro, Pesadillas, Amnesia, Colérico, Fobia, Vengativo, Timidez.
+- **Social**: Líder natural, Sire prestigioso, Deuda de gratitud,
+  Enemigo, Sire infame, Perseguido.
+- **Sobrenatural**: Médium, Resistencia mágica, Afortunado, Espíritu
+  mentor, Invinculable, Amor verdadero, Sin reflejo, Repulsión al ajo,
+  Embrujado, Sensible a la luz, Presencia inquietante, Sangre diluida.
 
 ### `trasfondos/` — uno por trasfondo
 

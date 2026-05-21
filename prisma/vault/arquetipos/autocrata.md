@@ -1,11 +1,15 @@
 ---
 name: Autócrata
 order: 1
-tooltip: Busca control y poder; quiere mandar a toda costa.
+tooltip: Necesita estar al mando por el mando mismo; el control es su recompensa.
 ---
 
 # Autócrata
 
-Quiere mandar; busca control y poder.
+Persigue el dominio como fin en sí. No le mueve una causa ni el bien
+común: simplemente quiere mandar, persuadido de que los demás son
+incompetentes o de que el poder le pertenece. Dictadores, jefes
+mafiosos y ejecutivos sin escrúpulos calzan en este perfil.
 
-> *Cuando actúas en consonancia con este arquetipo, el Narrador puede otorgarte regeneración de Fuerza de Voluntad.*
+**Recuperación de Fuerza de Voluntad.** Cuando consigue control efectivo
+sobre un grupo u organización.

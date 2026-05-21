@@ -1,16 +1,53 @@
 ---
 name: Nosferatu
-sect: Camarilla
+nickname: Ratas de Cloaca
+sect: Camarilla (con presencia en el Sabbat y autarcas)
 disciplines: Animalismo, Ofuscación, Potencia
-weakness: Su Abrazo los deforma. Apariencia 0, no se puede subir.
-tooltip: Linaje de monstruos repulsivos. Maestros del subsuelo y la información.
+weakness: "La maldición del clan los desfigura: tienen Apariencia 0 (se tacha el punto gratuito del atributo) y no pueden mejorarla con experiencia. Las acciones sociales basadas en primera impresión —salvo intimidación— fallan automáticamente."
+tooltip: Monstruos desfigurados. Maestros del sigilo, las cloacas y la información secreta.
 order: 4
 ---
 
 # Nosferatu
 
-Los Nosferatu son los **monstruos** de la familia. Su Abrazo retuerce el cuerpo en formas horrendas: piel de pergamino, dedos huesudos, fauces. Ningún Nosferatu pasa por humano. A cambio, son los maestros indiscutidos del **secreto**: redes de información, alcantarillas, ojos en todas partes.
+Si algún clan encarna el nombre "Condenados", son los Nosferatu. Mientras
+los demás Vástagos pasan por humanos, la Maldición los retuerce hasta
+volverlos repulsivos. Su Antediluviano, según la tradición, cargó al
+clan entero con esta marca por sus crímenes.
 
-**Apariencia y trasfondo común.** Cualquier deformidad obvia. Vivieron como vagabundos, hackers, informantes, archivistas.
+Tras el Abrazo, los chiquillos sufren una transformación agónica que
+los aparta para siempre del ganado. La mayoría escoge para el Abrazo a
+mortales con problemas físicos o emocionales — gente que ya conoce el
+rechazo —, y por eso muchos Nosferatu son sorprendentemente equilibrados
+y pragmáticos comparados con sus parientes "agraciados".
 
-**Debilidad.** **Apariencia 0**, no se puede mejorar nunca. Todas las tiradas Sociales basadas en seducción o impresionar tienen dificultad +2.
+Son supervivientes natos y los mejores espías de la Estirpe. Conocen
+cada cloaca, cada catacumba y cada chisme. Trafican información a precio
+de oro y suelen saber más sobre cualquier príncipe que el propio
+príncipe. Su solidaridad interna es legendaria: meterse con un Nosferatu
+es meterse con todos.
+
+**Apariencia.** Variada, pero siempre repulsiva: colmillos invasivos,
+tumores, huecos en lugar de nariz, orejas deformadas, dedos palmeados,
+piel agrietada, llagas. Su olor encaja con su pinta.
+
+**Refugios.** Cementerios, sótanos, almacenes abandonados. En las
+grandes ciudades, redes enteras de túneles bajo las cloacas o el metro,
+camufladas con Ofuscación y custodiadas por ghouls. Incluso los
+príncipes andan con pies de plomo cerca de estos reinos.
+
+**Trasfondo común.** Marginados sociales, vagabundos, enfermos mentales,
+antisociales. A veces, un Nosferatu vengativo escoge a un mortal hermoso
+y vanidoso sólo por contemplar el efecto de la Maldición.
+
+**Creación de personaje.** Atributos Físicos o Mentales primarios; los
+Sociales nunca son más que terciarios. Habilidades favoritas: Sigilo y
+Supervivencia. Trasfondos secundarios: a veces Criados (animales-ghoul
+o aberraciones humanas).
+
+**Organización.** Sin protocolos rígidos, pero con una unidad de clan
+excepcional. La deformidad compartida los empuja a sostenerse mutuamente.
+
+**Debilidad.** Apariencia 0 fija. No puede subirse con experiencia. Las
+acciones sociales basadas en seducción o causar buena impresión fallan
+automáticamente; la intimidación, en cambio, les es trivial.

@@ -1,11 +1,16 @@
 ---
 name: Superviviente
 order: 22
-tooltip: Lo único que importa es seguir adelante; pragmatismo absoluto.
+tooltip: Tenacidad por encima de todo; por imposible que sea el obstáculo, encuentra cómo seguir adelante.
 ---
 
 # Superviviente
 
-Lo único que importa es seguir adelante.
+Por difíciles que sean las circunstancias, siempre encuentra la forma
+de salir adelante. Se frustra cuando otros se rinden o aceptan su
+destino sin pelear. Proscritos, gente de la calle y luchadores
+idealistas encajan aquí.
 
-> *Cuando actúas en consonancia con este arquetipo, el Narrador puede otorgarte regeneración de Fuerza de Voluntad.*
+**Recuperación de Fuerza de Voluntad.** Cuando sobrevive a una
+situación peligrosa gracias a su tenacidad, o cuando otro persevera
+gracias a su consejo.

@@ -1,11 +1,16 @@
 ---
 name: Solitario
 order: 21
-tooltip: Trabaja y vive aparte de los demás; independencia radical.
+tooltip: Paria por elección; aun rodeado de gente prefiere su propia compañía y se distancia activamente del resto.
 ---
 
 # Solitario
 
-Trabaja y vive aparte de los demás.
+Aunque esté entre la multitud, sigue siendo evidentemente un extraño:
+prefiere su soledad al trato continuo con otros. No es necesariamente
+huraño; simplemente funciona mejor solo. Criminales independientes,
+librepensadores y radicales encajan aquí.
 
-> *Cuando actúas en consonancia con este arquetipo, el Narrador puede otorgarte regeneración de Fuerza de Voluntad.*
+**Recuperación de Fuerza de Voluntad.** Cuando logra por su cuenta
+algo que también beneficia al grupo. Un éxito impresionante contra
+gran oposición puede otorgar puntos adicionales.
