@@ -334,7 +334,9 @@ export class DiceService {
           user: {
             select: { id: true, email: true, nickname: true, avatar: true },
           },
-          character: { select: { id: true, name: true, kind: true } },
+          character: {
+            select: { id: true, name: true, kind: true, avatar: true },
+          },
         },
       });
 
@@ -420,7 +422,9 @@ export class DiceService {
         user: {
           select: { id: true, email: true, nickname: true, avatar: true },
         },
-        character: { select: { id: true, name: true, kind: true } },
+        character: {
+          select: { id: true, name: true, kind: true, avatar: true },
+        },
       },
     });
 
@@ -498,7 +502,9 @@ export class DiceService {
         user: {
           select: { id: true, email: true, nickname: true, avatar: true },
         },
-        character: { select: { id: true, name: true, kind: true } },
+        character: {
+          select: { id: true, name: true, kind: true, avatar: true },
+        },
       },
     });
 
@@ -551,7 +557,9 @@ export class DiceService {
         user: {
           select: { id: true, email: true, nickname: true, avatar: true },
         },
-        character: { select: { id: true, name: true, kind: true } },
+        character: {
+          select: { id: true, name: true, kind: true, avatar: true },
+        },
       },
     });
   }

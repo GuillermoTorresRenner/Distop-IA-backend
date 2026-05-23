@@ -14,6 +14,8 @@ import { JwtService } from '@nestjs/jwt';
 import { Server, Socket } from 'socket.io';
 import { parse as parseCookie } from 'cookie';
 import { JwtPayload } from '../common/interfaces/jwt-payload.interface';
+import { buildCharacterAvatarUrl } from '../common/utils/character.utils';
+import { buildUserAvatarUrl } from '../common/utils/avatar.utils';
 import { envs } from '../config/envs';
 import { PresenceService } from '../presence/presence.service';
 import { TableService } from './table.service';
@@ -226,12 +228,18 @@ export class TableGateway
 
     const narratorId = await this.tableService.getNarratorId(chronicleId);
 
-    // Identidad del hablante. Por defecto: nickname del usuario. Si pidió
-    // hablar como un PJ, validamos que sea suyo y esté asociado a la crónica.
+    // Identidad del hablante. Por defecto: nickname + avatar del usuario.
+    // Si pidió hablar como un PJ, validamos que sea suyo y esté asociado a
+    // la crónica, y usamos el retrato del personaje.
+    //
+    // El campo `avatar` que viaja al cliente es una URL pública relativa
+    // (`/images/...`). El front la resuelve via NPM en QA/prod o via el
+    // proxy de vite en dev.
     let speaker: {
       kind: 'self' | 'character';
       name: string;
       characterId: string | null;
+      avatar: string | null;
     };
     const asReq = body?.as;
     if (asReq?.kind === 'character' && asReq.characterId) {
@@ -249,10 +257,16 @@ export class TableGateway
         kind: 'character',
         name: ctx.name,
         characterId: ctx.id,
+        avatar: ctx.avatar ? buildCharacterAvatarUrl(ctx.avatar) : null,
       };
     } else {
-      const nick = await this.tableService.getUserDisplayName(userId);
-      speaker = { kind: 'self', name: nick, characterId: null };
+      const info = await this.tableService.getUserSpeakerInfo(userId);
+      speaker = {
+        kind: 'self',
+        name: info.name,
+        characterId: null,
+        avatar: info.avatar ? buildUserAvatarUrl(info.avatar) : null,
+      };
     }
 
     const message = {
@@ -336,7 +350,7 @@ export class TableGateway
     const narratorId = await this.tableService.getNarratorId(chronicleId);
 
     if (goesPublic) {
-      this.server.to(room).emit('roll:result', roll);
+      this.server.to(room).emit('roll:result', this.withCharacterAvatarUrl(roll));
     } else {
       const sockets = await this.server.in(room).fetchSockets();
       for (const s of sockets) {
@@ -347,7 +361,7 @@ export class TableGateway
         const isNarrator = !!narratorId && sUid === narratorId;
         const allowed = isSecret ? isAuthor : isAuthor || isNarrator;
         if (allowed) {
-          s.emit('roll:result', roll);
+          s.emit('roll:result', this.withCharacterAvatarUrl(roll));
         }
       }
     }
@@ -471,7 +485,7 @@ export class TableGateway
     const goesPublic = roll.isPublic && !isSecretByKind;
 
     if (goesPublic) {
-      this.server.to(room).emit('roll:result', roll);
+      this.server.to(room).emit('roll:result', this.withCharacterAvatarUrl(roll));
     } else {
       const sockets = await this.server.in(room).fetchSockets();
       for (const s of sockets) {
@@ -479,7 +493,7 @@ export class TableGateway
         const isAuthor = sUid === userId;
         const isViewerNarrator = !!narratorId && sUid === narratorId;
         const allowed = isSecret ? isAuthor : isAuthor || isViewerNarrator;
-        if (allowed) s.emit('roll:result', roll);
+        if (allowed) s.emit('roll:result', this.withCharacterAvatarUrl(roll));
       }
     }
 
@@ -568,7 +582,7 @@ export class TableGateway
     const goesPublic = roll.isPublic && !isSecretByKind;
 
     if (goesPublic) {
-      this.server.to(room).emit('roll:result', roll);
+      this.server.to(room).emit('roll:result', this.withCharacterAvatarUrl(roll));
     } else {
       const sockets = await this.server.in(room).fetchSockets();
       for (const s of sockets) {
@@ -576,7 +590,7 @@ export class TableGateway
         const isAuthor = sUid === userId;
         const isViewerNarrator = !!narratorId && sUid === narratorId;
         const allowed = isSecret ? isAuthor : isAuthor || isViewerNarrator;
-        if (allowed) s.emit('roll:result', roll);
+        if (allowed) s.emit('roll:result', this.withCharacterAvatarUrl(roll));
       }
     }
 
@@ -705,6 +719,7 @@ export class TableGateway
         kind: 'system' as const,
         name: 'Sistema',
         characterId: null,
+        avatar: null,
       },
       text: chatLine,
       at: new Date().toISOString(),
@@ -882,6 +897,30 @@ export class TableGateway
 
   private roomName(chronicleId: string) {
     return `chronicle:${chronicleId}`;
+  }
+
+  /**
+   * Reemplaza el `avatar` (filename guardado en BD) del personaje embebido en
+   * el roll por su URL pública relativa (`/images/characters/avatars/...`),
+   * lista para consumirse por el front. Idempotente: si no hay character o
+   * no hay avatar, devuelve el roll tal cual.
+   *
+   * Importante: clonamos en vez de mutar para no contaminar el cache del
+   * service ni el dato que vuelve a Prisma.
+   */
+  private withCharacterAvatarUrl<
+    T extends { character?: { avatar?: string | null } | null },
+  >(roll: T): T {
+    if (!roll?.character) return roll;
+    return {
+      ...roll,
+      character: {
+        ...roll.character,
+        avatar: roll.character.avatar
+          ? buildCharacterAvatarUrl(roll.character.avatar)
+          : null,
+      },
+    };
   }
 
   private extractTokenFromHandshake(client: Socket): string | null {

@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Auth, GetUser } from '../common/decorators';
+import { buildCharacterAvatarUrl } from '../common/utils/character.utils';
 import { UploaderService } from '../uploader/uploader.service';
 import { BoardService } from './board.service';
 import { CombatService } from './combat.service';
@@ -51,11 +52,27 @@ export class TableController {
     if (!role) {
       throw new ForbiddenException('Not a member of this chronicle');
     }
-    return this.diceService.listByChronicle(
+    const rolls = await this.diceService.listByChronicle(
       chronicleId,
       userId,
       role === 'NARRATOR',
       limit ?? 50,
+    );
+    // Enriquecemos el avatar del personaje a URL pública (mismo formato que
+    // el WS al emitir `roll:result`). Sin esto el front recibiría el
+    // filename crudo de BD.
+    return rolls.map((r) =>
+      r.character
+        ? {
+            ...r,
+            character: {
+              ...r.character,
+              avatar: r.character.avatar
+                ? buildCharacterAvatarUrl(r.character.avatar)
+                : null,
+            },
+          }
+        : r,
     );
   }
 

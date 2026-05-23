@@ -44,13 +44,29 @@ export class TableService {
    * identidad amigable en lugar del email.
    */
   async getUserDisplayName(userId: string): Promise<string> {
+    const info = await this.getUserSpeakerInfo(userId);
+    return info.name;
+  }
+
+  /**
+   * Devuelve nombre + filename de avatar del usuario para inflar la
+   * identidad del hablante en mensajes de chat (cuando el usuario habla
+   * "como sí mismo"). El consumidor debe convertir el filename a URL
+   * pública si lo expone al cliente.
+   */
+  async getUserSpeakerInfo(
+    userId: string,
+  ): Promise<{ name: string; avatar: string | null }> {
     const user = await this.prisma.users.findUnique({
       where: { id: userId },
-      select: { email: true, nickname: true },
+      select: { email: true, nickname: true, avatar: true },
     });
-    if (!user) return 'Desconocido';
-    if (user.nickname && user.nickname.trim()) return user.nickname.trim();
-    return user.email.split('@')[0] ?? user.email;
+    if (!user) return { name: 'Desconocido', avatar: null };
+    const name =
+      user.nickname && user.nickname.trim()
+        ? user.nickname.trim()
+        : (user.email.split('@')[0] ?? user.email);
+    return { name, avatar: user.avatar };
   }
 
   /**
@@ -449,6 +465,9 @@ export class TableService {
     name: string;
     kind: 'PC' | 'NPC' | 'ANTAGONIST';
     ownerId: string;
+    /** Filename del retrato (sin URL). Quien consuma este método debe
+     *  convertirlo a URL pública si lo expone al cliente. */
+    avatar: string | null;
   } | null> {
     const link = await this.prisma.chronicleCharacter.findUnique({
       where: {
@@ -456,7 +475,13 @@ export class TableService {
       },
       include: {
         character: {
-          select: { id: true, name: true, kind: true, userId: true },
+          select: {
+            id: true,
+            name: true,
+            kind: true,
+            userId: true,
+            avatar: true,
+          },
         },
       },
     });
@@ -466,6 +491,7 @@ export class TableService {
       name: link.character.name,
       kind: link.character.kind,
       ownerId: link.character.userId,
+      avatar: link.character.avatar,
     };
   }
 }
