@@ -1,4 +1,8 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -40,9 +44,7 @@ export class BoardService {
     await this.assertNarrator(chronicleId, callerId);
     const elementsJson = elements as unknown as Prisma.InputJsonValue;
     const appStateJson =
-      appState === null
-        ? Prisma.JsonNull
-        : (appState as Prisma.InputJsonValue);
+      appState === null ? Prisma.JsonNull : (appState as Prisma.InputJsonValue);
     // Upsert para que la primera escritura cree la fila si no existe.
     return this.prisma.chronicleBoard.upsert({
       where: { chronicleId },

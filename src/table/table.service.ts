@@ -159,7 +159,7 @@ export class TableService {
       );
     }
 
-    let bloodBefore = character.bloodPool;
+    const bloodBefore = character.bloodPool;
     let bloodAfter = character.bloodPool;
     if (cost > 0) {
       const updated = await this.prisma.character.update({
@@ -185,9 +185,7 @@ export class TableService {
       // Resolvemos `discipline` siempre (sea monolítica o vía path) para
       // mantener el contrato estable del gateway/front.
       discipline: { id: ownerDisciplineId, name: ownerDisciplineName },
-      path: power.path
-        ? { id: power.path.id, name: power.path.name }
-        : null,
+      path: power.path ? { id: power.path.id, name: power.path.name } : null,
       character: {
         id: character.id,
         name: character.name,
@@ -260,9 +258,17 @@ export class TableService {
     difficulty: number;
     sourceName: string;
     metadata: Record<string, unknown>;
-    character: { id: string; name: string; kind: 'PC' | 'NPC' | 'ANTAGONIST'; ownerId: string };
+    character: {
+      id: string;
+      name: string;
+      kind: 'PC' | 'NPC' | 'ANTAGONIST';
+      ownerId: string;
+    };
   } | null> {
-    if ((input.powerId && input.ritualId) || (!input.powerId && !input.ritualId)) {
+    if (
+      (input.powerId && input.ritualId) ||
+      (!input.powerId && !input.ritualId)
+    ) {
       throw new BadRequestException(
         'Provide exactly one of powerId or ritualId',
       );
@@ -321,10 +327,7 @@ export class TableService {
         },
       });
       if (!power) throw new NotFoundException('Discipline power not found');
-      if (
-        power.rollAttribute === null ||
-        power.rollDifficulty === null
-      ) {
+      if (power.rollAttribute === null || power.rollDifficulty === null) {
         return null;
       }
 
@@ -348,7 +351,7 @@ export class TableService {
       if (learned < power.level) {
         const label = power.path
           ? `${power.path.discipline?.name ?? 'Disciplina'} · ${power.path.name}`
-          : power.discipline?.name ?? 'Disciplina';
+          : (power.discipline?.name ?? 'Disciplina');
         throw new BadRequestException(
           `El personaje no domina ${label} a nivel ${power.level} (tiene ${learned}).`,
         );
@@ -357,7 +360,8 @@ export class TableService {
       rollAttribute = power.rollAttribute;
       rollAbility = power.rollAbility;
       rollDifficulty = power.rollDifficulty;
-      sourceName = `${power.discipline?.name ?? power.path?.discipline?.name ?? ''} ${power.level} — ${power.name}`.trim();
+      sourceName =
+        `${power.discipline?.name ?? power.path?.discipline?.name ?? ''} ${power.level} — ${power.name}`.trim();
       metadata = {
         kind: 'power',
         powerId: power.id,
@@ -411,7 +415,7 @@ export class TableService {
     // + modificador circunstancial. Mínimo 1.
     const attrValue = readAttribute(character, rollAttribute!);
     const abilityRating = rollAbility
-      ? character.abilities.find((a) => a.name === rollAbility)?.value ?? 0
+      ? (character.abilities.find((a) => a.name === rollAbility)?.value ?? 0)
       : 0;
     const safeModifier =
       typeof input.modifier === 'number' && Number.isFinite(input.modifier)

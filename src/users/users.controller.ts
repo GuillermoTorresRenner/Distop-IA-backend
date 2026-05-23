@@ -156,7 +156,9 @@ export class UsersController {
 
   @Delete(':id/avatar')
   @Auth()
-  @ApiOperation({ summary: 'Remove user avatar (also deletes the stored file)' })
+  @ApiOperation({
+    summary: 'Remove user avatar (also deletes the stored file)',
+  })
   @ApiResponse({ status: 200, description: 'Avatar removed' })
   @ApiResponse({ status: 404, description: 'User not found' })
   async removeAvatar(@Param('id') userId: string) {

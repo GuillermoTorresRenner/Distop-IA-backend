@@ -84,7 +84,9 @@ export class InvitationsService {
         },
       });
       if (alreadyMember) {
-        throw new BadRequestException('User already a member of this chronicle');
+        throw new BadRequestException(
+          'User already a member of this chronicle',
+        );
       }
     }
 
@@ -96,7 +98,9 @@ export class InvitationsService {
       },
     });
     if (pendingDuplicate) {
-      throw new BadRequestException('An invitation is already pending for this email');
+      throw new BadRequestException(
+        'An invitation is already pending for this email',
+      );
     }
 
     const token = randomBytes(32).toString('hex');
@@ -112,7 +116,9 @@ export class InvitationsService {
         expiresAt,
       },
       include: {
-        invitedUser: { select: { id: true, email: true, nickname: true, avatar: true } },
+        invitedUser: {
+          select: { id: true, email: true, nickname: true, avatar: true },
+        },
       },
     });
 
@@ -133,7 +139,10 @@ export class InvitationsService {
           expiresAt,
         )
         .catch((err) =>
-          this.logger.error(`Failed to send existing-user invite to ${normalizedEmail}`, err),
+          this.logger.error(
+            `Failed to send existing-user invite to ${normalizedEmail}`,
+            err,
+          ),
         );
     } else {
       const registerUrl = `${baseUrl}/register?invite=${token}`;
@@ -147,7 +156,10 @@ export class InvitationsService {
           expiresAt,
         )
         .catch((err) =>
-          this.logger.error(`Failed to send new-user invite to ${normalizedEmail}`, err),
+          this.logger.error(
+            `Failed to send new-user invite to ${normalizedEmail}`,
+            err,
+          ),
         );
     }
 
@@ -179,7 +191,9 @@ export class InvitationsService {
         chronicle: {
           select: { id: true, name: true, description: true, setting: true },
         },
-        invitedBy: { select: { id: true, email: true, nickname: true, avatar: true } },
+        invitedBy: {
+          select: { id: true, email: true, nickname: true, avatar: true },
+        },
       },
     });
     if (!invitation) throw new NotFoundException('Invitation not found');
@@ -230,7 +244,9 @@ export class InvitationsService {
       throw new BadRequestException('Invitation has expired');
     }
     if (invitation.email.toLowerCase() !== userEmail.toLowerCase()) {
-      throw new ForbiddenException('Invitation does not match your account email');
+      throw new ForbiddenException(
+        'Invitation does not match your account email',
+      );
     }
 
     const existingMember = await this.prisma.chronicleMember.findUnique({

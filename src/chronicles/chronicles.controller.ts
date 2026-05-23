@@ -23,6 +23,10 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { CharactersService } from '../characters/characters.service';
 import { Auth, GetUser } from '../common/decorators';
 import {
+  enrichCharacterWithAvatarUrl,
+  enrichCharactersWithAvatarUrls,
+} from '../common/utils/character.utils';
+import {
   enrichChronicleWithImageUrl,
   enrichChroniclesWithImageUrls,
 } from '../common/utils/chronicle.utils';
@@ -57,19 +61,20 @@ export class ChroniclesController {
 
   @Post()
   @Auth()
-  @ApiOperation({ summary: 'Create a new chronicle (current user becomes narrator)' })
+  @ApiOperation({
+    summary: 'Create a new chronicle (current user becomes narrator)',
+  })
   @ApiResponse({ status: 201, description: 'Chronicle created' })
-  async create(
-    @GetUser('id') userId: string,
-    @Body() dto: CreateChronicleDto,
-  ) {
+  async create(@GetUser('id') userId: string, @Body() dto: CreateChronicleDto) {
     const chronicle = await this.chronicles.create(userId, dto);
     return enrichChronicleWithImageUrl(chronicle);
   }
 
   @Get()
   @Auth()
-  @ApiOperation({ summary: 'List chronicles where the current user is a member' })
+  @ApiOperation({
+    summary: 'List chronicles where the current user is a member',
+  })
   async findMine(@GetUser('id') userId: string) {
     const chronicles = await this.chronicles.findAllForUser(userId);
     return enrichChroniclesWithImageUrls(chronicles);
@@ -77,7 +82,9 @@ export class ChroniclesController {
 
   @Get(':id')
   @Auth()
-  @ApiOperation({ summary: 'Get chronicle detail (members + pending invitations)' })
+  @ApiOperation({
+    summary: 'Get chronicle detail (members + pending invitations)',
+  })
   @ApiResponse({ status: 403, description: 'Not a member' })
   @ApiResponse({ status: 404, description: 'Chronicle not found' })
   async findOne(@Param('id') id: string, @GetUser('id') userId: string) {
@@ -100,7 +107,9 @@ export class ChroniclesController {
   @Post(':id/image')
   @Auth()
   @UseInterceptors(FileInterceptor('file'))
-  @ApiOperation({ summary: 'Upload chronicle cover image (narrator only, converted to WebP)' })
+  @ApiOperation({
+    summary: 'Upload chronicle cover image (narrator only, converted to WebP)',
+  })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -133,7 +142,11 @@ export class ChroniclesController {
 
     await this.chronicles.assertNarrator(id, userId);
     const upload = await this.uploader.uploadChronicleImage(file, id);
-    const chronicle = await this.chronicles.setImage(id, userId, upload.filename);
+    const chronicle = await this.chronicles.setImage(
+      id,
+      userId,
+      upload.filename,
+    );
     return enrichChronicleWithImageUrl(chronicle);
   }
 
@@ -205,21 +218,31 @@ export class ChroniclesController {
   @ApiOperation({
     summary: 'List characters associated with this chronicle (members only)',
   })
-  listCharacters(@Param('id') id: string, @GetUser('id') userId: string) {
-    return this.characters.findAllForChronicle(id, userId);
+  async listCharacters(
+    @Param('id') id: string,
+    @GetUser('id') userId: string,
+  ) {
+    const data = await this.characters.findAllForChronicle(id, userId);
+    // `findAllForChronicle` retorna `{ joinedAt, character }[]` (wrapper de
+    // la asociación). Enriquecemos `character` sin perder el `joinedAt`.
+    return data.map((entry) => ({
+      ...entry,
+      character: enrichCharacterWithAvatarUrl(entry.character),
+    }));
   }
 
   @Get(':id/associable-characters')
   @Auth()
   @ApiOperation({
     summary:
-      'List characters that can still be associated to this chronicle. Narrator sees every member\'s characters; players see only their own.',
+      "List characters that can still be associated to this chronicle. Narrator sees every member's characters; players see only their own.",
   })
-  listAssociableCharacters(
+  async listAssociableCharacters(
     @Param('id') id: string,
     @GetUser('id') userId: string,
   ) {
-    return this.characters.findAssociableForChronicle(id, userId);
+    const data = await this.characters.findAssociableForChronicle(id, userId);
+    return enrichCharactersWithAvatarUrls(data);
   }
 
   @Post(':id/characters')
@@ -228,18 +251,19 @@ export class ChroniclesController {
     summary:
       'Create a character inside this chronicle. Narrator may create for any member via targetUserId; otherwise the caller owns the character.',
   })
-  createCharacter(
+  async createCharacter(
     @Param('id') id: string,
     @GetUser('id') userId: string,
     @Body() dto: CreateChronicleCharacterDto,
   ) {
     const { targetUserId, ...characterDto } = dto;
-    return this.characters.createForChronicle(
+    const data = await this.characters.createForChronicle(
       userId,
       id,
       characterDto,
       targetUserId,
     );
+    return enrichCharacterWithAvatarUrl(data);
   }
 
   @Post(':id/characters/:characterId')
@@ -262,13 +286,19 @@ export class ChroniclesController {
     summary:
       'Update a character in the context of a chronicle. Allowed for the character owner, or for the narrator if the character is associated with this chronicle.',
   })
-  updateCharacterInChronicle(
+  async updateCharacterInChronicle(
     @Param('id') id: string,
     @Param('characterId') characterId: string,
     @GetUser('id') userId: string,
     @Body() dto: UpdateCharacterDto,
   ) {
-    return this.characters.updateFromChronicle(id, characterId, userId, dto);
+    const data = await this.characters.updateFromChronicle(
+      id,
+      characterId,
+      userId,
+      dto,
+    );
+    return data ? enrichCharacterWithAvatarUrl(data) : data;
   }
 
   @Delete(':id/characters/:characterId')
@@ -307,7 +337,9 @@ export class ChroniclesController {
 
   @Delete(':id/members/:userId')
   @Auth()
-  @ApiOperation({ summary: 'Remove a member from the chronicle (narrator only)' })
+  @ApiOperation({
+    summary: 'Remove a member from the chronicle (narrator only)',
+  })
   removeMember(
     @Param('id') id: string,
     @Param('userId') memberUserId: string,

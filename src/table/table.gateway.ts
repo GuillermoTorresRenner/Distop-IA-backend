@@ -15,6 +15,7 @@ import { Server, Socket } from 'socket.io';
 import { parse as parseCookie } from 'cookie';
 import { JwtPayload } from '../common/interfaces/jwt-payload.interface';
 import { envs } from '../config/envs';
+import { PresenceService } from '../presence/presence.service';
 import { TableService } from './table.service';
 import { DiceService } from './dice.service';
 import { BoardShareDto, BoardUpdateDto } from './dto/board-update.dto';
@@ -70,6 +71,7 @@ export class TableGateway
     private readonly diceService: DiceService,
     private readonly boardService: BoardService,
     private readonly combatService: CombatService,
+    private readonly presenceService: PresenceService,
   ) {}
 
   afterInit() {
@@ -103,6 +105,7 @@ export class TableGateway
 
       client.data.userId = user.id;
       client.data.email = user.email;
+      this.presenceService.add(user.id, client.id);
       this.logger.log(`Client connected: ${client.id} user=${user.email}`);
     } catch (err) {
       const message =
@@ -114,7 +117,11 @@ export class TableGateway
   }
 
   async handleDisconnect(client: Socket) {
-    const { userId, chronicleId } = (client.data ?? {}) as AuthenticatedSocketData;
+    const { userId, chronicleId } = (client.data ??
+      {}) as AuthenticatedSocketData;
+    if (userId) {
+      this.presenceService.remove(userId, client.id);
+    }
     if (userId && chronicleId) {
       const room = this.roomName(chronicleId);
       // Notifica a la sala que el usuario se fue solo si era su última conexión.
@@ -146,7 +153,8 @@ export class TableGateway
     if (!chronicleId) throw new WsException('chronicleId required');
 
     const role = await this.tableService.getMembership(userId, chronicleId);
-    if (!role) throw new WsException('Forbidden: not a member of this chronicle');
+    if (!role)
+      throw new WsException('Forbidden: not a member of this chronicle');
 
     // Si el socket estaba en otra mesa, sacarlo primero.
     if (client.data.chronicleId && client.data.chronicleId !== chronicleId) {
@@ -210,7 +218,7 @@ export class TableGateway
     const room = this.roomName(chronicleId);
     const kind = body?.recipient?.kind ?? 'all';
     const targetUserId =
-      kind === 'user' ? body?.recipient?.userId ?? null : null;
+      kind === 'user' ? (body?.recipient?.userId ?? null) : null;
 
     if (kind === 'user' && !targetUserId) {
       throw new WsException('recipient.userId required when kind === "user"');
@@ -220,7 +228,11 @@ export class TableGateway
 
     // Identidad del hablante. Por defecto: nickname del usuario. Si pidió
     // hablar como un PJ, validamos que sea suyo y esté asociado a la crónica.
-    let speaker: { kind: 'self' | 'character'; name: string; characterId: string | null };
+    let speaker: {
+      kind: 'self' | 'character';
+      name: string;
+      characterId: string | null;
+    };
     const asReq = body?.as;
     if (asReq?.kind === 'character' && asReq.characterId) {
       const ctx = await this.tableService.getCharacterContext(
@@ -282,7 +294,8 @@ export class TableGateway
     @ConnectedSocket() client: Socket,
     @MessageBody() body: RollVtmDto,
   ) {
-    const { userId, chronicleId } = (client.data ?? {}) as AuthenticatedSocketData;
+    const { userId, chronicleId } = (client.data ??
+      {}) as AuthenticatedSocketData;
     if (!userId || !chronicleId) throw new WsException('Not in a table');
 
     // Persiste y obtiene la tirada con autor + personaje + decremento de WP.
@@ -332,9 +345,7 @@ export class TableGateway
         // Secreta por kind (NPC/Antag): autor + narrador.
         const isAuthor = sUid === userId;
         const isNarrator = !!narratorId && sUid === narratorId;
-        const allowed = isSecret
-          ? isAuthor
-          : isAuthor || isNarrator;
+        const allowed = isSecret ? isAuthor : isAuthor || isNarrator;
         if (allowed) {
           s.emit('roll:result', roll);
         }
@@ -382,9 +393,7 @@ export class TableGateway
           const isAuthor = sUid === userId;
           const isNarrator = !!narratorId && sUid === narratorId;
           // Misma regla que la tirada que dispara este anuncio.
-          const allowed = isSecret
-            ? isAuthor
-            : isAuthor || isNarrator;
+          const allowed = isSecret ? isAuthor : isAuthor || isNarrator;
           if (allowed) {
             s.emit('sheet:announce', announce);
           }
@@ -416,7 +425,8 @@ export class TableGateway
     @ConnectedSocket() client: Socket,
     @MessageBody() body: RollInitiativeDto,
   ) {
-    const { userId, chronicleId } = (client.data ?? {}) as AuthenticatedSocketData;
+    const { userId, chronicleId } = (client.data ??
+      {}) as AuthenticatedSocketData;
     if (!userId || !chronicleId) throw new WsException('Not in a table');
 
     const ctx = await this.tableService.getInitiativeStats(
@@ -468,9 +478,7 @@ export class TableGateway
         const sUid = (s.data as AuthenticatedSocketData)?.userId;
         const isAuthor = sUid === userId;
         const isViewerNarrator = !!narratorId && sUid === narratorId;
-        const allowed = isSecret
-          ? isAuthor
-          : isAuthor || isViewerNarrator;
+        const allowed = isSecret ? isAuthor : isAuthor || isViewerNarrator;
         if (allowed) s.emit('roll:result', roll);
       }
     }
@@ -507,7 +515,8 @@ export class TableGateway
     @ConnectedSocket() client: Socket,
     @MessageBody() body: RollPowerDto,
   ) {
-    const { userId, chronicleId } = (client.data ?? {}) as AuthenticatedSocketData;
+    const { userId, chronicleId } = (client.data ??
+      {}) as AuthenticatedSocketData;
     if (!userId || !chronicleId) throw new WsException('Not in a table');
 
     const prepared = await this.tableService.prepareRollPower({
@@ -553,7 +562,8 @@ export class TableGateway
 
     const room = this.roomName(chronicleId);
     const isSecretByKind =
-      prepared.character.kind === 'NPC' || prepared.character.kind === 'ANTAGONIST';
+      prepared.character.kind === 'NPC' ||
+      prepared.character.kind === 'ANTAGONIST';
     const isSecret = !roll.isPublic;
     const goesPublic = roll.isPublic && !isSecretByKind;
 
@@ -586,9 +596,14 @@ export class TableGateway
     @ConnectedSocket() client: Socket,
     @MessageBody() body: SheetUpdateAnnounceDto,
   ) {
-    const { userId, chronicleId } = (client.data ?? {}) as AuthenticatedSocketData;
+    const { userId, chronicleId } = (client.data ??
+      {}) as AuthenticatedSocketData;
     if (!userId || !chronicleId) throw new WsException('Not in a table');
-    if (!body?.characterId || !Array.isArray(body.deltas) || body.deltas.length === 0) {
+    if (
+      !body?.characterId ||
+      !Array.isArray(body.deltas) ||
+      body.deltas.length === 0
+    ) {
       return { ok: true };
     }
 
@@ -653,7 +668,8 @@ export class TableGateway
     @ConnectedSocket() client: Socket,
     @MessageBody() body: { characterId: string; powerId: string },
   ) {
-    const { userId, chronicleId } = (client.data ?? {}) as AuthenticatedSocketData;
+    const { userId, chronicleId } = (client.data ??
+      {}) as AuthenticatedSocketData;
     if (!userId || !chronicleId) throw new WsException('Not in a table');
     if (!body?.characterId || !body?.powerId) {
       throw new WsException('characterId y powerId requeridos');
@@ -734,8 +750,12 @@ export class TableGateway
   // Helpers
   // ──────────────────────────────────────────────
 
-  private async getNarratorIdInRoom(chronicleId: string): Promise<string | null> {
-    const sockets = await this.server.in(this.roomName(chronicleId)).fetchSockets();
+  private async getNarratorIdInRoom(
+    chronicleId: string,
+  ): Promise<string | null> {
+    const sockets = await this.server
+      .in(this.roomName(chronicleId))
+      .fetchSockets();
     for (const s of sockets) {
       const uid = (s.data as AuthenticatedSocketData)?.userId;
       if (!uid) continue;
@@ -760,7 +780,8 @@ export class TableGateway
     @ConnectedSocket() client: Socket,
     @MessageBody() body: BoardShareDto,
   ) {
-    const { userId, chronicleId } = (client.data ?? {}) as AuthenticatedSocketData;
+    const { userId, chronicleId } = (client.data ??
+      {}) as AuthenticatedSocketData;
     if (!userId || !chronicleId) throw new WsException('Not in a table');
 
     const board = await this.boardService.setShared(
@@ -797,7 +818,8 @@ export class TableGateway
     @ConnectedSocket() client: Socket,
     @MessageBody() body: BoardUpdateDto,
   ) {
-    const { userId, chronicleId } = (client.data ?? {}) as AuthenticatedSocketData;
+    const { userId, chronicleId } = (client.data ??
+      {}) as AuthenticatedSocketData;
     if (!userId || !chronicleId) throw new WsException('Not in a table');
 
     // Solo el narrador puede empujar updates.
@@ -807,16 +829,22 @@ export class TableGateway
     }
 
     // Si la pizarra no está compartida, ignoramos el broadcast.
-    const board = await this.boardService.getBoardForMember(chronicleId, userId);
+    const board = await this.boardService.getBoardForMember(
+      chronicleId,
+      userId,
+    );
     if (!board.isShared) return { ok: true, broadcasted: false };
 
     const room = this.roomName(chronicleId);
-    this.server.to(room).except(client.id).emit('board:updated', {
-      chronicleId,
-      elements: body.elements,
-      appState: body.appState ?? null,
-      at: new Date().toISOString(),
-    });
+    this.server
+      .to(room)
+      .except(client.id)
+      .emit('board:updated', {
+        chronicleId,
+        elements: body.elements,
+        appState: body.appState ?? null,
+        at: new Date().toISOString(),
+      });
     return { ok: true, broadcasted: true };
   }
 
@@ -878,7 +906,9 @@ export class TableGateway
     chronicleId: string,
     excludeSocketId: string,
   ): Promise<boolean> {
-    const sockets = await this.server.in(this.roomName(chronicleId)).fetchSockets();
+    const sockets = await this.server
+      .in(this.roomName(chronicleId))
+      .fetchSockets();
     return sockets.some(
       (s) => s.id !== excludeSocketId && s.data?.userId === userId,
     );
@@ -897,7 +927,9 @@ export class TableGateway
       role: string | null;
     }>
   > {
-    const sockets = await this.server.in(this.roomName(chronicleId)).fetchSockets();
+    const sockets = await this.server
+      .in(this.roomName(chronicleId))
+      .fetchSockets();
     const seen = new Map<string, { id: string; email: string }>();
     for (const s of sockets) {
       const uid = (s.data as AuthenticatedSocketData)?.userId;

@@ -176,7 +176,8 @@ export class TableController {
   @Patch(':id/combat/participants/:pid')
   @Auth()
   @ApiOperation({
-    summary: 'Actualiza un participante (iniciativa o displayName). Solo narrador.',
+    summary:
+      'Actualiza un participante (iniciativa o displayName). Solo narrador.',
   })
   async updateCombatParticipant(
     @Param('id') chronicleId: string,
@@ -197,7 +198,9 @@ export class TableController {
 
   @Delete(':id/combat/participants/:pid')
   @Auth()
-  @ApiOperation({ summary: 'Quita un participante del tracker. Solo narrador.' })
+  @ApiOperation({
+    summary: 'Quita un participante del tracker. Solo narrador.',
+  })
   async removeCombatParticipant(
     @Param('id') chronicleId: string,
     @Param('pid') participantId: string,

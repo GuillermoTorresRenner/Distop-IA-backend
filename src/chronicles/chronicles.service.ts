@@ -48,7 +48,9 @@ export class ChroniclesService {
             id: true,
             role: true,
             joinedAt: true,
-            user: { select: { id: true, email: true, nickname: true, avatar: true } },
+            user: {
+              select: { id: true, email: true, nickname: true, avatar: true },
+            },
           },
         },
         _count: {
@@ -150,7 +152,11 @@ export class ChroniclesService {
     });
   }
 
-  async removeMember(chronicleId: string, requesterId: string, memberUserId: string) {
+  async removeMember(
+    chronicleId: string,
+    requesterId: string,
+    memberUserId: string,
+  ) {
     const chronicle = await this.assertNarrator(chronicleId, requesterId);
     if (chronicle.narratorId === memberUserId) {
       throw new BadRequestException('Cannot remove the narrator');
@@ -175,7 +181,9 @@ export class ChroniclesService {
           id: true,
           role: true,
           joinedAt: true,
-          user: { select: { id: true, email: true, nickname: true, avatar: true } },
+          user: {
+            select: { id: true, email: true, nickname: true, avatar: true },
+          },
         },
       },
       invitations: {
@@ -187,7 +195,9 @@ export class ChroniclesService {
           status: true,
           expiresAt: true,
           createdAt: true,
-          invitedUser: { select: { id: true, email: true, nickname: true, avatar: true } },
+          invitedUser: {
+            select: { id: true, email: true, nickname: true, avatar: true },
+          },
         },
       },
     };

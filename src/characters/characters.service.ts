@@ -18,7 +18,9 @@ export class CharactersService {
       nature: true,
       demeanor: true,
       clan: true,
-      abilities: { orderBy: [{ category: 'asc' as const }, { name: 'asc' as const }] },
+      abilities: {
+        orderBy: [{ category: 'asc' as const }, { name: 'asc' as const }],
+      },
       backgrounds: { orderBy: { order: 'asc' as const } },
       disciplines: {
         include: {
@@ -30,10 +32,7 @@ export class CharactersService {
                 include: { powers: { orderBy: { level: 'asc' as const } } },
               },
               rituals: {
-                orderBy: [
-                  { level: 'asc' as const },
-                  { order: 'asc' as const },
-                ],
+                orderBy: [{ level: 'asc' as const }, { order: 'asc' as const }],
               },
             },
           },
@@ -106,7 +105,9 @@ export class CharactersService {
     });
     if (!chronicle) throw new NotFoundException('Chronicle not found');
 
-    const callerMembership = chronicle.members.find((m) => m.userId === callerId);
+    const callerMembership = chronicle.members.find(
+      (m) => m.userId === callerId,
+    );
     if (!callerMembership) {
       throw new ForbiddenException('You are not a member of this chronicle');
     }
@@ -135,9 +136,13 @@ export class CharactersService {
     }
 
     if (kind === 'PC' && ownerId !== callerId) {
-      const targetIsMember = chronicle.members.some((m) => m.userId === ownerId);
+      const targetIsMember = chronicle.members.some(
+        (m) => m.userId === ownerId,
+      );
       if (!targetIsMember) {
-        throw new BadRequestException('Target user is not a member of this chronicle');
+        throw new BadRequestException(
+          'Target user is not a member of this chronicle',
+        );
       }
     }
 
@@ -422,9 +427,7 @@ export class CharactersService {
     }
 
     if (character.userId === targetUserId) {
-      throw new BadRequestException(
-        'Character already belongs to this user',
-      );
+      throw new BadRequestException('Character already belongs to this user');
     }
 
     await this.prisma.character.update({
@@ -611,7 +614,10 @@ export class CharactersService {
         await tx.characterAbility.deleteMany({ where: { characterId: id } });
         if (dto.abilities.length) {
           await tx.characterAbility.createMany({
-            data: dto.abilities.map((a) => ({ ...this.abilityCreate(a), characterId: id })),
+            data: dto.abilities.map((a) => ({
+              ...this.abilityCreate(a),
+              characterId: id,
+            })),
           });
         }
       }
@@ -714,7 +720,10 @@ export class CharactersService {
         }
       }
 
-      return tx.character.findUnique({ where: { id }, include: this.fullInclude() });
+      return tx.character.findUnique({
+        where: { id },
+        include: this.fullInclude(),
+      });
     });
   }
 
@@ -724,11 +733,97 @@ export class CharactersService {
     return { ok: true };
   }
 
-  async associateChronicle(characterId: string, userId: string, chronicleId: string) {
+  /**
+   * Verifica que `callerId` pueda editar este personaje:
+   *   - es dueño, O
+   *   - es narrador de **alguna** crónica donde el personaje está asociado.
+   *
+   * Diseñado para mutaciones cross-crónica (subir/quitar avatar, etc.) que
+   * no quieren forzar el ID de la crónica como parte de la ruta.
+   */
+  async assertEditable(characterId: string, callerId: string) {
+    const character = await this.prisma.character.findUnique({
+      where: { id: characterId },
+      select: {
+        id: true,
+        userId: true,
+        avatar: true,
+        chronicles: {
+          select: { chronicle: { select: { narratorId: true } } },
+        },
+      },
+    });
+    if (!character) throw new NotFoundException('Character not found');
+    if (character.userId === callerId) return character;
+
+    const narratorOfLinkedChronicle = character.chronicles.some(
+      (c) => c.chronicle.narratorId === callerId,
+    );
+    if (!narratorOfLinkedChronicle) {
+      throw new ForbiddenException(
+        'You must be the owner or a narrator of a linked chronicle',
+      );
+    }
+    return character;
+  }
+
+  /** Asigna el filename del retrato y devuelve la ficha completa. */
+  async setAvatar(characterId: string, callerId: string, filename: string) {
+    const current = await this.assertEditable(characterId, callerId);
+    if (current.avatar && current.avatar !== filename) {
+      // No bloqueamos la respuesta por la limpieza del file viejo; el caller
+      // (controller) puede invocar uploaderService.deleteCharacterAvatar.
+    }
+    await this.prisma.character.update({
+      where: { id: characterId },
+      data: { avatar: filename },
+    });
+    return {
+      character: await this.prisma.character.findUnique({
+        where: { id: characterId },
+        include: this.fullInclude(),
+      }),
+      previousFilename: current.avatar ?? null,
+    };
+  }
+
+  /** Quita el retrato (deja `avatar=null`) y retorna filename previo. */
+  async clearAvatar(characterId: string, callerId: string) {
+    const current = await this.assertEditable(characterId, callerId);
+    if (!current.avatar) {
+      return {
+        character: await this.prisma.character.findUnique({
+          where: { id: characterId },
+          include: this.fullInclude(),
+        }),
+        previousFilename: null,
+      };
+    }
+    await this.prisma.character.update({
+      where: { id: characterId },
+      data: { avatar: null },
+    });
+    return {
+      character: await this.prisma.character.findUnique({
+        where: { id: characterId },
+        include: this.fullInclude(),
+      }),
+      previousFilename: current.avatar,
+    };
+  }
+
+  async associateChronicle(
+    characterId: string,
+    userId: string,
+    chronicleId: string,
+  ) {
     await this.findOneOwned(characterId, userId);
     const chronicle = await this.prisma.chronicle.findUnique({
       where: { id: chronicleId },
-      select: { id: true, members: { where: { userId }, select: { id: true } } },
+      select: {
+        id: true,
+        members: { where: { userId }, select: { id: true } },
+      },
     });
     if (!chronicle) throw new NotFoundException('Chronicle not found');
     if (chronicle.members.length === 0) {
@@ -738,7 +833,9 @@ export class CharactersService {
       where: { chronicleId_characterId: { chronicleId, characterId } },
     });
     if (existing) {
-      throw new BadRequestException('Character is already associated with this chronicle');
+      throw new BadRequestException(
+        'Character is already associated with this chronicle',
+      );
     }
     await this.prisma.chronicleCharacter.create({
       data: { chronicleId, characterId },
@@ -746,12 +843,17 @@ export class CharactersService {
     return this.findOneOwned(characterId, userId);
   }
 
-  async dissociateChronicle(characterId: string, userId: string, chronicleId: string) {
+  async dissociateChronicle(
+    characterId: string,
+    userId: string,
+    chronicleId: string,
+  ) {
     await this.findOneOwned(characterId, userId);
     const deleted = await this.prisma.chronicleCharacter.deleteMany({
       where: { chronicleId, characterId },
     });
-    if (deleted.count === 0) throw new NotFoundException('Association not found');
+    if (deleted.count === 0)
+      throw new NotFoundException('Association not found');
     return this.findOneOwned(characterId, userId);
   }
 
@@ -992,7 +1094,11 @@ export class CharactersService {
           );
         }
         if (isCustom) {
-          if (!m.customName || !m.customKind || typeof m.customValue !== 'number') {
+          if (
+            !m.customName ||
+            !m.customKind ||
+            typeof m.customValue !== 'number'
+          ) {
             throw new BadRequestException(
               'Mérito/defecto custom requiere customName + customKind + customValue',
             );

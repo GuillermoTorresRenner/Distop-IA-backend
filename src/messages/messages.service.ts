@@ -20,7 +20,9 @@ const messageInclude = {
   recipient: { select: userSummarySelect },
 } satisfies Prisma.DirectMessageInclude;
 
-type RawMessage = Prisma.DirectMessageGetPayload<{ include: typeof messageInclude }>;
+type RawMessage = Prisma.DirectMessageGetPayload<{
+  include: typeof messageInclude;
+}>;
 
 @Injectable()
 export class MessagesService {
@@ -84,8 +86,7 @@ export class MessagesService {
       { id: string; email: string; nickname: string; avatar: string | null }
     >();
     for (const f of friends) {
-      const peer =
-        f.requesterId === currentUserId ? f.addressee : f.requester;
+      const peer = f.requesterId === currentUserId ? f.addressee : f.requester;
       peers.set(peer.id, peer);
     }
 

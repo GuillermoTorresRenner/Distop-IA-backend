@@ -120,18 +120,29 @@ export class MessagesGateway
   }
 
   @SubscribeMessage('dm:send')
-  async onSend(@ConnectedSocket() client: Socket, @MessageBody() body: SendBody) {
+  async onSend(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() body: SendBody,
+  ) {
     const senderId = (client.data as DmSocketData).userId;
     if (!senderId) throw new WsException('Unauthenticated');
     if (!body?.recipientId || typeof body.body !== 'string') {
       throw new WsException('Invalid payload');
     }
-    const message = await this.messages.send(senderId, body.recipientId, body.body);
+    const message = await this.messages.send(
+      senderId,
+      body.recipientId,
+      body.body,
+    );
     // Emitimos a las dos salas (sender y recipient). El receptor además
     // recibe un push del nuevo conteo global de unread.
     this.server.to(this.userRoom(message.senderId)).emit('dm:message', message);
-    this.server.to(this.userRoom(message.recipientId)).emit('dm:message', message);
-    const recipientCount = await this.messages.getUnreadCount(message.recipientId);
+    this.server
+      .to(this.userRoom(message.recipientId))
+      .emit('dm:message', message);
+    const recipientCount = await this.messages.getUnreadCount(
+      message.recipientId,
+    );
     this.server.to(this.userRoom(message.recipientId)).emit('dm:unread', {
       count: recipientCount,
     });
@@ -148,10 +159,14 @@ export class MessagesGateway
     if (!body?.messageId) throw new WsException('Invalid payload');
     const message = await this.messages.softDelete(senderId, body.messageId);
     this.server.to(this.userRoom(message.senderId)).emit('dm:deleted', message);
-    this.server.to(this.userRoom(message.recipientId)).emit('dm:deleted', message);
+    this.server
+      .to(this.userRoom(message.recipientId))
+      .emit('dm:deleted', message);
     // El conteo del recipient puede haber cambiado (si el mensaje borrado
     // todavía estaba sin leer).
-    const recipientCount = await this.messages.getUnreadCount(message.recipientId);
+    const recipientCount = await this.messages.getUnreadCount(
+      message.recipientId,
+    );
     this.server.to(this.userRoom(message.recipientId)).emit('dm:unread', {
       count: recipientCount,
     });
@@ -159,7 +174,10 @@ export class MessagesGateway
   }
 
   @SubscribeMessage('dm:read')
-  async onRead(@ConnectedSocket() client: Socket, @MessageBody() body: ReadBody) {
+  async onRead(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() body: ReadBody,
+  ) {
     const userId = (client.data as DmSocketData).userId;
     if (!userId) throw new WsException('Unauthenticated');
     if (!body?.peerId) throw new WsException('Invalid payload');

@@ -67,12 +67,7 @@ export class UploaderService {
     file: Express.Multer.File,
     chronicleId: string,
   ): Promise<UploadResult> {
-    const uploadDir = join(
-      process.cwd(),
-      'public',
-      'images',
-      'chronicles',
-    );
+    const uploadDir = join(process.cwd(), 'public', 'images', 'chronicles');
     await ensureDir(uploadDir);
 
     const timestamp = Date.now();
@@ -95,6 +90,59 @@ export class UploaderService {
       size: file.size,
       mimetype: 'image/webp',
     };
+  }
+
+  /**
+   * Sube un retrato de personaje. Resize a 1024x1024 con fit `cover` para
+   * recuadros y portraits. WebP calidad 82.
+   */
+  async uploadCharacterAvatar(
+    file: Express.Multer.File,
+    characterId: string,
+  ): Promise<UploadResult> {
+    const uploadDir = join(
+      process.cwd(),
+      'public',
+      'images',
+      'characters',
+      'avatars',
+    );
+    await ensureDir(uploadDir);
+
+    const timestamp = Date.now();
+    const filename = `${characterId}-${timestamp}.webp`;
+    const filePath = join(uploadDir, filename);
+
+    await sharp(file.buffer)
+      .resize({
+        width: 1024,
+        height: 1024,
+        fit: 'cover',
+        withoutEnlargement: true,
+      })
+      .webp({ quality: 82 })
+      .toFile(filePath);
+
+    return {
+      filename,
+      path: filePath,
+      size: file.size,
+      mimetype: 'image/webp',
+    };
+  }
+
+  async deleteCharacterAvatar(filename: string): Promise<void> {
+    if (!filename) return;
+
+    const filePath = join(
+      process.cwd(),
+      'public',
+      'images',
+      'characters',
+      'avatars',
+      filename,
+    );
+    await this.deleteFile(filePath);
   }
 
   async deleteChronicleImage(filename: string): Promise<void> {
@@ -204,9 +252,9 @@ export class UploaderService {
 /**
  * Parsea un dataURL `data:image/png;base64,iVBOR...` a buffer + mime.
  */
-function parseDataUrl(dataURL: string):
-  | { buffer: Buffer; mime: string }
-  | null {
+function parseDataUrl(
+  dataURL: string,
+): { buffer: Buffer; mime: string } | null {
   const m = /^data:([^;]+);base64,(.+)$/i.exec(dataURL ?? '');
   if (!m) return null;
   try {

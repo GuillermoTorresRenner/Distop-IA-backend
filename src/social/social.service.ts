@@ -81,10 +81,7 @@ export class SocialService {
     };
   }
 
-  private async suggestFriendsOfFriends(
-    currentUserId: string,
-    take: number,
-  ) {
+  private async suggestFriendsOfFriends(currentUserId: string, take: number) {
     const myFriendships = await this.prisma.friendship.findMany({
       where: {
         status: FriendshipStatus.ACCEPTED,
@@ -143,7 +140,12 @@ export class SocialService {
 
   private async attachRelations(
     currentUserId: string,
-    users: { id: string; email: string; nickname: string; avatar: string | null }[],
+    users: {
+      id: string;
+      email: string;
+      nickname: string;
+      avatar: string | null;
+    }[],
   ) {
     if (users.length === 0) return [];
     const userIds = users.map((u) => u.id);
@@ -167,8 +169,7 @@ export class SocialService {
       if (f) {
         if (f.status === FriendshipStatus.ACCEPTED) relation = 'FRIENDS';
         else if (f.status === FriendshipStatus.PENDING)
-          relation =
-            f.requesterId === currentUserId ? 'OUTGOING' : 'INCOMING';
+          relation = f.requesterId === currentUserId ? 'OUTGOING' : 'INCOMING';
         else if (f.status === FriendshipStatus.DECLINED) relation = 'DECLINED';
       }
       return { ...enrichUserWithAvatarUrl(u), relation };
@@ -177,7 +178,9 @@ export class SocialService {
 
   async request(requesterId: string, addresseeId: string) {
     if (requesterId === addresseeId) {
-      throw new BadRequestException('Cannot send a friendship request to yourself');
+      throw new BadRequestException(
+        'Cannot send a friendship request to yourself',
+      );
     }
     const target = await this.prisma.users.findUnique({
       where: { id: addresseeId },

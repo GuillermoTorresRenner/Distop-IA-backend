@@ -403,8 +403,7 @@ export class CombatService {
     const isNarrator = role === 'NARRATOR';
     const all: CombatParticipantView[] = tracker.participants.map((p) => {
       const kind = p.character?.kind ?? 'FREE';
-      const fallbackName =
-        p.character?.name ?? p.displayName ?? 'Sin nombre';
+      const fallbackName = p.character?.name ?? p.displayName ?? 'Sin nombre';
       const name = p.displayName?.trim() || fallbackName;
       const base: CombatParticipantView = {
         id: p.id,
@@ -472,7 +471,9 @@ export class CombatService {
   /** Solo narrador puede mutar el combate. */
   assertNarrator(role: 'NARRATOR' | 'PLAYER' | null) {
     if (role !== 'NARRATOR') {
-      throw new ForbiddenException('Solo el narrador puede modificar el combate');
+      throw new ForbiddenException(
+        'Solo el narrador puede modificar el combate',
+      );
     }
   }
 }

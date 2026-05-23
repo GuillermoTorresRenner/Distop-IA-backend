@@ -96,7 +96,10 @@ export class DiceService {
     woundPenalty?: number;
   }): RollVtmResult {
     const basePool = Math.max(1, Math.min(30, Math.floor(input.pool)));
-    const safeDiff = Math.max(2, Math.min(10, Math.floor(input.difficulty ?? 6)));
+    const safeDiff = Math.max(
+      2,
+      Math.min(10, Math.floor(input.difficulty ?? 6)),
+    );
     const skillRating =
       typeof input.skillRating === 'number'
         ? Math.max(0, Math.min(5, Math.floor(input.skillRating)))
@@ -105,7 +108,10 @@ export class DiceService {
     // La especialidad solo es válida si skillRating>=4. Si no se cumple, el
     // service la deniega: el front debería bloquear el botón pero defendemos
     // la regla del lado del servidor también.
-    if (wantedSpecialty && (skillRating === null || skillRating < MIN_SKILL_FOR_SPECIALTY)) {
+    if (
+      wantedSpecialty &&
+      (skillRating === null || skillRating < MIN_SKILL_FOR_SPECIALTY)
+    ) {
       throw new BadRequestException(
         `Specialty requires a skill rating of at least ${MIN_SKILL_FOR_SPECIALTY}`,
       );
@@ -233,7 +239,10 @@ export class DiceService {
 
   /// Puntúa un dado individual: devuelve `delta` (cambio en éxitos netos:
   /// +1 si >=dif, -1 si 1, 0 en otro caso) y si fue un 1.
-  private scoreDie(d: number, difficulty: number): { delta: number; ones: number } {
+  private scoreDie(
+    d: number,
+    difficulty: number,
+  ): { delta: number; ones: number } {
     if (d === 1) return { delta: -1, ones: 1 };
     if (d >= difficulty) return { delta: 1, ones: 0 };
     return { delta: 0, ones: 0 };
@@ -322,7 +331,9 @@ export class DiceService {
           sourceName: input.sourceName ?? null,
         },
         include: {
-          user: { select: { id: true, email: true, nickname: true, avatar: true } },
+          user: {
+            select: { id: true, email: true, nickname: true, avatar: true },
+          },
           character: { select: { id: true, name: true, kind: true } },
         },
       });
@@ -406,12 +417,21 @@ export class DiceService {
         metadata: { d10, dexterity: dex, wits, modifier: rawModifier, total },
       },
       include: {
-        user: { select: { id: true, email: true, nickname: true, avatar: true } },
+        user: {
+          select: { id: true, email: true, nickname: true, avatar: true },
+        },
         character: { select: { id: true, name: true, kind: true } },
       },
     });
 
-    return { roll: created, d10, dexterity: dex, wits, modifier: rawModifier, total };
+    return {
+      roll: created,
+      d10,
+      dexterity: dex,
+      wits,
+      modifier: rawModifier,
+      total,
+    };
   }
 
   /**
@@ -438,7 +458,10 @@ export class DiceService {
     metadata?: Record<string, unknown>;
   }) {
     const safePool = Math.max(1, Math.min(30, Math.floor(input.pool)));
-    const safeDifficulty = Math.max(2, Math.min(10, Math.floor(input.difficulty)));
+    const safeDifficulty = Math.max(
+      2,
+      Math.min(10, Math.floor(input.difficulty)),
+    );
     const result = this.rollVtm({
       pool: safePool,
       difficulty: safeDifficulty,
@@ -472,7 +495,9 @@ export class DiceService {
         metadata: (input.metadata ?? {}) as Prisma.InputJsonValue,
       },
       include: {
-        user: { select: { id: true, email: true, nickname: true, avatar: true } },
+        user: {
+          select: { id: true, email: true, nickname: true, avatar: true },
+        },
         character: { select: { id: true, name: true, kind: true } },
       },
     });
@@ -523,7 +548,9 @@ export class DiceService {
       orderBy: { createdAt: 'desc' },
       take: Math.min(200, Math.max(1, limit)),
       include: {
-        user: { select: { id: true, email: true, nickname: true, avatar: true } },
+        user: {
+          select: { id: true, email: true, nickname: true, avatar: true },
+        },
         character: { select: { id: true, name: true, kind: true } },
       },
     });

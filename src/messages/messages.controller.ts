@@ -73,22 +73,17 @@ export class MessagesController {
   @ApiOperation({
     summary: 'Marca como leídos todos los mensajes recibidos desde un peer.',
   })
-  markRead(
-    @GetUser('id') userId: string,
-    @Param('peerId') peerId: string,
-  ) {
+  markRead(@GetUser('id') userId: string, @Param('peerId') peerId: string) {
     return this.messages.markRead(userId, peerId);
   }
 
   @Delete(':messageId')
   @Auth()
   @ApiOperation({
-    summary: 'Soft delete de un mensaje propio (queda como "mensaje eliminado").',
+    summary:
+      'Soft delete de un mensaje propio (queda como "mensaje eliminado").',
   })
-  remove(
-    @GetUser('id') userId: string,
-    @Param('messageId') messageId: string,
-  ) {
+  remove(@GetUser('id') userId: string, @Param('messageId') messageId: string) {
     return this.messages.softDelete(userId, messageId);
   }
 }

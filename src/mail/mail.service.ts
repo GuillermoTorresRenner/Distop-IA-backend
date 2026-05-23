@@ -93,11 +93,7 @@ export class MailService {
       expiresAt: this.formatDate(expiresAt),
       year: new Date().getFullYear(),
     });
-    await this.send(
-      email,
-      `Distop-IA · Te invitan a "${chronicleName}"`,
-      html,
-    );
+    await this.send(email, `Distop-IA · Te invitan a "${chronicleName}"`, html);
     this.logger.log(
       `Chronicle invite (new) sent to ${email} for "${chronicleName}"`,
     );

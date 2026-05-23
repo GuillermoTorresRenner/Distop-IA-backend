@@ -23,7 +23,9 @@ export class CharacterMeritFlawDto {
   @IsString()
   meritFlawId?: string;
 
-  @ApiPropertyOptional({ description: 'Nombre del mérito/defecto customizado.' })
+  @ApiPropertyOptional({
+    description: 'Nombre del mérito/defecto customizado.',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(120)
@@ -34,14 +36,18 @@ export class CharacterMeritFlawDto {
   @IsEnum(['MERIT', 'FLAW'] as const)
   customKind?: 'MERIT' | 'FLAW';
 
-  @ApiPropertyOptional({ description: 'Coste: positivo (mérito) o negativo (defecto).' })
+  @ApiPropertyOptional({
+    description: 'Coste: positivo (mérito) o negativo (defecto).',
+  })
   @IsOptional()
   @IsInt()
   @Min(-7)
   @Max(7)
   customValue?: number;
 
-  @ApiPropertyOptional({ description: 'Categoría libre (Físico, Mental, Social, Sobrenatural).' })
+  @ApiPropertyOptional({
+    description: 'Categoría libre (Físico, Mental, Social, Sobrenatural).',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(40)

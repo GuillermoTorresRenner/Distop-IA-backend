@@ -28,7 +28,11 @@ export class CreateArmorDto {
   @Max(10)
   penalty!: number;
 
-  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(500) description?: string;
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  description?: string;
 }
 
 export class UpdateArmorDto extends PartialType(CreateArmorDto) {}

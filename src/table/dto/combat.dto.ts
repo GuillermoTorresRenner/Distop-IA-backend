@@ -26,7 +26,9 @@ export class AddCombatParticipantDto {
   @MaxLength(120)
   displayName?: string;
 
-  @ApiPropertyOptional({ description: 'Valor de iniciativa anotado por el master.' })
+  @ApiPropertyOptional({
+    description: 'Valor de iniciativa anotado por el master.',
+  })
   @IsOptional()
   @IsInt()
   initiative?: number;

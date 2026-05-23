@@ -27,21 +27,27 @@ export class CatalogController {
 
   @Get('attributes')
   @Auth()
-  @ApiOperation({ summary: 'Attribute info (V20) with key, name, category, description' })
+  @ApiOperation({
+    summary: 'Attribute info (V20) with key, name, category, description',
+  })
   attributes() {
     return this.catalog.listAttributes();
   }
 
   @Get('abilities')
   @Auth()
-  @ApiOperation({ summary: 'Ability info (V20) with key, name, category, description' })
+  @ApiOperation({
+    summary: 'Ability info (V20) with key, name, category, description',
+  })
   abilities() {
     return this.catalog.listAbilities();
   }
 
   @Get('health-levels')
   @Auth()
-  @ApiOperation({ summary: 'Health level info (V20) with key, name, penalty, description' })
+  @ApiOperation({
+    summary: 'Health level info (V20) with key, name, penalty, description',
+  })
   healthLevels() {
     return this.catalog.listHealthLevels();
   }
@@ -76,7 +82,10 @@ export class CatalogController {
 
   @Get('virtues')
   @Auth()
-  @ApiOperation({ summary: 'Virtue catalog (Conciencia, Autocontrol, Coraje, Convicción, Instintos)' })
+  @ApiOperation({
+    summary:
+      'Virtue catalog (Conciencia, Autocontrol, Coraje, Convicción, Instintos)',
+  })
   virtues() {
     return this.catalog.listVirtues();
   }
@@ -85,7 +94,9 @@ export class CatalogController {
 
   @Get('weapon-categories')
   @Auth()
-  @ApiOperation({ summary: 'Weapon categories (Porra, Fusil, …) ordered by kind' })
+  @ApiOperation({
+    summary: 'Weapon categories (Porra, Fusil, …) ordered by kind',
+  })
   weaponCategories() {
     return this.catalog.listWeaponCategories();
   }
@@ -93,7 +104,7 @@ export class CatalogController {
   @Get('weapons')
   @Auth()
   @ApiOperation({
-    summary: 'System weapons (V20 manual) + the caller\'s custom weapons',
+    summary: "System weapons (V20 manual) + the caller's custom weapons",
   })
   weapons(@GetUser('id') userId: string) {
     return this.catalog.listWeapons(userId);
@@ -127,7 +138,7 @@ export class CatalogController {
   @Get('armors')
   @Auth()
   @ApiOperation({
-    summary: 'System armors (V20 manual) + the caller\'s custom armors',
+    summary: "System armors (V20 manual) + the caller's custom armors",
   })
   armors(@GetUser('id') userId: string) {
     return this.catalog.listArmors(userId);

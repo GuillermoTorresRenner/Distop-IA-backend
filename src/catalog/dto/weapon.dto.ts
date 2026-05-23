@@ -31,27 +31,44 @@ export class CreateWeaponDto {
   @IsEnum(WeaponDamageBase)
   damageBase!: WeaponDamageBase;
 
-  @ApiProperty({ example: 1, description: 'Bono al daño (Fuerza + bono o valor fijo).' })
+  @ApiProperty({
+    example: 1,
+    description: 'Bono al daño (Fuerza + bono o valor fijo).',
+  })
   @IsInt()
   @Min(0)
   damageBonus!: number;
 
-  @ApiPropertyOptional() @IsOptional() @IsBoolean()
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
   lethal?: boolean;
 
-  @ApiPropertyOptional() @IsOptional() @IsBoolean()
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
   aggravated?: boolean;
 
-  @ApiPropertyOptional() @IsOptional() @IsBoolean()
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
   bluntPlus?: boolean;
 
   // RANGED-only
   @ApiPropertyOptional() @IsOptional() @IsInt() @Min(0) range?: number;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(16) rate?: string;
   @ApiPropertyOptional() @IsOptional() @IsInt() @Min(0) magazine?: number;
-  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(8) concealment?: string;
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(8)
+  concealment?: string;
 
-  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(500) notes?: string;
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  notes?: string;
 }
 
 export class UpdateWeaponDto extends PartialType(CreateWeaponDto) {}

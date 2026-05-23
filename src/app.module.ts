@@ -11,10 +11,13 @@ import { CatalogModule } from './catalog/catalog.module';
 import { CharactersModule } from './characters/characters.module';
 import { TableModule } from './table/table.module';
 import { MessagesModule } from './messages/messages.module';
+import { PresenceModule } from './presence/presence.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
     PrismaModule,
+    PresenceModule,
     UsersModule,
     AuthModule,
     UploaderModule,
@@ -26,6 +29,7 @@ import { MessagesModule } from './messages/messages.module';
     CharactersModule,
     TableModule,
     MessagesModule,
+    AdminModule,
   ],
   controllers: [],
   providers: [],

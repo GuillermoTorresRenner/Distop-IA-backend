@@ -15,6 +15,7 @@ type UserWithoutPassword = {
   email: string;
   nickname: string;
   isActive: boolean | null;
+  isAdmin: boolean;
   avatar: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -73,6 +74,7 @@ export class UsersService {
           email: true,
           nickname: true,
           isActive: true,
+          isAdmin: true,
           avatar: true,
           createdAt: true,
           updatedAt: true,
@@ -188,6 +190,7 @@ export class UsersService {
         email: true,
         nickname: true,
         isActive: true,
+        isAdmin: true,
         avatar: true,
         createdAt: true,
         updatedAt: true,
@@ -212,6 +215,7 @@ export class UsersService {
         email: true,
         nickname: true,
         isActive: true,
+        isAdmin: true,
         avatar: true,
         createdAt: true,
         updatedAt: true,

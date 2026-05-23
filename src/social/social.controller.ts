@@ -21,7 +21,8 @@ export class SocialController {
   @Get('users')
   @Auth()
   @ApiOperation({
-    summary: 'Search users (excludes current user). Returns relation flag for each.',
+    summary:
+      'Search users (excludes current user). Returns relation flag for each.',
   })
   searchUsers(@GetUser('id') userId: string, @Query() dto: SearchUsersDto) {
     return this.social.searchUsers(userId, dto);
@@ -36,7 +37,9 @@ export class SocialController {
 
   @Get('friend-requests/incoming')
   @Auth()
-  @ApiOperation({ summary: 'Pending friend requests where the user is the addressee' })
+  @ApiOperation({
+    summary: 'Pending friend requests where the user is the addressee',
+  })
   incoming(@GetUser('id') userId: string) {
     return this.social.listIncoming(userId);
   }
@@ -54,10 +57,7 @@ export class SocialController {
     summary:
       'Send a friend request. If the addressee already sent one, it auto-accepts.',
   })
-  request(
-    @GetUser('id') userId: string,
-    @Body() dto: CreateFriendshipDto,
-  ) {
+  request(@GetUser('id') userId: string, @Body() dto: CreateFriendshipDto) {
     return this.social.request(userId, dto.addresseeId);
   }
 
@@ -70,7 +70,9 @@ export class SocialController {
 
   @Patch('friend-requests/:id/decline')
   @Auth()
-  @ApiOperation({ summary: 'Decline a pending friend request (addressee only)' })
+  @ApiOperation({
+    summary: 'Decline a pending friend request (addressee only)',
+  })
   decline(@GetUser('id') userId: string, @Param('id') id: string) {
     return this.social.decline(userId, id);
   }

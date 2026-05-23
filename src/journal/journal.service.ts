@@ -297,8 +297,12 @@ export class JournalService {
       }),
     ]);
     return {
-      chronicle: chronicleEntries.map((e) => this.serializeFeedEntry(e, 'CHRONICLE')),
-      character: characterEntries.map((e) => this.serializeFeedEntry(e, 'CHARACTER')),
+      chronicle: chronicleEntries.map((e) =>
+        this.serializeFeedEntry(e, 'CHRONICLE'),
+      ),
+      character: characterEntries.map((e) =>
+        this.serializeFeedEntry(e, 'CHARACTER'),
+      ),
     };
   }
 

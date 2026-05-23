@@ -14,6 +14,9 @@ interface EnvVars {
   MAIL_USER: string;
   MAIL_PASSWORD: string;
   MAIL_FROM: string;
+  ADMIN_EMAIL: string;
+  ADMIN_NICKNAME: string;
+  ADMIN_PASSWORD: string;
 }
 
 const envsSchema = joi
@@ -29,6 +32,12 @@ const envsSchema = joi
     MAIL_USER: joi.string().optional(),
     MAIL_PASSWORD: joi.string().optional(),
     MAIL_FROM: joi.string().optional(),
+    ADMIN_EMAIL: joi
+      .string()
+      .email({ tlds: { allow: false } })
+      .required(),
+    ADMIN_NICKNAME: joi.string().min(3).required(),
+    ADMIN_PASSWORD: joi.string().min(8).required(),
   })
   .unknown(true);
 
@@ -52,4 +61,7 @@ export const envs = {
   mailUser: envVars.MAIL_USER,
   mailPassword: envVars.MAIL_PASSWORD,
   mailFrom: envVars.MAIL_FROM,
+  adminEmail: envVars.ADMIN_EMAIL,
+  adminNickname: envVars.ADMIN_NICKNAME,
+  adminPassword: envVars.ADMIN_PASSWORD,
 };

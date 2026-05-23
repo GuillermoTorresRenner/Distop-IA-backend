@@ -34,6 +34,10 @@ model Character {
   chronicleName String? // texto libre, distinto de la asociación con Chronicle
   generation  Int?
   haven       String?
+
+  /// Retrato del personaje. Filename (sin URL) bajo
+  /// `public/images/characters/avatars/`. La URL pública se construye en runtime.
+  avatar      String?
   clanId      String?
   clan        Clan?      @relation(fields: [clanId], references: [id], onDelete: SetNull)
 

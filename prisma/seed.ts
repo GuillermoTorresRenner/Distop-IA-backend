@@ -11,6 +11,7 @@
  * está mal te lo dice en consola con archivo + campo y aborta.
  */
 import 'dotenv/config';
+import * as bcrypt from 'bcrypt';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import {
@@ -497,6 +498,60 @@ async function seedArmors() {
   console.log(`✓ ${items.length} armaduras (system).`);
 }
 
+/**
+ * Crea (o asegura idempotente) un usuario administrador a partir de las
+ * variables `ADMIN_EMAIL`, `ADMIN_NICKNAME`, `ADMIN_PASSWORD` del entorno.
+ *
+ * Comportamiento:
+ *  - Si no existe usuario con ese email → lo crea con `isAdmin=true`, hashea
+ *    el password y lo deja activo.
+ *  - Si ya existe → garantiza `isAdmin=true`, `isActive=true` y sincroniza
+ *    el `nickname`. No re-hashea el password en cada corrida (el dueño puede
+ *    haberlo cambiado vía /api/users/:id/password).
+ *
+ * Si faltan las variables del entorno, hace skip con warning (no aborta el
+ * seed para no romper despliegues que aún no las configuren). El módulo
+ * `config/envs.ts` igualmente valida que existan al arrancar la app.
+ */
+async function seedAdminUser() {
+  const email = process.env.ADMIN_EMAIL;
+  const nickname = process.env.ADMIN_NICKNAME;
+  const password = process.env.ADMIN_PASSWORD;
+
+  if (!email || !nickname || !password) {
+    console.warn(
+      '⚠ ADMIN_EMAIL / ADMIN_NICKNAME / ADMIN_PASSWORD no definidas — skip admin seed.',
+    );
+    return;
+  }
+
+  const existing = await prisma.users.findUnique({ where: { email } });
+  if (existing) {
+    await prisma.users.update({
+      where: { id: existing.id },
+      data: {
+        nickname,
+        isAdmin: true,
+        isActive: true,
+      },
+    });
+    console.log(`✓ Admin ya existía (${email}); flags sincronizadas.`);
+    return;
+  }
+
+  const hashed = await bcrypt.hash(password, 10);
+  await prisma.users.create({
+    data: {
+      email,
+      nickname,
+      password: hashed,
+      isAdmin: true,
+      isActive: true,
+    },
+  });
+  console.log(`✓ Admin creado: ${email} (nickname=${nickname}).`);
+}
+
 async function main() {
   console.log('▶ Seed Distop-IA — leyendo vault…');
   // El orden importa: las disciplinas validan contra los nombres de habilidades.
@@ -514,6 +569,7 @@ async function main() {
   await seedDisciplines(abilityNames);
   await seedWeapons();
   await seedArmors();
+  await seedAdminUser();
 
   console.log('✔ Seed completado.');
 }

@@ -112,7 +112,10 @@ export class CatalogService {
       throw new ForbiddenException('You do not own this weapon');
     }
     if (dto.categoryId) {
-      await this.assertCategoryExists(dto.categoryId, dto.kind ?? existing.kind);
+      await this.assertCategoryExists(
+        dto.categoryId,
+        dto.kind ?? existing.kind,
+      );
     }
     return this.prisma.weapon.update({
       where: { id },

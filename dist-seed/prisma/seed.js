@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 /* eslint-disable @typescript-eslint/no-floating-promises */
 /**
@@ -13,6 +46,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * está mal te lo dice en consola con archivo + campo y aborta.
  */
 require("dotenv/config");
+const bcrypt = __importStar(require("bcrypt"));
 const client_1 = require("@prisma/client");
 const adapter_pg_1 = require("@prisma/adapter-pg");
 const vault_loader_1 = require("./vault-loader");
@@ -216,6 +250,7 @@ async function seedDisciplines(abilityNames) {
     const items = (0, vault_loader_1.loadDisciplines)(abilityNames);
     for (let i = 0; i < items.length; i++) {
         const d = items[i];
+        const hasPaths = d.kind === 'paths';
         const discipline = await prisma.discipline.upsert({
             where: { name: d.name },
             create: {
@@ -223,39 +258,171 @@ async function seedDisciplines(abilityNames) {
                 description: d.description,
                 tooltip: d.tooltip,
                 order: d.order || i,
+                hasPaths,
             },
-            update: { description: d.description, tooltip: d.tooltip, order: d.order || i },
+            update: {
+                description: d.description,
+                tooltip: d.tooltip,
+                order: d.order || i,
+                hasPaths,
+            },
         });
-        for (const p of d.powers) {
-            const description = d.powerDescriptions[p.level] ?? null;
-            const mechanics = {
-                summary: p.summary ?? null,
-                tooltip: p.tooltip ?? null,
-                bloodCost: p.bloodCost,
-                rollAttribute: p.rollAttribute,
-                rollAbility: p.rollAbility,
-                rollDifficulty: p.rollDifficulty,
-            };
-            await prisma.disciplinePower.upsert({
+        if (d.kind === 'monolithic') {
+            // Disciplina clásica: 5 poderes directos bajo la disciplina.
+            for (const p of d.powers) {
+                const description = d.powerDescriptions[p.level] ?? null;
+                const mechanics = {
+                    summary: p.summary ?? null,
+                    tooltip: p.tooltip ?? null,
+                    bloodCost: p.bloodCost,
+                    rollAttribute: p.rollAttribute,
+                    rollAbility: p.rollAbility,
+                    rollDifficulty: p.rollDifficulty,
+                };
+                await prisma.disciplinePower.upsert({
+                    where: {
+                        disciplineId_level: {
+                            disciplineId: discipline.id,
+                            level: p.level,
+                        },
+                    },
+                    create: {
+                        disciplineId: discipline.id,
+                        pathId: null,
+                        level: p.level,
+                        name: p.name,
+                        description,
+                        ...mechanics,
+                    },
+                    update: {
+                        name: p.name,
+                        description,
+                        ...mechanics,
+                    },
+                });
+            }
+            continue;
+        }
+        // Disciplina ramificada: cada senda con sus 5 poderes + rituales.
+        // Limpiamos primero los poderes "legacy" que apuntaban directo a esta
+        // disciplina (caso típico: la disciplina era monolítica y ahora pasa
+        // a tener sendas). Solo eliminamos los que tienen `disciplineId` set
+        // y `pathId` null — los poderes nuevos viven bajo path.
+        await prisma.disciplinePower.deleteMany({
+            where: { disciplineId: discipline.id, pathId: null },
+        });
+        // Después limpiamos sendas/rituales que ya no estén en el vault — el
+        // upsert posterior recrea lo vigente.
+        const vaultPathKeys = new Set(d.paths.map((p) => p.key));
+        const vaultRitualKeys = new Set(d.rituals.map((r) => r.key));
+        const dbPaths = await prisma.disciplinePath.findMany({
+            where: { disciplineId: discipline.id },
+            select: { id: true, key: true },
+        });
+        for (const dbPath of dbPaths) {
+            if (!vaultPathKeys.has(dbPath.key)) {
+                await prisma.disciplinePath.delete({ where: { id: dbPath.id } });
+            }
+        }
+        const dbRituals = await prisma.disciplineRitual.findMany({
+            where: { disciplineId: discipline.id },
+            select: { id: true, key: true },
+        });
+        for (const dbRitual of dbRituals) {
+            if (!vaultRitualKeys.has(dbRitual.key)) {
+                await prisma.disciplineRitual.delete({ where: { id: dbRitual.id } });
+            }
+        }
+        for (let pIdx = 0; pIdx < d.paths.length; pIdx++) {
+            const path = d.paths[pIdx];
+            const pathDescription = d.pathDescriptions[path.key] ?? null;
+            const dbPath = await prisma.disciplinePath.upsert({
                 where: {
-                    disciplineId_level: { disciplineId: discipline.id, level: p.level },
+                    disciplineId_key: { disciplineId: discipline.id, key: path.key },
                 },
                 create: {
                     disciplineId: discipline.id,
-                    level: p.level,
-                    name: p.name,
-                    description,
-                    ...mechanics,
+                    key: path.key,
+                    name: path.name,
+                    description: pathDescription,
+                    tooltip: path.tooltip,
+                    order: path.order || pIdx,
                 },
                 update: {
-                    name: p.name,
+                    name: path.name,
+                    description: pathDescription,
+                    tooltip: path.tooltip,
+                    order: path.order || pIdx,
+                },
+            });
+            for (const power of path.powers) {
+                const pathPowerDescriptions = d.pathPowerDescriptions[path.key] ?? {};
+                const description = pathPowerDescriptions[power.level] ?? null;
+                const mechanics = {
+                    summary: power.summary ?? null,
+                    tooltip: power.tooltip ?? null,
+                    bloodCost: power.bloodCost,
+                    rollAttribute: power.rollAttribute,
+                    rollAbility: power.rollAbility,
+                    rollDifficulty: power.rollDifficulty,
+                };
+                await prisma.disciplinePower.upsert({
+                    where: {
+                        pathId_level: { pathId: dbPath.id, level: power.level },
+                    },
+                    create: {
+                        disciplineId: null,
+                        pathId: dbPath.id,
+                        level: power.level,
+                        name: power.name,
+                        description,
+                        ...mechanics,
+                    },
+                    update: {
+                        name: power.name,
+                        description,
+                        ...mechanics,
+                    },
+                });
+            }
+        }
+        for (let rIdx = 0; rIdx < d.rituals.length; rIdx++) {
+            const ritual = d.rituals[rIdx];
+            const description = d.ritualDescriptions[ritual.key] ?? null;
+            await prisma.disciplineRitual.upsert({
+                where: {
+                    disciplineId_key: { disciplineId: discipline.id, key: ritual.key },
+                },
+                create: {
+                    disciplineId: discipline.id,
+                    key: ritual.key,
+                    level: ritual.level,
+                    name: ritual.name,
                     description,
-                    ...mechanics,
+                    tooltip: ritual.tooltip,
+                    ingredients: ritual.ingredients,
+                    castingTime: ritual.castingTime,
+                    rollAttribute: ritual.rollAttribute,
+                    rollAbility: ritual.rollAbility,
+                    rollDifficulty: ritual.rollDifficulty,
+                    order: ritual.order || rIdx,
+                },
+                update: {
+                    level: ritual.level,
+                    name: ritual.name,
+                    description,
+                    tooltip: ritual.tooltip,
+                    ingredients: ritual.ingredients,
+                    castingTime: ritual.castingTime,
+                    rollAttribute: ritual.rollAttribute,
+                    rollAbility: ritual.rollAbility,
+                    rollDifficulty: ritual.rollDifficulty,
+                    order: ritual.order || rIdx,
                 },
             });
         }
     }
-    console.log(`✓ ${items.length} disciplinas con poderes.`);
+    console.log(`✓ ${items.length} disciplinas con poderes${items.some((d) => d.kind === 'paths') ? ' / sendas / rituales' : ''}.`);
 }
 async function seedWeapons() {
     const categories = (0, vault_loader_1.loadWeaponCategories)();
@@ -270,10 +437,16 @@ async function seedWeapons() {
         categoryByName.set(def.name, cat.id);
     }
     const weapons = (0, vault_loader_1.loadWeapons)(new Set(categories.map((c) => c.name)));
-    await prisma.weapon.deleteMany({ where: { system: true } });
-    await prisma.weapon.createMany({
-        data: weapons.map((w, idx) => ({
-            name: w.name,
+    // findFirst + create/update por nombre+system (en lugar de delete+create) para
+    // no romper FKs con `character_weapons` cuando hay personajes que ya tienen
+    // armas system asociadas en la BD. Weapon.name no es @unique, así que no se
+    // puede usar `upsert`.
+    for (let idx = 0; idx < weapons.length; idx++) {
+        const w = weapons[idx];
+        const existing = await prisma.weapon.findFirst({
+            where: { name: w.name, system: true },
+        });
+        const data = {
             kind: w.kind,
             categoryId: categoryByName.get(w.category),
             damageBase: w.damageBase,
@@ -290,27 +463,90 @@ async function seedWeapons() {
             notes: w.notes,
             order: w.order || idx,
             system: true,
-            userId: null,
-        })),
-    });
+        };
+        if (existing) {
+            await prisma.weapon.update({ where: { id: existing.id }, data });
+        }
+        else {
+            await prisma.weapon.create({ data: { name: w.name, userId: null, ...data } });
+        }
+    }
     console.log(`✓ ${categories.length} categorías de armas y ${weapons.length} armas (system).`);
 }
 async function seedArmors() {
     const items = (0, vault_loader_1.loadArmors)();
-    await prisma.armor.deleteMany({ where: { system: true } });
-    await prisma.armor.createMany({
-        data: items.map((a, idx) => ({
-            name: a.name,
+    // findFirst + create/update por nombre+system para no romper FKs con
+    // `character_armors` cuando hay personajes con armaduras system ya
+    // asociadas. Armor.name no es @unique.
+    for (let idx = 0; idx < items.length; idx++) {
+        const a = items[idx];
+        const existing = await prisma.armor.findFirst({
+            where: { name: a.name, system: true },
+        });
+        const data = {
             rating: a.rating,
             penalty: a.penalty,
             description: a.description,
             tooltip: a.tooltip,
             order: a.order || idx,
             system: true,
-            userId: null,
-        })),
-    });
+        };
+        if (existing) {
+            await prisma.armor.update({ where: { id: existing.id }, data });
+        }
+        else {
+            await prisma.armor.create({ data: { name: a.name, userId: null, ...data } });
+        }
+    }
     console.log(`✓ ${items.length} armaduras (system).`);
+}
+/**
+ * Crea (o asegura idempotente) un usuario administrador a partir de las
+ * variables `ADMIN_EMAIL`, `ADMIN_NICKNAME`, `ADMIN_PASSWORD` del entorno.
+ *
+ * Comportamiento:
+ *  - Si no existe usuario con ese email → lo crea con `isAdmin=true`, hashea
+ *    el password y lo deja activo.
+ *  - Si ya existe → garantiza `isAdmin=true`, `isActive=true` y sincroniza
+ *    el `nickname`. No re-hashea el password en cada corrida (el dueño puede
+ *    haberlo cambiado vía /api/users/:id/password).
+ *
+ * Si faltan las variables del entorno, hace skip con warning (no aborta el
+ * seed para no romper despliegues que aún no las configuren). El módulo
+ * `config/envs.ts` igualmente valida que existan al arrancar la app.
+ */
+async function seedAdminUser() {
+    const email = process.env.ADMIN_EMAIL;
+    const nickname = process.env.ADMIN_NICKNAME;
+    const password = process.env.ADMIN_PASSWORD;
+    if (!email || !nickname || !password) {
+        console.warn('⚠ ADMIN_EMAIL / ADMIN_NICKNAME / ADMIN_PASSWORD no definidas — skip admin seed.');
+        return;
+    }
+    const existing = await prisma.users.findUnique({ where: { email } });
+    if (existing) {
+        await prisma.users.update({
+            where: { id: existing.id },
+            data: {
+                nickname,
+                isAdmin: true,
+                isActive: true,
+            },
+        });
+        console.log(`✓ Admin ya existía (${email}); flags sincronizadas.`);
+        return;
+    }
+    const hashed = await bcrypt.hash(password, 10);
+    await prisma.users.create({
+        data: {
+            email,
+            nickname,
+            password: hashed,
+            isAdmin: true,
+            isActive: true,
+        },
+    });
+    console.log(`✓ Admin creado: ${email} (nickname=${nickname}).`);
 }
 async function main() {
     console.log('▶ Seed Distop-IA — leyendo vault…');
@@ -328,6 +564,7 @@ async function main() {
     await seedDisciplines(abilityNames);
     await seedWeapons();
     await seedArmors();
+    await seedAdminUser();
     console.log('✔ Seed completado.');
 }
 main()
