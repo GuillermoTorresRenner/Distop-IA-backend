@@ -18,6 +18,12 @@ model CombatTracker {
 /// Participante en el tracker. Puede estar asociado a un Character (PC, NPC o
 /// ANTAGONIST) o ser una entrada libre (sin characterId, solo displayName)
 /// para PNJs improvisados. El narrador anota la iniciativa manualmente.
+///
+/// Caso especial — "copias de antagonista" (mooks): el narrador puede clonar
+/// un Character con kind=NPC|ANTAGONIST en N entradas. Cada copia tiene
+/// `characterId=null` (no es un Character real), `sourceCharacterId` apuntando
+/// a la plantilla, y stats embebidos (`dexterity`, `wits`, niveles de salud)
+/// para resolver iniciativa y trackear daño sin generar fichas duplicadas.
 model CombatParticipant {
   id          String        @id @default(uuid())
   trackerId   String
@@ -25,8 +31,12 @@ model CombatParticipant {
   /// Character asociado. Opcional: si es null, la entrada es libre (displayName obligatorio).
   characterId String?
   character   Character?    @relation(fields: [characterId], references: [id], onDelete: SetNull)
+  /// Plantilla de la que se clonó esta copia (solo para mooks). Si la plantilla
+  /// se elimina, la copia queda en el tracker pero pierde el vínculo.
+  sourceCharacterId String?
+  sourceCharacter   Character? @relation("CombatParticipantSource", fields: [sourceCharacterId], references: [id], onDelete: SetNull)
   /// Nombre visible. Si hay character asociado, sirve como override opcional.
-  /// Si no hay character, es el nombre del participante libre.
+  /// Si no hay character, es el nombre del participante libre (o mook).
   displayName String?
   /// Valor de iniciativa anotado a mano por el master. Nullable mientras
   /// el master aún no lo declara. Solo se usa para mostrar info al narrador
@@ -35,10 +45,24 @@ model CombatParticipant {
   /// Orden 0-based dentro del tracker. El narrador lo cambia con drag & drop
   /// o lo recalcula el back cuando inserta una entrada nueva.
   order       Int
+
+  /// Stats embebidos para mooks (solo cuando characterId=null y sourceCharacterId
+  /// está set). Permiten resolver iniciativa y trackear salud sin Character.
+  dexterity   Int?
+  wits        Int?
+  healthBruised       Int @default(0)
+  healthHurt          Int @default(0)
+  healthInjured       Int @default(0)
+  healthWounded       Int @default(0)
+  healthMauled        Int @default(0)
+  healthCrippled      Int @default(0)
+  healthIncapacitated Int @default(0)
+
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
   @@index([trackerId])
   @@index([characterId])
+  @@index([sourceCharacterId])
   @@map("combat_participants")
 }

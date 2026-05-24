@@ -126,30 +126,29 @@ export class CharactersService {
       }
     }
 
+    // Regla "narrador no juega con PC propio en mesa":
+    //  - PC creado por el narrador → queda con userId=narratorId y NO se
+    //    asocia al tracker. Es un "PC en custodia" para transferir luego al
+    //    jugador. `targetUserId` se ignora para PCs creados por el narrador:
+    //    la transferencia es un paso explícito posterior.
+    //  - PC creado por un jugador → queda asociado al tracker como siempre.
+    //  - NPC/ANTAGONIST creado por el narrador → asociado, dueño narratorId.
     const ownerId =
-      kind === 'PC' ? (targetUserId ?? callerId) : chronicle.narratorId;
+      kind === 'PC'
+        ? isCallerNarrator
+          ? chronicle.narratorId
+          : callerId
+        : chronicle.narratorId;
 
-    if (ownerId !== callerId && !isCallerNarrator) {
-      throw new ForbiddenException(
-        'Only the narrator can create a character for another player',
-      );
-    }
-
-    if (kind === 'PC' && ownerId !== callerId) {
-      const targetIsMember = chronicle.members.some(
-        (m) => m.userId === ownerId,
-      );
-      if (!targetIsMember) {
-        throw new BadRequestException(
-          'Target user is not a member of this chronicle',
-        );
-      }
-    }
+    // PC sin asociar: solo cuando el narrador lo crea para custodia.
+    const associateToChronicle = !(kind === 'PC' && isCallerNarrator);
 
     return this.prisma.character.create({
       data: {
         ...this.buildCreateData(ownerId, dto),
-        chronicles: { create: { chronicleId } },
+        ...(associateToChronicle
+          ? { chronicles: { create: { chronicleId } } }
+          : {}),
       },
       include: this.fullInclude(),
     });
@@ -280,7 +279,7 @@ export class CharactersService {
   ) {
     const character = await this.prisma.character.findUnique({
       where: { id: characterId },
-      select: { id: true, userId: true, name: true },
+      select: { id: true, userId: true, name: true, kind: true },
     });
     if (!character) throw new NotFoundException('Character not found');
 
@@ -296,9 +295,19 @@ export class CharactersService {
 
     const isNarrator = chronicle.narratorId === callerId;
     const isOwner = character.userId === callerId;
-    if (!isNarrator && !isOwner) {
+
+    // Regla: el narrador no juega con PC propio ni ajeno. Solo el dueño de
+    // un PC puede asociarlo a la mesa. Para NPC/ANTAGONIST el narrador sí
+    // puede (son su herramienta de juego).
+    if (character.kind === 'PC') {
+      if (!isOwner) {
+        throw new ForbiddenException(
+          'Only the character owner can associate a PC to a chronicle',
+        );
+      }
+    } else if (!isNarrator) {
       throw new ForbiddenException(
-        'Only the narrator or the character owner can associate it',
+        'Only the narrator can associate NPCs or antagonists',
       );
     }
 
@@ -407,18 +416,13 @@ export class CharactersService {
       );
     }
 
-    const link = await this.prisma.chronicleCharacter.findFirst({
-      where: { chronicleId, characterId },
-      select: {
-        character: { select: { id: true, userId: true, kind: true } },
-      },
+    const character = await this.prisma.character.findUnique({
+      where: { id: characterId },
+      select: { id: true, userId: true, kind: true },
     });
-    if (!link) {
-      throw new NotFoundException(
-        'Character is not associated with this chronicle',
-      );
+    if (!character) {
+      throw new NotFoundException('Character not found');
     }
-    const character = link.character;
 
     if (character.kind !== 'PC') {
       throw new BadRequestException(
@@ -430,17 +434,43 @@ export class CharactersService {
       throw new BadRequestException('Character already belongs to this user');
     }
 
-    await this.prisma.character.update({
-      where: { id: characterId },
-      data: { userId: targetUserId },
+    const link = await this.prisma.chronicleCharacter.findUnique({
+      where: { chronicleId_characterId: { chronicleId, characterId } },
+      select: { chronicleId: true },
+    });
+
+    // Si no está asociado, el caller (narrador) debe ser el dueño actual.
+    // Esto cubre el flujo "PC en custodia": narrador crea PC, queda con
+    // userId=narratorId sin asociar, luego transfiere al jugador y aquí
+    // mismo se crea la asociación. Si está asociado, mantenemos la regla
+    // original (narrador puede transferir cualquier PC asociado).
+    if (!link && character.userId !== callerId) {
+      throw new NotFoundException(
+        'Character is not associated with this chronicle',
+      );
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.character.update({
+        where: { id: characterId },
+        data: { userId: targetUserId },
+      });
+      if (!link) {
+        await tx.chronicleCharacter.create({
+          data: { chronicleId, characterId },
+        });
+      }
     });
     return { ok: true };
   }
 
   /**
    * Lista personajes que pueden asociarse a la crónica.
-   * - Narrador: ve los de TODOS los miembros (no asociados aún).
-   * - Jugador: ve solo los suyos (no asociados aún).
+   *
+   * Regla "narrador no juega con PC propio":
+   *  - Narrador: ve sus PNJs/Antagonistas no asociados (su herramienta).
+   *    NO ve PCs ajenos: cada jugador asocia su propio PC.
+   *  - Jugador: ve sus PCs no asociados (los antagonistas no son suyos).
    */
   async findAssociableForChronicle(chronicleId: string, callerId: string) {
     const chronicle = await this.prisma.chronicle.findUnique({
@@ -459,9 +489,6 @@ export class CharactersService {
     }
     const isNarrator = chronicle.narratorId === callerId;
 
-    const memberIds = chronicle.members.map((m) => m.userId);
-    const ownerFilter: string[] = isNarrator ? memberIds : [callerId];
-
     const linked = await this.prisma.chronicleCharacter.findMany({
       where: { chronicleId },
       select: { characterId: true },
@@ -469,8 +496,10 @@ export class CharactersService {
     const linkedIds = new Set(linked.map((l) => l.characterId));
 
     const characters = await this.prisma.character.findMany({
-      where: { userId: { in: ownerFilter } },
-      orderBy: [{ userId: 'asc' }, { name: 'asc' }],
+      where: isNarrator
+        ? { userId: callerId, kind: { in: ['NPC', 'ANTAGONIST'] } }
+        : { userId: callerId, kind: 'PC' },
+      orderBy: [{ name: 'asc' }],
       include: {
         clan: true,
         user: {
@@ -479,6 +508,43 @@ export class CharactersService {
       },
     });
 
+    return characters.filter((c) => !linkedIds.has(c.id));
+  }
+
+  /**
+   * PCs en custodia del narrador para una crónica: personajes con
+   * `kind = 'PC'`, `userId = narratorId` y sin asociar al tracker. Son los
+   * PJs que el narrador creó para futuros jugadores y aún tiene que
+   * transferir. Solo narrador.
+   */
+  async findCustodiedPcs(chronicleId: string, callerId: string) {
+    const chronicle = await this.prisma.chronicle.findUnique({
+      where: { id: chronicleId },
+      select: { id: true, narratorId: true },
+    });
+    if (!chronicle) throw new NotFoundException('Chronicle not found');
+    if (chronicle.narratorId !== callerId) {
+      throw new ForbiddenException(
+        'Only the narrator can see custodied PCs',
+      );
+    }
+
+    const linked = await this.prisma.chronicleCharacter.findMany({
+      where: { chronicleId },
+      select: { characterId: true },
+    });
+    const linkedIds = new Set(linked.map((l) => l.characterId));
+
+    const characters = await this.prisma.character.findMany({
+      where: { userId: callerId, kind: 'PC' },
+      orderBy: [{ createdAt: 'desc' }],
+      include: {
+        clan: true,
+        user: {
+          select: { id: true, email: true, nickname: true, avatar: true },
+        },
+      },
+    });
     return characters.filter((c) => !linkedIds.has(c.id));
   }
 

@@ -4,7 +4,19 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { CharacterKind } from '@prisma/client';
+import { randomInt } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
+
+export interface MookHealthView {
+  bruised: number;
+  hurt: number;
+  injured: number;
+  wounded: number;
+  mauled: number;
+  crippled: number;
+  incapacitated: number;
+}
 
 export interface CombatParticipantView {
   id: string;
@@ -19,10 +31,17 @@ export interface CombatParticipantView {
    *  - PC: personaje de un jugador (visible para todos).
    *  - NPC / ANTAGONIST: solo visible para el narrador.
    *  - FREE: entrada libre (sin Character), solo narrador.
+   *  - MOOK: copia de un NPC/ANTAGONIST con stats embebidos (solo narrador).
    */
-  kind: 'PC' | 'NPC' | 'ANTAGONIST' | 'FREE';
+  kind: 'PC' | 'NPC' | 'ANTAGONIST' | 'FREE' | 'MOOK';
   /** Solo presente para narrador. */
   ownerId?: string | null;
+  /** Solo para mooks (narrador): plantilla y stats embebidos. */
+  sourceCharacterId?: string | null;
+  sourceCharacterName?: string | null;
+  dexterity?: number | null;
+  wits?: number | null;
+  health?: MookHealthView;
 }
 
 export interface CombatStateView {
@@ -351,6 +370,215 @@ export class CombatService {
     return this.toView(fresh, 'NARRATOR');
   }
 
+  /**
+   * Clona un NPC/ANTAGONIST asociado a la crónica en N copias ("mooks") sin
+   * generar Characters reales. Cada copia es un CombatParticipant con
+   * `characterId=null`, `sourceCharacterId` apuntando a la plantilla y stats
+   * embebidos (Destreza, Astucia, salud por casilla) para resolver combate.
+   *
+   * Solo narrador (la validación de rol vive en el caller). La plantilla
+   * debe ser NPC/ANTAGONIST y estar asociada a la crónica.
+   */
+  async cloneAntagonist(
+    chronicleId: string,
+    input: { sourceCharacterId: string; count: number; baseName?: string },
+  ): Promise<CombatStateView> {
+    const count = Math.max(1, Math.min(20, Math.floor(input.count)));
+    const link = await this.prisma.chronicleCharacter.findUnique({
+      where: {
+        chronicleId_characterId: {
+          chronicleId,
+          characterId: input.sourceCharacterId,
+        },
+      },
+      include: {
+        character: {
+          select: {
+            id: true,
+            name: true,
+            kind: true,
+            dexterity: true,
+            wits: true,
+          },
+        },
+      },
+    });
+    if (!link?.character) {
+      throw new BadRequestException(
+        'La plantilla no está asociada a esta crónica',
+      );
+    }
+    if (link.character.kind === CharacterKind.PC) {
+      throw new BadRequestException(
+        'Solo se pueden clonar PNJs o antagonistas',
+      );
+    }
+
+    const tracker = await this.ensureTracker(chronicleId);
+    const baseName = (input.baseName?.trim() || link.character.name).slice(
+      0,
+      100,
+    );
+    const startOrder = tracker.participants.length;
+
+    await this.prisma.combatParticipant.createMany({
+      data: Array.from({ length: count }, (_, i) => ({
+        trackerId: tracker.id,
+        characterId: null,
+        sourceCharacterId: link.character!.id,
+        displayName: `${baseName} ${i + 1}`,
+        initiative: null,
+        order: startOrder + i,
+        dexterity: link.character!.dexterity,
+        wits: link.character!.wits,
+      })),
+    });
+
+    const fresh = await this.ensureTracker(chronicleId);
+    return this.toView(fresh, 'NARRATOR');
+  }
+
+  /**
+   * Actualiza los niveles de salud (por casilla, V20) de un participante.
+   * Pensado para mooks pero funciona para cualquier participant: el narrador
+   * tiene el control completo. Si la entrada no es un mook (no tiene stats
+   * embebidos), no se actualiza (los PCs tienen su salud en su Character).
+   */
+  async updateParticipantHealth(
+    chronicleId: string,
+    participantId: string,
+    patch: Partial<MookHealthView>,
+  ): Promise<CombatStateView> {
+    const tracker = await this.ensureTracker(chronicleId);
+    const participant = tracker.participants.find(
+      (p) => p.id === participantId,
+    );
+    if (!participant) {
+      throw new NotFoundException('Participante no encontrado');
+    }
+    if (participant.characterId || !participant.sourceCharacterId) {
+      throw new BadRequestException(
+        'Solo se puede editar la salud de copias de antagonista',
+      );
+    }
+
+    // Topes V20 por nivel: Bruised/Hurt/Incapacitated tienen 1 casilla,
+    // los demás 2. Clampamos defensivamente.
+    const clamp = (val: number | undefined, max: number) =>
+      val === undefined ? undefined : Math.max(0, Math.min(max, val));
+
+    await this.prisma.combatParticipant.update({
+      where: { id: participantId },
+      data: {
+        healthBruised: clamp(patch.bruised, 1),
+        healthHurt: clamp(patch.hurt, 1),
+        healthInjured: clamp(patch.injured, 2),
+        healthWounded: clamp(patch.wounded, 2),
+        healthMauled: clamp(patch.mauled, 2),
+        healthCrippled: clamp(patch.crippled, 2),
+        healthIncapacitated: clamp(patch.incapacitated, 1),
+      },
+    });
+
+    const fresh = await this.ensureTracker(chronicleId);
+    return this.toView(fresh, 'NARRATOR');
+  }
+
+  /**
+   * Tira iniciativa para un mook (participant sin Character, con stats
+   * embebidos). 1d10 + Destreza + Astucia. Persiste la tirada como
+   * `DiceRoll` (sin characterId) y actualiza `initiative` del participant.
+   *
+   * Devuelve el nuevo estado del combate + el desglose de la tirada para
+   * que el gateway pueda emitir `roll:result`.
+   */
+  async rollMookInitiative(
+    chronicleId: string,
+    participantId: string,
+    userId: string,
+  ): Promise<{
+    state: CombatStateView;
+    roll: {
+      d10: number;
+      dexterity: number;
+      wits: number;
+      total: number;
+      mookName: string;
+    };
+  }> {
+    const tracker = await this.ensureTracker(chronicleId);
+    const participant = tracker.participants.find(
+      (p) => p.id === participantId,
+    );
+    if (!participant) {
+      throw new NotFoundException('Participante no encontrado');
+    }
+    if (
+      participant.characterId ||
+      participant.dexterity === null ||
+      participant.wits === null
+    ) {
+      throw new BadRequestException(
+        'Solo se puede tirar iniciativa de copias con stats embebidos',
+      );
+    }
+
+    const d10 = randomInt(1, 11);
+    const dex = participant.dexterity;
+    const wits = participant.wits;
+    const total = d10 + dex + wits;
+    const mookName = participant.displayName ?? 'Mook';
+
+    // Persistimos el DiceRoll sin characterId; metadata lleva el desglose
+    // + el nombre visible del mook para el historial.
+    await this.prisma.diceRoll.create({
+      data: {
+        chronicleId,
+        userId,
+        characterId: null,
+        label: `Iniciativa · ${mookName} (Destreza ${dex} + Astucia ${wits})`,
+        pool: 1,
+        difficulty: 10,
+        specialty: false,
+        skillRating: null,
+        specialtyText: null,
+        willpowerSpent: false,
+        wpForSuccess: false,
+        wpForWound: false,
+        wpForReroll: false,
+        willpowerEffect: 'NONE',
+        woundPenalty: 0,
+        rolls: [d10],
+        specialtyRerolls: [],
+        willpowerRerolls: [],
+        successes: 0,
+        isBotch: false,
+        isPublic: false,
+        sourceKind: 'INITIATIVE',
+        sourceName: 'Iniciativa',
+        metadata: {
+          d10,
+          dexterity: dex,
+          wits,
+          modifier: 0,
+          total,
+          mookName,
+        },
+      },
+    });
+
+    await this.prisma.combatParticipant.update({
+      where: { id: participantId },
+      data: { initiative: total },
+    });
+
+    const fresh = await this.ensureTracker(chronicleId);
+    return {
+      state: this.toView(fresh, 'NARRATOR'),
+      roll: { d10, dexterity: dex, wits, total, mookName },
+    };
+  }
+
   // ──────────────────────────────────────────────────────────
   // Internals
   // ──────────────────────────────────────────────────────────
@@ -368,6 +596,9 @@ export class CombatService {
             character: {
               select: { id: true, name: true, kind: true, userId: true },
             },
+            sourceCharacter: {
+              select: { id: true, name: true },
+            },
           },
         },
       },
@@ -381,6 +612,9 @@ export class CombatService {
           include: {
             character: {
               select: { id: true, name: true, kind: true, userId: true },
+            },
+            sourceCharacter: {
+              select: { id: true, name: true },
             },
           },
         },
@@ -402,7 +636,11 @@ export class CombatService {
   ): CombatStateView {
     const isNarrator = role === 'NARRATOR';
     const all: CombatParticipantView[] = tracker.participants.map((p) => {
-      const kind = p.character?.kind ?? 'FREE';
+      // Detectamos mooks: sin Character asociado pero con sourceCharacterId y
+      // stats embebidos. Si hay character, su kind manda; si no, FREE o MOOK.
+      const isMook =
+        !p.characterId && !!p.sourceCharacterId && p.dexterity !== null;
+      const kind = p.character?.kind ?? (isMook ? 'MOOK' : 'FREE');
       const fallbackName = p.character?.name ?? p.displayName ?? 'Sin nombre';
       const name = p.displayName?.trim() || fallbackName;
       const base: CombatParticipantView = {
@@ -415,6 +653,21 @@ export class CombatService {
       if (isNarrator) {
         base.initiative = p.initiative;
         base.ownerId = p.character?.userId ?? null;
+        if (isMook) {
+          base.sourceCharacterId = p.sourceCharacterId;
+          base.sourceCharacterName = p.sourceCharacter?.name ?? null;
+          base.dexterity = p.dexterity;
+          base.wits = p.wits;
+          base.health = {
+            bruised: p.healthBruised,
+            hurt: p.healthHurt,
+            injured: p.healthInjured,
+            wounded: p.healthWounded,
+            mauled: p.healthMauled,
+            crippled: p.healthCrippled,
+            incapacitated: p.healthIncapacitated,
+          };
+        }
       }
       return base;
     });
@@ -463,7 +716,18 @@ export class CombatService {
       chronicleId: masterView.chronicleId,
       cursor: playerCursor,
       round: masterView.round,
-      participants: visible.map(({ initiative, ownerId, ...rest }) => rest),
+      participants: visible.map(
+        ({
+          initiative,
+          ownerId,
+          sourceCharacterId,
+          sourceCharacterName,
+          dexterity,
+          wits,
+          health,
+          ...rest
+        }) => rest,
+      ),
       totalParticipants: masterView.totalParticipants,
     };
   }

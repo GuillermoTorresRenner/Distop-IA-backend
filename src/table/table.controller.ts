@@ -20,8 +20,10 @@ import { CombatService } from './combat.service';
 import { DiceService } from './dice.service';
 import {
   AddCombatParticipantDto,
+  CloneAntagonistDto,
   ReorderCombatDto,
   UpdateCombatParticipantDto,
+  UpdateParticipantHealthDto,
 } from './dto/combat.dto';
 import { SaveBoardDto } from './dto/save-board.dto';
 import { UploadBoardFileDto } from './dto/upload-board-file.dto';
@@ -300,5 +302,68 @@ export class TableController {
     const state = await this.combatService.clear(chronicleId);
     this.gateway.broadcastCombat(chronicleId, state);
     return state;
+  }
+
+  @Post(':id/combat/clone-antagonist')
+  @Auth()
+  @ApiOperation({
+    summary:
+      'Clona N copias de un PNJ/Antagonista asociado a la crónica. Cada copia es un participant sin Character con stats embebidos (Destreza, Astucia, salud). Solo narrador.',
+  })
+  async cloneAntagonist(
+    @Param('id') chronicleId: string,
+    @GetUser('id') userId: string,
+    @Body() dto: CloneAntagonistDto,
+  ) {
+    const role = await this.tableService.getMembership(userId, chronicleId);
+    this.combatService.assertNarrator(role);
+    const state = await this.combatService.cloneAntagonist(chronicleId, dto);
+    this.gateway.broadcastCombat(chronicleId, state);
+    return state;
+  }
+
+  @Patch(':id/combat/participants/:pid/health')
+  @Auth()
+  @ApiOperation({
+    summary:
+      'Actualiza casillas de salud V20 de una copia de antagonista. Solo aplica a mooks (participants con stats embebidos). Solo narrador.',
+  })
+  async updateParticipantHealth(
+    @Param('id') chronicleId: string,
+    @Param('pid') participantId: string,
+    @GetUser('id') userId: string,
+    @Body() dto: UpdateParticipantHealthDto,
+  ) {
+    const role = await this.tableService.getMembership(userId, chronicleId);
+    this.combatService.assertNarrator(role);
+    const state = await this.combatService.updateParticipantHealth(
+      chronicleId,
+      participantId,
+      dto,
+    );
+    this.gateway.broadcastCombat(chronicleId, state);
+    return state;
+  }
+
+  @Post(':id/combat/participants/:pid/roll-initiative')
+  @Auth()
+  @ApiOperation({
+    summary:
+      'Tira iniciativa de una copia de antagonista (1d10 + Destreza + Astucia embebidas). Actualiza el tracker y registra la tirada. Solo narrador.',
+  })
+  async rollMookInitiative(
+    @Param('id') chronicleId: string,
+    @Param('pid') participantId: string,
+    @GetUser('id') userId: string,
+  ) {
+    const role = await this.tableService.getMembership(userId, chronicleId);
+    this.combatService.assertNarrator(role);
+    const { state, roll } = await this.combatService.rollMookInitiative(
+      chronicleId,
+      participantId,
+      userId,
+    );
+    this.gateway.broadcastCombat(chronicleId, state);
+    return { state, roll };
   }
 }

@@ -84,8 +84,8 @@ Schemas modulares en [prisma/schema/](prisma/schema/):
 - `Armor`, `CharacterArmor` - armaduras (system V20 + custom). `Armor`: `id`, `name` (unique), `rating`, `penalty`, `description?`, `tooltip?`, `order`, timestamps.
 
 **Mesa Virtual:**
-- `DiceRoll` - registro persistente de tiradas: `id`, `characterId`, `chronicleId`, `sourceKind` (enum: VTM, INITIATIVE, ...), `notation`, `rolls[]`, `total`, `metadata` (Json: para INITIATIVE contiene `{ d10, dexterity, wits, modifier, total }`), timestamps.
-- `CombatParticipant` - personaje inscrito en el tracker de combate: `id`, `chronicleId`, `characterId`, `initiative`, `currentRound`, `turnOrder`, timestamps.
+- `DiceRoll` - registro persistente de tiradas: `id`, `characterId?`, `chronicleId`, `sourceKind` (enum: VTM, INITIATIVE, ...), `notation`, `rolls[]`, `total`, `metadata` (Json: para INITIATIVE contiene `{ d10, dexterity, wits, modifier, total }`, para mooks contiene `{ d10, dexterity, wits, modifier, total, mookName }`), timestamps.
+- `CombatParticipant` - participante del tracker de combate (Character o Mook). Campos: `id`, `chronicleId`, `characterId?` (null para mooks), `sourceCharacterId?` (FK Character para mooks, relación inversa `sourceCharacter`), `displayName`, `initiative?`, `currentRound`, `turnOrder`, `dexterity?` (int, para mooks), `wits?` (int, para mooks), `healthBruised|Hurt|Injured|Wounded|Mauled|Crippled|Incapacitated: Int @default(0)` (casillas V20 para mooks), timestamps. Índice: `@@index([sourceCharacterId])`.
 
 **Diario y Social:**
 - `JournalEntry` - bitácora de crónica o personaje.
@@ -121,6 +121,7 @@ Schemas modulares en [prisma/schema/](prisma/schema/):
 **Characters** ([src/characters/characters.controller.ts](src/characters/characters.controller.ts)):
 - `GET/POST/PATCH/DELETE /api/characters[/:id]` - CRUD.
 - `POST /api/characters/:id/clone` - clonar personaje.
+- `POST /api/characters/:id/transfer` - transferir custodia a otro usuario (atómico con asociación a crónica). Body: `{ targetUserId }`. Solo narrador, para PCs sin asociar con `kind='PC'`.
 
 **Chronicles** ([src/chronicles/chronicles.controller.ts](src/chronicles/chronicles.controller.ts)):
 - `POST /api/chronicles` - crear crónica (auth). Usuario actual queda como `NARRATOR` y `ChronicleMember` automáticamente.
@@ -128,10 +129,11 @@ Schemas modulares en [prisma/schema/](prisma/schema/):
 - `GET /api/chronicles/:id` - detalle (auth, debe ser miembro): `narrator`, `members[]`, `invitations[]` (sólo PENDING).
 - `PATCH /api/chronicles/:id` - actualizar `name|description|setting` (auth, sólo narrador).
 - `DELETE /api/chronicles/:id` - eliminar crónica (auth, sólo narrador). Cascade borra members + invitations.
-- `GET /api/chronicles/:id/characters` - personajes asociados a la crónica.
-- `GET /api/chronicles/:id/associable-characters` - candidatos a asociar (narrador ve todos los miembros, jugador solo los suyos).
-- `POST /api/chronicles/:id/characters` - crear-y-asociar personaje. Soporta `kind + targetUserId` para que narrador cree NPCs/Antagonistas.
-- `POST/DELETE /api/chronicles/:id/characters/:characterId` - asociar/desasociar personaje.
+- `GET /api/chronicles/:id/characters` - personajes asociados a la crónica (solo PCs de jugadores + NPCs/Antagonistas del narrador).
+- `GET /api/chronicles/:id/associable-characters` - candidatos a asociar. Narrador solo ve NPCs/Antagonistas sin asociar; jugador solo sus PCs sin asociar.
+- `GET /api/chronicles/:id/custodied-pcs` - PCs en custodia del narrador (sin asociar, `kind='PC'`, `userId=narratorId`). Solo narrador.
+- `POST /api/chronicles/:id/characters` - crear-y-asociar personaje (narrador) o crear-y-asociar PC propio (jugador). Body: `{ kind?, name?, targetUserId? }`. Narrador crea PCs en custodia (sin `ChronicleCharacter`) o NPCs/Antagonistas asociados.
+- `POST/DELETE /api/chronicles/:id/characters/:characterId` - asociar/desasociar personaje (jugador con su PC, narrador con NPCs/Antagonistas solo).
 - `POST /api/chronicles/:id/invitations` - invitar por email (auth, sólo narrador). Body `{ email }`. Crea `ChronicleInvitation` con token aleatorio (7 días). Si el email pertenece a un usuario registrado → envía correo con `${FRONTEND_URL}/invitations/<token>`. Si no → envía correo con `${FRONTEND_URL}/register?invite=<token>`. Errores: 400 si ya es miembro o ya hay invitación pendiente para ese email.
 - `DELETE /api/chronicles/:id/invitations/:invitationId` - cancela invitación pendiente (auth, narrador).
 - `DELETE /api/chronicles/:id/members/:userId` - expulsa miembro (auth, narrador). No permite remover al narrador.
@@ -141,8 +143,15 @@ Schemas modulares en [prisma/schema/](prisma/schema/):
 - `GET /api/invitations` - lista invitaciones pendientes dirigidas al usuario actual (auth). Match por `invitedUserId` o por `email`.
 - `POST /api/invitations/:token/accept` - acepta (auth). Valida que el email del invite coincide con el del usuario logueado. Si OK, crea `ChronicleMember` con rol `PLAYER` y marca invitación `ACCEPTED`.
 
-**Table (WebSocket)** ([src/table/table.gateway.ts](src/table/table.gateway.ts)):
+**Table (WebSocket + REST)** ([src/table/table.gateway.ts](src/table/table.gateway.ts), [src/table/table.controller.ts](src/table/table.controller.ts)):
+
+*WebSocket:*
 - `roll:initiative` - evento cliente→servidor. Body: `{ characterId, label?, isPublic?, modifier? }`. Valida permisos (PC: dueño o narrador; NPC/Antagonista: solo narrador). Tira `1d10` server-side + Destreza + Astucia + modificador circunstancial. Persiste en `DiceRoll` con `sourceKind='INITIATIVE'` y `metadata` con desglose. Emite `roll:result` (visibilidad según `isPublic`). Inscribe/actualiza personaje en tracker e emite `combat:state`.
+
+*REST:*
+- `POST /api/chronicles/:id/combat/clone-antagonist` - clonar NPC/Antagonista en N "mooks" (copias sin `Character` real, con stats embebidos). Body: `{ sourceCharacterId, count (1..20), baseName? }`. Valida que la plantilla esté asociada y sea NPC/ANTAGONIST. Crea participantes con `characterId=null`, `sourceCharacterId` set, `displayName="<base> 1..N"`, copiando `dexterity/wits` de la plantilla. Emite `combat:state`. Solo narrador.
+- `PATCH /api/chronicles/:id/combat/participants/:pid/health` - actualizar casillas V20 de mook. Body: `{ bruised?, hurt?, injured?, wounded?, mauled?, crippled?, incapacitated? }`. Valida clamp por nivel V20. Solo aplica a mooks (`characterId=null`). Emite `combat:state`. Solo narrador.
+- `POST /api/chronicles/:id/combat/participants/:pid/roll-initiative` - tirar iniciativa para mook server-side. Tira `1d10` + stats embebidos; persiste en `DiceRoll` con `characterId=null` y `metadata` con desglose + `mookName`. Actualiza `initiative` del participant. Emite `combat:state` (visibilidad solo narrador). Solo narrador.
 
 **Mail templates** (Distop-IA · La Mascarada VTT — paleta sangrienta) en [src/mail/templates/](src/mail/templates/):
 
@@ -179,6 +188,7 @@ solo el `.md` y vuelve a correr `npx prisma db seed` — el seed es idempotente.
 - `20260518025656_add_background_catalog` - nuevo modelo `Background` con catálogo de trasfondos V20.
 - `20260518055413_add_catalog_tooltips_and_virtues` - agrega columna `tooltip String?` a todos los modelos de catálogo (AttributeInfo, AbilityInfo, MeritFlaw, Clan, Discipline, DisciplinePower, Background, HealthLevelInfo, Archetype, Armor, Weapon); nuevo modelo `VirtueInfo` para virtudes canónicas V20.
 - `20260521040330_discipline_paths_and_rituals` - agrega flag `hasPaths` a `Discipline`; nullable `disciplineId` y nuevo `pathId?` en `DisciplinePower` (mutuamente excluyentes); nuevos modelos `DisciplinePath`, `DisciplineRitual`, `CharacterDisciplinePath` y `CharacterDisciplineRitual` para soportar Taumaturgia y Nigromancia con sus sendas y rituales.
+- `20260524004423_combat_participant_mook_stats` - extiende `CombatParticipant` con campos `sourceCharacterId` (FK inversa `sourceCharacter`), `dexterity?`, `wits?`, `healthBruised|Hurt|Injured|Wounded|Mauled|Crippled|Incapacitated` (casillas V20 para mooks); agrega índice `@@index([sourceCharacterId])`; nullable `characterId?` en `DiceRoll` para soportar tiradas de mooks sin Character.
 
 **Notas sobre el seeder (`prisma/seed.ts`):**
 - Armas (`Weapon`) y armaduras (`Armor`) se persisten con un patrón **findFirst + create/update** por `(name, system=true)`, NO con `deleteMany + createMany`. Razón: `CharacterWeapon` y `CharacterArmor` mantienen FKs `Restrict` hacia esos catálogos; borrar masivamente rompe la integridad referencial cuando ya existen personajes con equipo asociado.
@@ -227,6 +237,34 @@ Opcionales: `BACKEND_URL`, `FRONTEND_URL`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`
 ## Archivos estáticos
 
 Servidos desde `./public`. Avatares en `public/images/users/avatars/`.
+
+## Reglas de permisos (Personajes y Crónicas)
+
+**PCs en mesa:**
+- Un jugador puede asociar su PC propio a una crónica via `POST /api/chronicles/:id/characters/:characterId`. Esto crea un registro `ChronicleCharacter`.
+- El narrador **no puede** asociar PCs (propias ni ajenas) a la crónica. Los endpoints que verifican esto lanzan `ForbiddenException` si `character.kind === 'PC'` y el caller no es el dueño.
+
+**PCs en custodia:**
+- El narrador crea PCs con `kind='PC'` via `POST /api/chronicles/:id/characters` y quedan con `userId = narratorId` **sin** crear `ChronicleCharacter`. Son "PCs en custodia".
+- El narrador puede listar sus PCs en custodia via `GET /api/chronicles/:id/custodied-pcs`.
+- El narrador transfiere custodia a un jugador via `POST /api/characters/:id/transfer { targetUserId }`. Esto **atómicamente**: cambia `userId` al jugador, crea `ChronicleCharacter` si la crónica está asociada al transfer, y devuelve el character actualizado.
+
+**NPCs / Antagonistas:**
+- Solo el narrador crea NPCs/Antagonistas via `POST /api/chronicles/:id/characters` con `kind='NPC'|'ANTAGONIST'`. Se asocian automáticamente.
+- `userId` siempre = `narratorId`.
+- No son transferibles.
+
+**Asociabilidad:**
+- `GET /api/chronicles/:id/associable-characters` filtra por:
+  - Narrador: solo ve sus NPCs/Antagonistas sin asociar (nunca PCs).
+  - Jugador: solo ve sus PCs sin asociar.
+- Solo el dueño de un PC puede asociarlo; solo el narrador puede desasociar NPCs/Antagonistas.
+
+**Combate (mooks):**
+- Solo el narrador puede clonar antagonistas via `POST /api/chronicles/:id/combat/clone-antagonist`.
+- Mooks tienen `characterId = null`, `sourceCharacterId = <template>`, stats embebidos (`dexterity`, `wits`), casillas V20.
+- Tiradas de mooks (`roll:initiative`) resultan en `DiceRoll` con `characterId = null` y metadata incluyendo `mookName`.
+- Visibilidad: el narrador ve `sourceCharacterId/Name`, `dexterity`, `wits`, `health`. Los jugadores solo ven PCs reales (`characterId != null` con `kind='PC'`).
 
 ## Notas para extender
 

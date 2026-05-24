@@ -103,6 +103,10 @@ model Character {
   diceRolls    DiceRoll[]
   journalEntries CharacterJournalEntry[]
   combatParticipations CombatParticipant[]
+  /// Copias de este personaje en trackers de combate (solo aplica si es NPC o
+  /// ANTAGONIST clonado por el narrador como mook). Se mantienen vinculadas
+  /// para mostrar el nombre de la plantilla en la UI.
+  combatTemplates      CombatParticipant[] @relation("CombatParticipantSource")
   disciplineRituals CharacterDisciplineRitual[]
 
   @@index([userId])

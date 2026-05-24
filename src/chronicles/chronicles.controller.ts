@@ -235,13 +235,27 @@ export class ChroniclesController {
   @Auth()
   @ApiOperation({
     summary:
-      "List characters that can still be associated to this chronicle. Narrator sees every member's characters; players see only their own.",
+      'Personajes que aún se pueden asociar a la crónica. Narrador: sus PNJs y antagonistas no asociados. Jugador: sus PCs no asociados.',
   })
   async listAssociableCharacters(
     @Param('id') id: string,
     @GetUser('id') userId: string,
   ) {
     const data = await this.characters.findAssociableForChronicle(id, userId);
+    return enrichCharactersWithAvatarUrls(data);
+  }
+
+  @Get(':id/custodied-pcs')
+  @Auth()
+  @ApiOperation({
+    summary:
+      'PCs en custodia del narrador para una crónica (creados por él, aún no transferidos ni asociados al tracker). Solo narrador.',
+  })
+  async listCustodiedPcs(
+    @Param('id') id: string,
+    @GetUser('id') userId: string,
+  ) {
+    const data = await this.characters.findCustodiedPcs(id, userId);
     return enrichCharactersWithAvatarUrls(data);
   }
 
