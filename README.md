@@ -455,9 +455,9 @@ El seed popula automáticamente:
   Ventrue, Lasombra, Tzimisce, Assamita, Followers of Set, Giovanni,
   Ravnos, Caitiff), con apodo, secta, disciplinas in-clan, debilidad
   mecánica y resumen narrativo.
-- 12 disciplinas con sus poderes:
-  - 10 disciplinas monolíticas (Animalismo, Auspex, Celeridad, Dominación,
-    Fortaleza, Ofuscación, Potencia, Presencia, Protean, Quietus,
+- 13 disciplinas con sus poderes:
+  - 11 disciplinas monolíticas (Animalismo, Auspex, Celeridad, Dementación,
+    Dominación, Fortaleza, Ofuscación, Potencia, Presencia, Protean, Quietus,
     Obtenebración, Vicisitud, Serpentis, Quimerismo).
   - 2 disciplinas ramificadas: **Taumaturgia** (5 sendas) y **Nigromancia**
     (3 sendas), cada una con sus 5 niveles de poderes por senda y los
