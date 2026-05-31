@@ -27,6 +27,7 @@ import { RollPowerDto } from './dto/roll-power.dto';
 import { RollVtmDto } from './dto/roll-vtm.dto';
 import { SheetUpdateAnnounceDto } from './dto/sheet-update-announce.dto';
 import { BoardService } from './board.service';
+import { ChatService } from './chat.service';
 import { CombatService, type CombatStateView } from './combat.service';
 import { AuthenticatedSocketData } from './types/socket-with-user';
 
@@ -71,6 +72,7 @@ export class TableGateway
     private readonly jwtService: JwtService,
     private readonly tableService: TableService,
     private readonly diceService: DiceService,
+    private readonly chatService: ChatService,
     private readonly boardService: BoardService,
     private readonly combatService: CombatService,
     private readonly presenceService: PresenceService,
@@ -281,6 +283,20 @@ export class TableGateway
         userId: targetUserId,
       } as { kind: 'all' | 'narrator' | 'user'; userId: string | null },
     };
+
+    // Persistir antes de emitir (fire-and-forget, no bloqueamos el broadcast).
+    void this.chatService.persist({
+      id: message.id,
+      chronicleId,
+      userId,
+      characterId: speaker.characterId,
+      speakerKind: speaker.kind,
+      speakerName: speaker.name,
+      speakerAvatar: speaker.avatar,
+      text,
+      recipientKind: kind,
+      recipientUserId: targetUserId,
+    });
 
     if (kind === 'all') {
       this.server.to(room).emit('chat:message', message);
@@ -730,6 +746,18 @@ export class TableGateway
     // de sangre se hizo en BD y el panel embebido del narrador refleja el
     // nuevo saldo, pero el chat queda limpio.
     if (ctx.kind === 'PC') {
+      void this.chatService.persist({
+        id: chatMessage.id,
+        chronicleId,
+        userId,
+        characterId: null,
+        speakerKind: 'system',
+        speakerName: 'Sistema',
+        speakerAvatar: null,
+        text: chatLine,
+        recipientKind: 'all',
+        recipientUserId: null,
+      });
       this.server.to(room).emit('chat:message', chatMessage);
 
       // Anuncio del delta de sangre, también solo para PCs.
@@ -861,6 +889,20 @@ export class TableGateway
         at: new Date().toISOString(),
       });
     return { ok: true, broadcasted: true };
+  }
+
+  /** Notifica a la sala que un mensaje de chat fue borrado. */
+  broadcastChatDeleted(chronicleId: string, messageId: string) {
+    this.server
+      .to(this.roomName(chronicleId))
+      .emit('chat:deleted', { messageId });
+  }
+
+  /** Notifica a la sala que una tirada fue borrada. */
+  broadcastRollDeleted(chronicleId: string, rollId: string) {
+    this.server
+      .to(this.roomName(chronicleId))
+      .emit('roll:deleted', { rollId });
   }
 
   /**

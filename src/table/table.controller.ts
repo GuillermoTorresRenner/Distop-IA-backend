@@ -4,6 +4,7 @@ import {
   Delete,
   ForbiddenException,
   Get,
+  NotFoundException,
   Param,
   ParseIntPipe,
   Patch,
@@ -16,6 +17,7 @@ import { Auth, GetUser } from '../common/decorators';
 import { buildCharacterAvatarUrl } from '../common/utils/character.utils';
 import { UploaderService } from '../uploader/uploader.service';
 import { BoardService } from './board.service';
+import { ChatService } from './chat.service';
 import { CombatService } from './combat.service';
 import { DiceService } from './dice.service';
 import {
@@ -35,6 +37,7 @@ import { TableService } from './table.service';
 export class TableController {
   constructor(
     private readonly diceService: DiceService,
+    private readonly chatService: ChatService,
     private readonly tableService: TableService,
     private readonly boardService: BoardService,
     private readonly combatService: CombatService,
@@ -76,6 +79,62 @@ export class TableController {
           }
         : r,
     );
+  }
+
+  @Get(':id/messages')
+  @Auth()
+  @ApiOperation({ summary: 'Historial de mensajes de chat de la crónica.' })
+  async getMessages(
+    @Param('id') chronicleId: string,
+    @GetUser('id') userId: string,
+    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
+  ) {
+    const role = await this.tableService.getMembership(userId, chronicleId);
+    if (!role) {
+      throw new ForbiddenException('Not a member of this chronicle');
+    }
+    return this.chatService.listByChronicle(
+      chronicleId,
+      userId,
+      role === 'NARRATOR',
+      limit ?? 100,
+    );
+  }
+
+  @Delete(':id/messages/:messageId')
+  @Auth()
+  @ApiOperation({ summary: 'Borra un mensaje de chat (autor o narrador).' })
+  async deleteMessage(
+    @Param('id') chronicleId: string,
+    @Param('messageId') messageId: string,
+    @GetUser('id') userId: string,
+  ) {
+    const role = await this.tableService.getMembership(userId, chronicleId);
+    if (!role) {
+      throw new ForbiddenException('Not a member of this chronicle');
+    }
+    const narratorId = await this.tableService.getNarratorId(chronicleId);
+    await this.chatService.deleteMessage(messageId, userId, narratorId);
+    this.gateway.broadcastChatDeleted(chronicleId, messageId);
+    return { ok: true, messageId };
+  }
+
+  @Delete(':id/rolls/:rollId')
+  @Auth()
+  @ApiOperation({ summary: 'Borra una tirada individual (solo narrador).' })
+  async deleteRoll(
+    @Param('id') chronicleId: string,
+    @Param('rollId') rollId: string,
+    @GetUser('id') userId: string,
+  ) {
+    const role = await this.tableService.getMembership(userId, chronicleId);
+    if (role !== 'NARRATOR') {
+      throw new ForbiddenException('Only the narrator can delete rolls');
+    }
+    const deleted = await this.diceService.deleteById(chronicleId, rollId);
+    if (!deleted) throw new NotFoundException('Tirada no encontrada');
+    this.gateway.broadcastRollDeleted(chronicleId, rollId);
+    return { ok: true, rollId };
   }
 
   @Delete(':id/rolls')

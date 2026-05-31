@@ -3,6 +3,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { envs } from '../config/envs';
 import { UploaderModule } from '../uploader/uploader.module';
 import { BoardService } from './board.service';
+import { ChatService } from './chat.service';
 import { CombatService } from './combat.service';
 import { TableGateway } from './table.gateway';
 import { TableService } from './table.service';
@@ -21,6 +22,7 @@ import { TableController } from './table.controller';
     TableGateway,
     TableService,
     DiceService,
+    ChatService,
     BoardService,
     CombatService,
   ],

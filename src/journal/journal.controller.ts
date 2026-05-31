@@ -19,6 +19,7 @@ import { UploaderService } from '../uploader/uploader.service';
 import {
   CreateCharacterJournalEntryDto,
   CreateChronicleJournalEntryDto,
+  ShareCharacterEntryDto,
   UpdateCharacterJournalEntryDto,
   UpdateChronicleJournalEntryDto,
 } from './dto';
@@ -128,6 +129,27 @@ export class JournalController {
     @Body() dto: UpdateCharacterJournalEntryDto,
   ) {
     return this.journal.updateCharacterEntry(chronicleId, entryId, userId, dto);
+  }
+
+  @Patch('chronicles/:chronicleId/character-journal/:entryId/share')
+  @Auth()
+  @ApiOperation({
+    summary:
+      'Activa o desactiva la visibilidad pública de una nota de personaje. ' +
+      'Cuando isShared=true aparece en la bitácora de la crónica para todos los miembros.',
+  })
+  shareCharacter(
+    @Param('chronicleId') chronicleId: string,
+    @Param('entryId') entryId: string,
+    @GetUser('id') userId: string,
+    @Body() dto: ShareCharacterEntryDto,
+  ) {
+    return this.journal.shareCharacterEntry(
+      chronicleId,
+      entryId,
+      userId,
+      dto.isShared,
+    );
   }
 
   @Delete('chronicles/:chronicleId/character-journal/:entryId')

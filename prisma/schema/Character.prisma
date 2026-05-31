@@ -100,7 +100,8 @@ model Character {
   chronicles   ChronicleCharacter[]
   weapons      CharacterWeapon[]
   armors       CharacterArmor[]
-  diceRolls    DiceRoll[]
+  diceRolls     DiceRoll[]
+  tableMessages TableMessage[]
   journalEntries CharacterJournalEntry[]
   combatParticipations CombatParticipant[]
   /// Copias de este personaje en trackers de combate (solo aplica si es NPC o

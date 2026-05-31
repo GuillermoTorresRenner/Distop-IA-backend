@@ -91,15 +91,40 @@ export class JournalService {
 
   async listChronicleEntries(chronicleId: string, userId: string) {
     await this.assertMember(chronicleId, userId);
-    const entries = await this.prisma.chronicleJournalEntry.findMany({
-      where: { chronicleId },
-      include: { author: { select: authorSelect } },
-      orderBy: [
-        { sessionDate: { sort: 'desc', nulls: 'last' } },
-        { createdAt: 'desc' },
-      ],
+    const [chronicleEntries, sharedCharacterEntries] = await Promise.all([
+      this.prisma.chronicleJournalEntry.findMany({
+        where: { chronicleId },
+        include: { author: { select: authorSelect } },
+        orderBy: [
+          { sessionDate: { sort: 'desc', nulls: 'last' } },
+          { createdAt: 'desc' },
+        ],
+      }),
+      this.prisma.characterJournalEntry.findMany({
+        where: { chronicleId, isShared: true },
+        include: {
+          author: { select: authorSelect },
+          character: { select: characterSelect },
+        },
+        orderBy: [
+          { sessionDate: { sort: 'desc', nulls: 'last' } },
+          { createdAt: 'desc' },
+        ],
+      }),
+    ]);
+
+    const all = [
+      ...chronicleEntries.map((e) => ({ ...this.serializeEntry(e), entryKind: 'CHRONICLE' as const })),
+      ...sharedCharacterEntries.map((e) => ({ ...this.serializeEntry(e), entryKind: 'CHARACTER' as const })),
+    ].sort((a, b) => {
+      // Ordena por sessionDate desc (nulls last), luego createdAt desc.
+      const da = a.sessionDate ? new Date(a.sessionDate).getTime() : 0;
+      const db = b.sessionDate ? new Date(b.sessionDate).getTime() : 0;
+      if (da !== db) return db - da;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
-    return entries.map((e) => this.serializeEntry(e));
+
+    return all;
   }
 
   async createChronicleEntry(
@@ -250,6 +275,37 @@ export class JournalService {
     return this.serializeEntry(updated);
   }
 
+  /**
+   * Activa o desactiva la visibilidad pública de una nota de personaje.
+   * Solo el autor puede cambiar este flag. Cuando isShared=true la entrada
+   * aparece en la bitácora de la crónica para todos los miembros.
+   */
+  async shareCharacterEntry(
+    chronicleId: string,
+    entryId: string,
+    userId: string,
+    isShared: boolean,
+  ) {
+    const entry = await this.prisma.characterJournalEntry.findUnique({
+      where: { id: entryId },
+    });
+    if (!entry || entry.chronicleId !== chronicleId) {
+      throw new NotFoundException('Entry not found');
+    }
+    if (entry.authorId !== userId) {
+      throw new ForbiddenException('You can only share your own entries');
+    }
+    const updated = await this.prisma.characterJournalEntry.update({
+      where: { id: entryId },
+      data: { isShared },
+      include: {
+        author: { select: authorSelect },
+        character: { select: characterSelect },
+      },
+    });
+    return this.serializeEntry(updated);
+  }
+
   async removeCharacterEntry(
     chronicleId: string,
     entryId: string,
@@ -328,6 +384,7 @@ export class JournalService {
       updatedAt: e.updatedAt,
       author: enrichUserWithAvatarUrl(e.author),
       character: 'character' in e ? e.character : null,
+      isShared: 'isShared' in e ? e.isShared : null,
     };
   }
 

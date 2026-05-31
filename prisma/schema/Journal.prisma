@@ -26,10 +26,14 @@ model CharacterJournalEntry {
   title       String
   body        String
   sessionDate DateTime?
+  /// Si true, la entrada es visible para todos los miembros de la crónica
+  /// en la bitácora compartida. El autor puede activarlo/desactivarlo.
+  isShared    Boolean    @default(false)
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
   @@index([chronicleId, authorId])
+  @@index([chronicleId, isShared])
   @@index([characterId])
   @@map("character_journal_entries")
 }

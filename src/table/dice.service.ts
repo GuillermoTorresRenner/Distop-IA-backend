@@ -565,6 +565,23 @@ export class DiceService {
   }
 
   /**
+   * Borra una tirada individual. Valida que pertenezca a la crónica indicada.
+   * Devuelve true si se borró, false si no existía.
+   */
+  async deleteById(
+    chronicleId: string,
+    rollId: string,
+  ): Promise<boolean> {
+    const roll = await this.prisma.diceRoll.findUnique({
+      where: { id: rollId },
+      select: { id: true, chronicleId: true },
+    });
+    if (!roll || roll.chronicleId !== chronicleId) return false;
+    await this.prisma.diceRoll.delete({ where: { id: rollId } });
+    return true;
+  }
+
+  /**
    * Borra TODAS las tiradas de una crónica. Solo el narrador puede hacerlo
    * (la validación de permiso vive en el controller / gateway que llama).
    */
