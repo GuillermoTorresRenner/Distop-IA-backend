@@ -41,6 +41,7 @@ NestJS
  ├─ CharactersModule  # CRUD personajes (atributos, habilidades, ventajas, equipo)
  ├─ ChroniclesModule  # crónicas, miembros e invitaciones para el VTT
  ├─ TableModule       # gateway WebSocket: tiradas de dados, combate, iniciativa
+ ├─ MusicModule       # reproducción de música en streaming vía YouTube
  ├─ JournalModule     # bitácora de crónicas y personajes
  ├─ SocialModule      # amistades
  └─ PrismaModule      # cliente Prisma compartido
@@ -152,6 +153,37 @@ Schemas modulares en [prisma/schema/](prisma/schema/):
 - `POST /api/chronicles/:id/combat/clone-antagonist` - clonar NPC/Antagonista en N "mooks" (copias sin `Character` real, con stats embebidos). Body: `{ sourceCharacterId, count (1..20), baseName? }`. Valida que la plantilla esté asociada y sea NPC/ANTAGONIST. Crea participantes con `characterId=null`, `sourceCharacterId` set, `displayName="<base> 1..N"`, copiando `dexterity/wits` de la plantilla. Emite `combat:state`. Solo narrador.
 - `PATCH /api/chronicles/:id/combat/participants/:pid/health` - actualizar casillas V20 de mook. Body: `{ bruised?, hurt?, injured?, wounded?, mauled?, crippled?, incapacitated? }`. Valida clamp por nivel V20. Solo aplica a mooks (`characterId=null`). Emite `combat:state`. Solo narrador.
 - `POST /api/chronicles/:id/combat/participants/:pid/roll-initiative` - tirar iniciativa para mook server-side. Tira `1d10` + stats embebidos; persiste en `DiceRoll` con `characterId=null` y `metadata` con desglose + `mookName`. Actualiza `initiative` del participant. Emite `combat:state` (visibilidad solo narrador). Solo narrador.
+
+**Music (Streaming)** ([src/music/music.controller.ts](src/music/music.controller.ts), [src/music/music.service.ts](src/music/music.service.ts)):
+
+*REST:*
+- `GET /api/chronicles/:id/music/state` - obtener estado actual del player de la crónica (auth). Devuelve `{ chronicleId, status, currentTrack, queue, startedAt?, pausedAt? }`. `status: 'STOPPED' | 'PLAYING' | 'PAUSED'`.
+- `GET /api/chronicles/:id/music/stream` - stream de audio/ogg chunked sin autenticación (para etiqueta `<audio>` del cliente). Retorna `Content-Type: audio/ogg` con pipes ffmpeg→PassThrough.
+- `POST /api/chronicles/:id/music/play` - reproducir track desde URL de YouTube. Body: `{ url }`. Resuelve metadata con `yt-dlp-wrap` (sin shell injection), transcodifica a OGG/Vorbis vía `ffmpeg`, inicia stream. Emite `music:state` vía WebSocket a toda la sala. Auth: narrador y jugadores.
+- `POST /api/chronicles/:id/music/pause` - pausar reproducción. Solo narrador. Emite `music:state`.
+- `POST /api/chronicles/:id/music/resume` - reanudar reproducción pausada. Solo narrador. Emite `music:state`.
+- `POST /api/chronicles/:id/music/skip` - saltar al siguiente track en la cola. Solo narrador. Emite `music:state`.
+- `POST /api/chronicles/:id/music/stop` - detener reproducción y limpiar cola. Solo narrador. Emite `music:state`.
+- `POST /api/chronicles/:id/music/queue` - agregar track a la cola de espera. Body: `{ url }`. Resuelve metadata sin iniciar stream inmediato. Auth: narrador y jugadores.
+- `DELETE /api/chronicles/:id/music/queue/:index` - remover track de la cola por índice. Solo narrador. Emite `music:state`.
+
+*WebSocket:*
+- `music:state` - evento servidor→cliente emitido a toda la sala cuando cambia el estado del player. Shape: `{ chronicleId, status, currentTrack?, queue, startedAt?, pausedAt? }`. `currentTrack` incluye `{ title, author, duration, thumbnail }`.
+
+**Implementación interna:**
+- `MusicService` gestiona estado por crónica en memoria (`Map<chronicleId, PlayerState>`). Cada `PlayerState` contiene `status`, `currentTrack`, `queue[]`, `ffmpegProcess?`, `startedAt`, `pausedAt`.
+- Resolución de URL vía `yt-dlp-wrap` (sin shell injection). Extrae `title`, `author`, `duration`, `thumbnail`.
+- Transcodificación a OGG/Vorbis vía `ffmpeg` (instalado en Dockerfile). El pipe stdout→PassThrough se mantiene abierto para múltiples conexiones HTTP.
+- Cleanup automático: tras 30 segundos de inactividad (sin clientes conectados al stream), mata el ffmpeg y limpia la memoria.
+- `TableGateway` emite `music:state` a la sala via `broadcastMusicState(chronicleId, state)` cuando se dispara un cambio.
+
+**Dependencias nuevas:**
+- `fluent-ffmpeg` - control programático de ffmpeg.
+- `yt-dlp-wrap` - wrapper seguro (sin shell) de yt-dlp para extraer metadata y urls de audio.
+- `@types/fluent-ffmpeg` - tipos TypeScript.
+
+**Dockerfile:**
+- Instala `ffmpeg`, `python3`, `yt-dlp` en la etapa de build para disponibilidad en runtime.
 
 **Mail templates** (Distop-IA · La Mascarada VTT — paleta sangrienta) en [src/mail/templates/](src/mail/templates/):
 

@@ -1,5 +1,10 @@
 name: distop_ia_dev
 
+# En desarrollo local, asegurate de tener instalados:
+# - ffmpeg (brew install ffmpeg / apt install ffmpeg)
+# - yt-dlp (brew install yt-dlp / pip install yt-dlp)
+# - python3 (generalmente ya está instalado)
+
 services:
   db:
     image: postgres:17

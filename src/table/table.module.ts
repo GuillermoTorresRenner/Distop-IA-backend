@@ -26,5 +26,6 @@ import { TableController } from './table.controller';
     BoardService,
     CombatService,
   ],
+  exports: [TableService, TableGateway],
 })
 export class TableModule {}

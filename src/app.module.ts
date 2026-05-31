@@ -13,6 +13,7 @@ import { TableModule } from './table/table.module';
 import { MessagesModule } from './messages/messages.module';
 import { PresenceModule } from './presence/presence.module';
 import { AdminModule } from './admin/admin.module';
+import { MusicModule } from './music/music.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { AdminModule } from './admin/admin.module';
     TableModule,
     MessagesModule,
     AdminModule,
+    MusicModule,
   ],
   controllers: [],
   providers: [],

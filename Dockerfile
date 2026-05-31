@@ -24,11 +24,26 @@ RUN test -f dist-seed/prisma/seed.js || (echo "Seed build failed" && ls -la dist
 
 RUN mkdir -p public
 
-FROM node:22-alpine AS production
+FROM node:22-slim AS production
 
-RUN apk add --no-cache openssl dumb-init libc6-compat
+# Debian slim tiene glibc nativo — necesario para el binario de yt-dlp.
+# ffmpeg desde el repo oficial de Debian; curl para descargar yt-dlp.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    dumb-init \
+    openssl \
+    ffmpeg \
+    curl \
+    python3 \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN addgroup -g 1001 -S nodejs && adduser -S nestjs -u 1001
+# yt-dlp: instalamos el binario oficial (glibc, siempre la última versión).
+# Se auto-actualiza en cada deploy → nunca queda desactualizado en producción.
+RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp \
+    -o /usr/local/bin/yt-dlp \
+    && chmod a+rx /usr/local/bin/yt-dlp \
+    && /usr/local/bin/yt-dlp --version
+
+RUN groupadd -g 1001 nodejs && useradd -u 1001 -g nodejs nestjs
 
 WORKDIR /app
 

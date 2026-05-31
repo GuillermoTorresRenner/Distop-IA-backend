@@ -937,6 +937,38 @@ export class TableGateway
     }
   }
 
+  /**
+   * Emite el estado del reproductor de música a toda la sala.
+   * Lo invoca MusicService después de cualquier cambio de estado.
+   */
+  broadcastMusicState(
+    chronicleId: string,
+    state: {
+      chronicleId: string;
+      status: 'idle' | 'playing' | 'paused';
+      currentTrack: {
+        videoId: string;
+        title: string;
+        url: string;
+        duration: number | null;
+        thumbnail: string | null;
+        requestedBy: string;
+      } | null;
+      queue: Array<{
+        videoId: string;
+        title: string;
+        url: string;
+        duration: number | null;
+        thumbnail: string | null;
+        requestedBy: string;
+      }>;
+      startedAt: number | null;
+      pausedAt: number | null;
+    },
+  ) {
+    this.server.to(this.roomName(chronicleId)).emit('music:state', state);
+  }
+
   private roomName(chronicleId: string) {
     return `chronicle:${chronicleId}`;
   }
