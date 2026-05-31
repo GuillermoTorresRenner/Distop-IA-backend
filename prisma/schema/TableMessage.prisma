@@ -1,0 +1,34 @@
+/// Mensaje de chat en la mesa de juego.
+/// Persiste todos los mensajes para recuperación ante reconexión,
+/// historial de sesión y auditoría. Los mensajes privados (narrator/user)
+/// se persisten igual pero el back filtra por visibilidad al servirlos.
+model TableMessage {
+  id          String    @id @default(uuid())
+  chronicleId String
+  chronicle   Chronicle @relation(fields: [chronicleId], references: [id], onDelete: Cascade)
+  userId      String
+  user        Users     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  characterId String?
+  character   Character? @relation(fields: [characterId], references: [id], onDelete: SetNull)
+
+  /// "self" | "character" | "system"
+  speakerKind   String
+  speakerName   String
+  speakerAvatar String?
+
+  text String
+
+  /// "all" | "narrator" | "user"
+  recipientKind   String
+  /// userId destino cuando recipientKind === "user"
+  recipientUserId String?
+
+  deletedAt DateTime?
+  deletedBy String?
+
+  createdAt DateTime @default(now())
+
+  @@index([chronicleId, createdAt])
+  @@index([userId])
+  @@map("table_messages")
+}
