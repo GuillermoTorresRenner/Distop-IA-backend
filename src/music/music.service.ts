@@ -62,13 +62,20 @@ export class MusicService {
 
     let metadata: Record<string, unknown>;
     try {
-      const raw = await ytDlp.execPromise([
+      const args = [
         youtubeUrl,
         '--dump-json',
         '--no-warnings',
         '--no-playlist',
         '-f', 'bestaudio/best',
-      ]);
+      ];
+      // Si existen cookies de YouTube montadas en el contenedor, usarlas
+      // para bypassear el bot detection desde IPs de datacenter/VPS.
+      const cookiesPath = '/app/youtube-cookies.txt';
+      if (existsSync(cookiesPath)) {
+        args.push('--cookies', cookiesPath);
+      }
+      const raw = await ytDlp.execPromise(args);
       metadata = JSON.parse(raw) as Record<string, unknown>;
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error desconocido';

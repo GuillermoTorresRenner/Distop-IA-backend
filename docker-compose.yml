@@ -42,6 +42,7 @@ services:
           - backend-prod
     volumes:
       - ./public:/app/public
+      - ./youtube-cookies.txt:/app/youtube-cookies.txt:ro
 
 networks:
   internal:

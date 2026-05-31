@@ -40,6 +40,12 @@ services:
           - backend-qa
     volumes:
       - ./public:/app/public
+      # Cookies de YouTube para bypassear bot detection desde el VPS.
+      # Generarlas localmente con "Get cookies.txt LOCALLY" (Chrome) estando
+      # logueado en youtube.com, y subirlas al VPS en la misma carpeta que
+      # este compose. Si el archivo no existe, la música funcionará igual
+      # pero YouTube puede bloquear el acceso desde IPs de datacenter.
+      - ./youtube-cookies.txt:/app/youtube-cookies.txt:ro
 
   adminer:
     image: adminer:latest
