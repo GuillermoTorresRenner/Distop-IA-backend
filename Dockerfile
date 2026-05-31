@@ -29,6 +29,7 @@ FROM node:22-slim AS production
 # Debian slim tiene glibc nativo — necesario para el binario de yt-dlp.
 # ffmpeg desde el repo oficial de Debian; curl para descargar yt-dlp.
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
     dumb-init \
     openssl \
     ffmpeg \
