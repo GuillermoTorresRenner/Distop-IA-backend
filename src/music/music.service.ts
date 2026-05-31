@@ -62,25 +62,22 @@ export class MusicService {
 
     let metadata: Record<string, unknown>;
     try {
+      // tv_embedded y android no requieren po_token desde IPs de datacenter.
+      // Usamos tv_embedded como primario y android como fallback.
       const args = [
         youtubeUrl,
         '--dump-json',
         '--no-warnings',
         '--no-playlist',
-        '-f', 'bestaudio/best',
+        '--extractor-args', 'youtube:player_client=tv_embedded,android',
+        '-f', 'bestaudio[ext=webm]/bestaudio[ext=m4a]/bestaudio/best',
       ];
-      // Si existen cookies de YouTube montadas en el contenedor, usarlas
-      // para bypassear el bot detection desde IPs de datacenter/VPS.
-      // El archivo debe montarse sin :ro porque yt-dlp actualiza las cookies.
+      // Cookies opcionales — si existen ayudan pero ya no son el mecanismo
+      // principal gracias al player_client tv_embedded.
       const cookiesPath = '/app/youtube-cookies.txt';
       if (existsSync(cookiesPath)) {
         args.push('--cookies', cookiesPath);
       }
-      // Selector de formato con máximo fallback:
-      // 1) audio webm/m4a sin video
-      // 2) cualquier audio
-      // 3) el mejor formato disponible (audio+video, ffmpeg extrae solo audio)
-      args[args.indexOf('bestaudio/best')] = 'bestaudio[ext=webm]/bestaudio[ext=m4a]/bestaudio/best';
       const raw = await ytDlp.execPromise(args);
       metadata = JSON.parse(raw) as Record<string, unknown>;
     } catch (err) {
