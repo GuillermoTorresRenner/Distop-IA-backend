@@ -45,7 +45,7 @@ services:
       # logueado en youtube.com, y subirlas al VPS en la misma carpeta que
       # este compose. Si el archivo no existe, la música funcionará igual
       # pero YouTube puede bloquear el acceso desde IPs de datacenter.
-      - ./youtube-cookies.txt:/app/youtube-cookies.txt:ro
+      - ./youtube-cookies.txt:/app/youtube-cookies.txt
 
   adminer:
     image: adminer:latest

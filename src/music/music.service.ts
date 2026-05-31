@@ -71,10 +71,16 @@ export class MusicService {
       ];
       // Si existen cookies de YouTube montadas en el contenedor, usarlas
       // para bypassear el bot detection desde IPs de datacenter/VPS.
+      // El archivo debe montarse sin :ro porque yt-dlp actualiza las cookies.
       const cookiesPath = '/app/youtube-cookies.txt';
       if (existsSync(cookiesPath)) {
         args.push('--cookies', cookiesPath);
       }
+      // Selector de formato con máximo fallback:
+      // 1) audio webm/m4a sin video
+      // 2) cualquier audio
+      // 3) el mejor formato disponible (audio+video, ffmpeg extrae solo audio)
+      args[args.indexOf('bestaudio/best')] = 'bestaudio[ext=webm]/bestaudio[ext=m4a]/bestaudio/best';
       const raw = await ytDlp.execPromise(args);
       metadata = JSON.parse(raw) as Record<string, unknown>;
     } catch (err) {
